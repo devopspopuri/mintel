@@ -75,6 +75,7 @@ def test_details_record_has_required_sections():
     assert all(item["systems"] and item["jobSignals"] for item in record["cloudArchitecture"]["linesOfBusiness"])
     assert all(item["rolePlatformView"] and item["consultantExplanation"] and item["evidenceModel"] for item in record["cloudArchitecture"]["linesOfBusiness"])
     assert record["cloudArchitecture"]["roleDomainPlatform"]["guideShape"] == "Platform-foundation guide"
+    assert record["cloudArchitecture"]["projectNarrativeReadingGuide"]["title"] == "How I Say This In An Interview"
     product_system_branch = next(item for item in record["cloudArchitecture"]["architectureMindmap"]["branches"] if item["title"] == "Product systems")
     assert product_system_branch["items"] == record["applicationLandscape"]
     workstreams = record["threeYearDeliveryTimeline"]
@@ -88,6 +89,23 @@ def test_details_record_has_required_sections():
     assert all(marker not in workstream_text for marker in ["Q1", "Q2", "Q3", "Q4", "Year 1", "Year 2", "Year 3"])
     assert record["productionSupportScenarios"]
     assert record["resumeProjectSummary"]
+
+
+def test_all_role_domain_programs_have_natural_project_narrative_reading_guide():
+    records = training_program_seed_records()
+    assert len(records) == len(MARKETING_ROLE_NAMES) * len(INDUSTRY_DOMAINS)
+    for record in records:
+        guide = record["cloudArchitecture"]["projectNarrativeReadingGuide"]
+        label = f"{record['marketingRole']} / {record['industryDomain']}"
+        assert guide["title"] == "How I Say This In An Interview", label
+        assert len(guide["quickRead"]) == 5, label
+        assert len(guide["readingOrder"]) == 5, label
+        assert len(guide["sayThis"]) >= 5, label
+        assert "I supported" in " ".join(guide["sayThis"]), label
+        assert "I did not own business rules or feature code" in guide["anchorSentence"], label
+        assert record["marketingRole"] in guide["anchorSentence"], label
+        assert record["industryDomain"] in " ".join(item[1] for item in guide["quickRead"]), label
+        assert "I owned the whole application." in guide["avoidSaying"], label
 
 
 def test_details_record_has_consultant_quality_material():
@@ -1480,6 +1498,9 @@ def test_role_program_maps_concepts_to_basics_or_company_context():
     )
     role_text = " ".join(block["text"] for block in role_blocks)
     assert "Concept Coverage Map" in role_text
+    assert "How I Say This In An Interview" in role_text
+    assert "Say it naturally" in role_text
+    assert "I did not own business rules or feature code" in role_text
     assert "Every concept is explained either in Basics Prep or in the role/domain company context" in role_text
     assert "Architect reading lens" in role_text
     assert "Decision Rationale" in role_text

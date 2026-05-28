@@ -982,6 +982,43 @@ def _role_domain_platform_map(role_name: str, domain: str, profile: DomainProfil
     }
 
 
+def _project_narrative_reading_guide(role_name: str, domain: str, applications: list[str], focus: list[str]) -> dict[str, Any]:
+    primary_apps = applications[:4]
+    primary_flow = ", ".join(primary_apps)
+    role_focus = ", ".join(focus[:5]).lower()
+    return {
+        "title": "How I Say This In An Interview",
+        "quickRead": [
+            ["Where I worked", f"I worked in a large {domain} environment, not a small lab setup."],
+            ["Systems I supported", f"The main systems were {primary_flow}."],
+            ["My part", f"My {role_name} work was around {role_focus}."],
+            ["What I did not own", "I did not own business rules, product priority, feature code, or final policy approval."],
+            ["How I proved it", "I used Jira, PRs, logs, dashboards, command output, runbooks, and rollback or recovery notes."],
+        ],
+        "readingOrder": [
+            ["Start", "I first explain the business system and company scale."],
+            ["Flow", f"Then I name the product flow: {primary_flow}."],
+            ["Boundary", "Then I explain what I owned and what other teams owned."],
+            ["Work", "Then I connect the work to Jira stories, defects, requests, validation, and handoff."],
+            ["Architecture", "Then I explain the layers: business flow, applications, platform, governance, and observability."],
+        ],
+        "sayThis": [
+            f"I supported {domain} systems such as {primary_flow}.",
+            f"My role was not to change the business rules; my {role_name} contribution was around {role_focus}.",
+            "I worked through Jira stories and support requests, validated changes in lower environments, and attached evidence.",
+            "I usually explained my work with diagrams, logs, command output, dashboards, PRs, tickets, runbooks, and rollback or recovery notes.",
+            "That helped application, QA, security, release, and operations teams understand what changed and how to support it.",
+        ],
+        "avoidSaying": [
+            "I owned the whole application.",
+            "I handled all business rules.",
+            "I just used tools.",
+            "I repeated the paragraph without understanding the work.",
+        ],
+        "anchorSentence": f"I did not own business rules or feature code; my {role_name} contribution was the enablement layer around {role_focus}.",
+    }
+
+
 def build_training_program_record(role: Any, domain: str, display_order: int, active_market_jobs: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     profile = DOMAIN_PROFILES[domain]
     ownership = ROLE_OWNERSHIP[role.name]
@@ -1037,6 +1074,7 @@ def build_training_program_record(role: Any, domain: str, display_order: int, ac
             "architectureInterviewExplanation": _architecture_interview_explanation(role.name, domain, applications, focus, tools),
             "consultantProjectContext": _consultant_project_context(role.name, domain, applications, focus),
             "consultantProjectContextBrief": _consultant_project_context_brief(role.name, domain, applications, focus),
+            "projectNarrativeReadingGuide": _project_narrative_reading_guide(role.name, domain, applications, focus),
             "enterpriseOperatingModel": _enterprise_operating_model(role.name, domain, applications),
             "roleProductExplanation": _role_product_explanation(role.name, domain, applications, focus),
             "productGlossary": _product_glossary(role.name, domain, profile, focus),

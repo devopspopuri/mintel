@@ -18134,6 +18134,14 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         "Interviewers look for context first. My answer explains where the role operated, which teams were involved, and what outcomes the work supported.",
     )
     context_brief = architecture.get("consultantProjectContextBrief") if isinstance(architecture.get("consultantProjectContextBrief"), dict) else {}
+    reading_guide = architecture.get("projectNarrativeReadingGuide") if isinstance(architecture.get("projectNarrativeReadingGuide"), dict) else {}
+    if reading_guide:
+        add(reading_guide.get("title"), "section")
+        add_callout("Interview meaning", [f"{item[0]}: {item[1]}" for item in _as_list(reading_guide.get("quickRead")) if isinstance(item, list) and len(item) >= 2], "key")
+        add_callout("Say it naturally", reading_guide.get("sayThis"), "interview")
+        add_callout("How to explain it", [f"{item[0]}: {item[1]}" for item in _as_list(reading_guide.get("readingOrder")) if isinstance(item, list) and len(item) >= 2], "learn")
+        add_callout("Avoid saying", reading_guide.get("avoidSaying"), "warning")
+        add_callout("Anchor sentence", reading_guide.get("anchorSentence"), "interview")
     if context_brief:
         add(context_brief.get("headline"), "section")
         add_callout("Context Summary", context_brief.get("summary"), "key")

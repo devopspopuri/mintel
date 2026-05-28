@@ -484,6 +484,41 @@
   {% elif section == "overview" %}
     <section class="card stack">
       <h2>Enterprise Project Context</h2>
+      {% if program.cloud_architecture.projectNarrativeReadingGuide %}
+        {% set guide = program.cloud_architecture.projectNarrativeReadingGuide %}
+        <section class="subtle-panel">
+          <strong>{{ guide.title }}</strong>
+          <div class="grid-2">
+            <section>
+              <strong>Interview meaning</strong>
+              <ul class="stack-list">
+                {% for item in guide.quickRead %}
+                  <li><strong>{{ item[0] }}:</strong> {{ item[1] }}</li>
+                {% endfor %}
+              </ul>
+            </section>
+            <section>
+              <strong>Say it naturally</strong>
+              <ul class="stack-list">{% for item in guide.sayThis %}<li>{{ item }}</li>{% endfor %}</ul>
+            </section>
+          </div>
+          <div class="grid-2">
+            <section>
+              <strong>How to explain it</strong>
+              <ul class="stack-list">
+                {% for item in guide.readingOrder %}
+                  <li><strong>{{ item[0] }}:</strong> {{ item[1] }}</li>
+                {% endfor %}
+              </ul>
+            </section>
+            <section>
+              <strong>Avoid saying</strong>
+              <ul class="stack-list">{% for item in guide.avoidSaying %}<li>{{ item }}</li>{% endfor %}</ul>
+            </section>
+          </div>
+          <p><strong>Anchor sentence:</strong> {{ guide.anchorSentence }}</p>
+        </section>
+      {% endif %}
       {% if program.cloud_architecture.consultantProjectContextBrief %}
         {% set context_brief = program.cloud_architecture.consultantProjectContextBrief %}
         <section class="subtle-panel stack">
