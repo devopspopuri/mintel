@@ -940,7 +940,7 @@ def test_training_basics_detailed_answers_are_interview_responses_not_meta_coach
         assert len(topic_questions) == len(set(topic_questions))
     first_sections = _training_basics_topic_sections(modules[0], 1)
     assert first_sections[0]["qa"][0]["question"] == "What is RHEL server in RHEL System Administration, Linux, Networking, And Troubleshooting?"
-    assert first_sections[1]["qa"][0]["question"] == "What is the day-to-day RHEL admin practice for Topic 1?"
+    assert first_sections[1]["qa"][0]["question"] == "What is the day-to-day RHEL admin practice for Topic 1 in the Digital Banking Onboarding And Payments Platform project?"
     assert first_sections[2]["qa"][0]["question"] == "What failure pattern do you commonly see on a RHEL application host?"
 
 
@@ -1126,12 +1126,37 @@ def test_each_training_basics_topic_has_dynamic_fifteen_question_test():
 
 
 def test_training_basics_questions_are_not_short_template_prompts():
+    minimum_words = 12
     modules = _training_basics_preparation_modules()
     for topic_number, module in enumerate(modules, start=1):
         for section in _training_basics_topic_sections(module, topic_number):
-            assert all(_training_question_word_count(item["question"]) >= 10 for item in section["qa"])
+            assert all(_training_question_word_count(item["question"]) >= minimum_words for item in section["qa"])
         assessment = _training_basics_topic_assessment(module, topic_number)
-        assert all(_training_question_word_count(item["prompt"]) >= 10 for item in assessment["questions"])
+        assert all(_training_question_word_count(item["prompt"]) >= minimum_words for item in assessment["questions"])
+
+
+def test_training_program_questions_are_at_least_twelve_words():
+    def question_like_strings(value, path=""):
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                nested_path = f"{path}.{key}" if path else str(key)
+                yield from question_like_strings(nested, nested_path)
+        elif isinstance(value, list):
+            for index, nested in enumerate(value):
+                yield from question_like_strings(nested, f"{path}[{index}]")
+        elif isinstance(value, str):
+            leaf = path.rsplit(".", 1)[-1].lower()
+            if value.strip().endswith("?") and any(token in leaf for token in ("question", "prompt")):
+                yield path, value
+
+    short_questions = []
+    for record in training_program_seed_records():
+        label = f"{record['marketingRole']} / {record['industryDomain']}"
+        for path, text in question_like_strings(record):
+            if _training_question_word_count(text) < 12:
+                short_questions.append((label, path, text))
+
+    assert short_questions == []
 
 
 def test_training_basics_section_page_does_not_show_generated_answer_template():

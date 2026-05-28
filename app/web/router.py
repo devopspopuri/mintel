@@ -14572,6 +14572,9 @@ def _training_basics_question_word_count(question: str) -> int:
     return len(re.findall(r"[A-Za-z0-9`/.-]+", question or ""))
 
 
+TRAINING_BASICS_MIN_QUESTION_WORDS = 12
+
+
 def _training_basics_expand_short_question(
     question: str,
     *,
@@ -14582,7 +14585,7 @@ def _training_basics_expand_short_question(
     project_name: str,
 ) -> str:
     clean = (question or "").strip()
-    if _training_basics_question_word_count(clean) >= 10:
+    if _training_basics_question_word_count(clean) >= TRAINING_BASICS_MIN_QUESTION_WORDS:
         return clean
     topic = title or "this topic"
     q_lower = clean.lower().rstrip("?")
@@ -14645,26 +14648,26 @@ def _training_basics_expand_short_test_prompt(
     primary: str,
 ) -> str:
     clean = (prompt or "").strip()
-    if _training_basics_question_word_count(clean) >= 10:
+    if _training_basics_question_word_count(clean) >= TRAINING_BASICS_MIN_QUESTION_WORDS:
         return clean
     topic = re.sub(r"^\d+\.\s*", "", module_title or "this topic")
     q_lower = clean.lower().rstrip("?.")
     replacements = {
         "explain git and github using the transfer limit change": "How should a candidate explain Git and GitHub using the transfer limit change?",
-        "how does pr evidence protect a banking-platform release": "How does pull request evidence protect a banking-platform release during review?",
+        "how does pr evidence protect a banking-platform release": "How does pull request evidence protect a banking-platform release during peer review?",
         "explain image versus container using the ticket api": "How should a candidate explain image versus container using the payment API?",
         "explain kubernetes objects through the ticket api deployment": "How should Kubernetes objects be explained through the payment API deployment?",
         "explain the banking-platform cloud architecture in simple language": "How should the banking-platform cloud architecture be explained in simple interview language?",
         "how do cloud identity and network evidence support troubleshooting": "How do cloud identity and network evidence support troubleshooting for the banking platform?",
         "explain ci/cd through one banking-platform release": "How should CI/CD be explained through one banking-platform release from PR to validation?",
-        "what evidence proves a banking-platform release is safe": "What evidence proves a banking-platform release is safe enough to promote?",
-        "explain observability using payment-flow slowness": "How should observability be explained using payment-flow slowness during an interview?",
-        "explain terraform plan using banking-platform infrastructure": "How should Terraform plan output be explained using banking-platform infrastructure?",
-        "what does terraform state prove and not prove": "What does Terraform state prove and not prove for banking-platform infrastructure?",
-        "explain iam and secrets through the banking platform": "How should IAM and secrets be explained through the banking platform?",
+        "what evidence proves a banking-platform release is safe": "What evidence proves a banking-platform release is safe enough to promote into production?",
+        "explain observability using payment-flow slowness": "How should observability be explained using payment-flow slowness during a project interview?",
+        "explain terraform plan using banking-platform infrastructure": "How should Terraform plan output be explained using banking-platform infrastructure changes during review?",
+        "what does terraform state prove and not prove": "What does Terraform state prove and not prove for banking-platform infrastructure ownership?",
+        "explain iam and secrets through the banking platform": "How should IAM and secrets be explained through the banking platform support workflow?",
         "how do you handle access evidence without exposing values": "How do you handle access evidence without exposing secret or customer values?",
         "explain agile/jira using the transfer limit feature": "How should Agile and Jira be explained using the transfer limit feature?",
-        "how does automation evidence become a runbook": "How does automation evidence become a useful runbook for support teams?",
+        "how does automation evidence become a runbook": "How does automation evidence become a useful runbook for production support teams?",
         "tell the full banking-platform project story in 60 seconds": "How would you tell the full banking-platform project story in 60 seconds?",
         "what evidence proves you are ready for role/domain training": "What evidence proves you are ready to enter role and domain training?",
     }

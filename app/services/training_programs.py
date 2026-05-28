@@ -66,15 +66,15 @@ MAAS_INTERVIEW_PLAYBOOKS: dict[str, dict[str, Any]] = {
         "opening": "Start with the deployment flow, infrastructure ownership, and the last production change delivered.",
         "flow": ["Resume walkthrough and ownership scope", "Delivery pipeline and release safety", "Failure mode or rollback discussion", "Automation and drift probes", "Next improvement focus"],
         "coreQuestions": [
-            "How do you design a safe CI/CD pipeline for multi-environment releases?",
-            "What guardrails keep GitOps or IaC changes from drifting in production?",
-            "How do you reduce deployment risk without slowing the team down?",
+            "How do you design a safe CI/CD pipeline for multi-environment production releases?",
+            "What guardrails keep GitOps or IaC changes from drifting in production environments?",
+            "How do you reduce deployment risk without slowing the delivery team down?",
             "Tell me about a release failure you owned and how you recovered it.",
         ],
         "followUpProbes": [
-            "What if a pipeline stage is flaky only in one region?",
-            "How do you separate infrastructure drift from an application defect?",
-            "Which checks belong before merge versus before production promotion?",
+            "What if a pipeline stage is flaky only in one deployment region?",
+            "How do you separate infrastructure drift from an application defect during triage?",
+            "Which checks belong before merge versus before production promotion approval gates in practice?",
         ],
         "pressureChecks": [
             "A production deployment is stuck halfway through. What do you do first?",
@@ -111,14 +111,14 @@ MAAS_INTERVIEW_PLAYBOOKS: dict[str, dict[str, Any]] = {
         "flow": ["Data flow and ownership", "Pipeline reliability and backfills", "Schema or contract change", "Data quality and lineage", "Operating model"],
         "coreQuestions": [
             "How do you design a reliable orchestration flow for daily and late-arriving data?",
-            "How do you catch bad data before it reaches analytics users?",
-            "What do you do when a schema change breaks downstream consumers?",
-            "How do you backfill without double-counting or corrupting history?",
+            "How do you catch bad data before it reaches analytics users downstream?",
+            "What do you do when a schema change breaks downstream data consumers?",
+            "How do you backfill data without double-counting or corrupting historical records downstream?",
         ],
         "followUpProbes": [
             "How do you separate transient pipeline failure from a true data defect?",
-            "What lineage or metadata do you keep for debugging?",
-            "How do you communicate a data outage to stakeholders?",
+            "What lineage or metadata do you keep for debugging production data issues?",
+            "How do you communicate a data outage to stakeholders during business reporting?",
         ],
         "pressureChecks": [
             "A dashboard looks wrong 10 minutes before a leadership review. What do you check first?",
@@ -132,15 +132,15 @@ MAAS_INTERVIEW_PLAYBOOKS: dict[str, dict[str, Any]] = {
         "opening": "Start with the last model or inference system operated and explain how it moved from training to production.",
         "flow": ["Model lifecycle and ownership", "Deployment and inference", "Drift and retraining", "Monitoring and rollback", "Governance"],
         "coreQuestions": [
-            "How do you deploy a model safely without disrupting production traffic?",
-            "What signals tell you a model is drifting or degrading?",
-            "How do you keep training and inference features consistent?",
-            "How do you decide when to retrain versus when to rollback?",
+            "How do you deploy a model safely without disrupting production inference traffic?",
+            "What signals tell you a production model is drifting or degrading after release?",
+            "How do you keep training and inference features consistent across runtime environments?",
+            "How do you decide when to retrain versus when to rollback safely?",
         ],
         "followUpProbes": [
             "How do you compare an old model and a new model before rollout?",
-            "What happens when data quality drops but the model still serves?",
-            "How do you make inference reproducible under pressure?",
+            "What happens when data quality drops but the model still serves predictions?",
+            "How do you make inference reproducible under production support pressure during incidents?",
         ],
         "pressureChecks": [
             "The model is returning wrong results after a deploy. What do you do first?",
@@ -154,15 +154,15 @@ MAAS_INTERVIEW_PLAYBOOKS: dict[str, dict[str, Any]] = {
         "opening": "Start with an operations problem and explain how telemetry becomes action, not just a dashboard.",
         "flow": ["Telemetry and signal quality", "Alert correlation and noise reduction", "Automation or remediation", "Human review", "Trust and adoption"],
         "coreQuestions": [
-            "How do you reduce noisy alerts without hiding a real incident?",
-            "How do you correlate events across logs, metrics, and traces?",
-            "What remediation would you automate first, and why?",
-            "How do you keep operators trusting the AI output?",
+            "How do you reduce noisy alerts without hiding a real incident signal?",
+            "How do you correlate events across logs, metrics, traces, tickets, and deployments?",
+            "What remediation would you automate first during an incident, and why exactly?",
+            "How do you keep operators trusting the AI output during incident triage?",
         ],
         "followUpProbes": [
-            "What if the model is right statistically but wrong operationally?",
-            "How do you review false positives and false negatives?",
-            "How do you explain the recommendation to an on-call engineer?",
+            "What if the model is right statistically but wrong operationally for support?",
+            "How do you review false positives and false negatives after production incidents?",
+            "How do you explain the recommendation to an on-call engineer clearly during triage?",
         ],
         "pressureChecks": [
             "The AI system recommends the wrong runbook during an outage. What do you do?",
@@ -3069,10 +3069,10 @@ def _business_analyst_lens(use_case: dict[str, Any], index: int, role_name: str,
         ],
         "domainVocabulary": _unique([lob_name, *signals[:6], "business capability", "exception path", "SLA", "KPI", "audit record", "owner route"]),
         "businessQuestions": [
-            f"Which {lob_name} business capability is affected by this use case?",
-            "Who starts the workflow and who consumes the result?",
-            "What is the normal path, and what exception path matters most?",
-            "Which KPI, SLA, report, or audit signal proves business value?",
+            f"Which {lob_name} business capability is affected by this use case inside the workflow?",
+            "Who starts the workflow, who consumes the result, and what handoff matters?",
+            "What is the normal path, and what exception path matters most operationally?",
+            "Which KPI, SLA, report, or audit signal proves business value after delivery?",
             "Which system owns the status, data, or operational truth at each handoff?",
         ],
         "businessEvidence": _unique([*evidence[:4], *signals[:4], "business process map", "KPI/SLA note", "exception path note", "report/dashboard reference"]),
@@ -3150,7 +3150,7 @@ def _architect_lens(use_case: dict[str, Any], role_name: str, domain: str, prima
         "reviewQuestions": [
             f"Which business capability in {domain} does this use case protect or improve?",
             f"Where does {primary_system} hand off to {secondary_system}, and what evidence proves that handoff is healthy?",
-            "What failure mode would expose the weakest part of this design?",
+            "What failure mode would expose the weakest part of this architecture design?",
             "Which NFR matters most here: availability, security, performance, cost, auditability, data quality, or operability?",
             f"What part is truly owned by {role_name}, and what part must remain with another team?",
         ],
@@ -3369,24 +3369,24 @@ def _use_case_questions(title: str, role_name: str, domain: str, systems: list[s
             f"Walk me through the {title} use case from business problem to production outcome.",
             f"What exactly did you own as a {role_name}, and what was owned by developers or product owners?",
             f"Which {domain} applications were touched, and why did {primary_system} matter to the business?",
-            "How did you gather requirements and confirm the current-state workflow?",
+            "How did you gather requirements and confirm the current-state workflow with stakeholders?",
             f"Which tools did you use for {focus[0]} and {focus[1]}, and what output did each tool produce?",
-            "How did you validate the change before production?",
-            "How did you document rollback, support handoff, or recovery steps?",
+            "How did you validate the change before production rollout and support handoff?",
+            "How did you document rollback, support handoff, or recovery steps for operations?",
             "What issue came up during implementation, and how did you resolve it?",
             "How did you communicate progress and risk to leads or support teams?",
-            "What measurable improvement or operational benefit came from the use case?",
+            "What measurable improvement or operational benefit came from the completed use case?",
         ],
         "architecture": [
             f"Draw the high-level architecture for {primary_system} in this use case.",
             "Where do DNS, WAF, API gateway, load balancer, compute, database, queue, secrets, and observability fit?",
             f"Which components were inside your {role_name} boundary and which were outside it?",
-            "How did the architecture support dev, QA, stage, and production separation?",
-            "What architecture risk would you call out to a lead engineer?",
+            "How did the architecture support dev, QA, stage, and production separation safely?",
+            "What architecture risk would you call out to a lead engineer first?",
         ],
         "system design": [
             f"How would you design this use case if {primary_system} had to support more teams and applications?",
-            "How would you make the workflow reusable across multiple product teams?",
+            "How would you make the workflow reusable across multiple product teams safely?",
             "How would you design access control, secrets, audit evidence, and approval flow?",
             "How would you design observability so support teams can understand user impact?",
             f"How would you handle dependency failure between {primary_system} and {secondary_system}?",
@@ -3400,10 +3400,10 @@ def _use_case_questions(title: str, role_name: str, domain: str, systems: list[s
         ],
         "troubleshooting": [
             "A deployment succeeded but users still see errors. What are your first checks?",
-            "Pods or services restart after rollout. What signals do you review?",
+            "Pods or services restart after rollout. What signals do you review first?",
             "A pipeline, data job, sync, model, database, or automation workflow failed. How do you isolate the cause?",
             "Latency increased after a change. How do you separate application, platform, network, and database causes?",
-            "Rollback did not fully restore behavior. What do you check next?",
+            "Rollback did not fully restore behavior. What do you check next operationally?",
         ],
     }
     questions = base_questions[category][:count]
@@ -3847,14 +3847,14 @@ def _interview_talk_tracks(role_name: str, domain: str, applications: list[str],
             ),
         },
         {
-            "prompt": "What exactly did you build?",
+            "prompt": "What exactly did you build, validate, and hand off for production support?",
             "answer": (
                 f"I built the repeatable engineering layer around {', '.join(focus[:4]).lower()}. "
                 f"For {applications[0]}, that meant configuration, automation, validation, documentation, and support evidence that allowed application teams to release and operate safely."
             ),
         },
         {
-            "prompt": "How do you prove it was real work?",
+            "prompt": "How do you prove it was real work with artifacts and outcomes?",
             "answer": (
                 f"{applications[0]} artifact trail: request, design note, pull request or configuration, validation result, dashboard or log evidence, runbook, incident notes, and final status update. "
                 f"The {role_name} story reads as implementation work because it includes decisions, evidence, validation, issue handling, and outcome."
@@ -3960,12 +3960,12 @@ def _scenarios(role_name: str, incidents: list[str]) -> list[str]:
 
 def _interview_questions(role_name: str, domain: str, focus: list[str]) -> list[str]:
     return [
-        f"How did you apply {focus[0]} in a {domain} project?",
-        f"Which {domain} applications did your {role_name} work support?",
-        "How did you handle production deployment approvals and validation?",
-        "How did you troubleshoot a failed production release or incident?",
-        "How did you protect secrets, access, audit evidence, and regulated data?",
-        f"How did you measure success for {focus[1]} or {focus[2]} improvements?",
+        f"How did you apply {focus[0]} in a {domain} project from intake to handoff?",
+        f"Which {domain} applications did your {role_name} work support during delivery execution?",
+        "How did you handle production deployment approvals, validation, and release evidence safely?",
+        "How did you troubleshoot a failed production release or incident during support?",
+        "How did you protect secrets, access, audit evidence, and regulated data controls?",
+        f"How did you measure success for {focus[1]} or {focus[2]} improvements after rollout?",
         "How did you coordinate with developers, QA, security, infrastructure, and business teams?",
         "What would you improve if you joined a similar client project today?",
     ]
