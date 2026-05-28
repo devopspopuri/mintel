@@ -73,6 +73,8 @@ def test_details_record_has_required_sections():
     assert record["cloudArchitecture"]["coreComponents"]
     assert len(record["cloudArchitecture"]["linesOfBusiness"]) == 3
     assert all(item["systems"] and item["jobSignals"] for item in record["cloudArchitecture"]["linesOfBusiness"])
+    assert all(item["rolePlatformView"] and item["consultantExplanation"] and item["evidenceModel"] for item in record["cloudArchitecture"]["linesOfBusiness"])
+    assert record["cloudArchitecture"]["roleDomainPlatform"]["guideShape"] == "Platform-foundation guide"
     product_system_branch = next(item for item in record["cloudArchitecture"]["architectureMindmap"]["branches"] if item["title"] == "Product systems")
     assert product_system_branch["items"] == record["applicationLandscape"]
     workstreams = record["threeYearDeliveryTimeline"]
@@ -972,11 +974,14 @@ def test_training_path_is_twelve_topic_foundation_and_four_weeks_role_domain():
     assert "backbase.com/blog/digital-banking-platform" in reference_text
     assert "crassula.io/blog/digital-banking-architecture" in reference_text
     assert "bepeerless.co/blog/microservices-vs-monolithic-architecture" in reference_text
+    assert "kms-technology.com/blog/core-banking-system" in reference_text
     assert "core banking" in reference_text
     assert "service and orchestration layer" in reference_text
     assert "fault isolation" in reference_text
     assert "targeted scaling" in reference_text
     assert "security and compliance by design" in reference_text
+    assert "real-time event-driven processing" in reference_text
+    assert "Customer Onboarding Diagram" in json.dumps(overview["visualDiagrams"])
     assert all("Digital Banking Onboarding And Payments Platform" in (overview["summary"] + " ".join(item["purpose"] for item in overview["projects"])) for _ in [None])
     pdf_text = " ".join(block["text"] for block in _training_basics_pdf_blocks())
     assert "12 topics at 10 hours per topic" in pdf_text
@@ -991,6 +996,7 @@ def test_training_path_is_twelve_topic_foundation_and_four_weeks_role_domain():
     assert "backbase.com/blog/digital-banking-platform" in pdf_text
     assert "crassula.io/blog/digital-banking-architecture" in pdf_text
     assert "bepeerless.co/blog/microservices-vs-monolithic-architecture" in pdf_text
+    assert "kms-technology.com/blog/core-banking-system" in pdf_text
     assert "Book Review App" not in pdf_text
     assert "8-10" not in pdf_text
 
@@ -1038,8 +1044,57 @@ def test_training_basics_index_embeds_master_architecture_diagram():
     assert "Backbase: Digital banking platform architecture for the AI era" in body
     assert "Crassula: Digital banking architecture key elements and best practices" in body
     assert "Peerless: Microservices vs monolithic architecture for core banking" in body
+    assert "KMS Technology: The future of core banking systems" in body
+    assert "Real-Time Reference Signals" in body
+    assert "Visual Diagrams Used In The Guide" in body
+    assert "Payment Processing Diagram" in body
     assert "Terraform modules and Ansible runbooks" in body
     assert "How The 12 Topics Attach" in body
+
+
+def test_role_domain_guides_are_concise_consultant_explanations_not_bulk_templates():
+    records = training_program_seed_records()
+    expected_shapes = {
+        "DevOps Engineer": "Release-story guide",
+        "Cloud Platform Engineer": "Platform-foundation guide",
+        "Site Reliability / AIOps Engineer": "Operations-control-room guide",
+        "Data Platform Engineer": "Source-to-consumer data guide",
+        "MLOps / AI Platform Engineer": "Model-lifecycle guide",
+    }
+    shapes = {}
+    for role, expected_shape in expected_shapes.items():
+        record = next(item for item in records if item["marketingRole"] == role and item["industryDomain"] == "Banking / Financial Services")
+        architecture = record["cloudArchitecture"]
+        shapes[role] = architecture["roleDomainPlatform"]["guideShape"]
+        assert shapes[role] == expected_shape
+        assert all(role in lob["rolePlatformView"] for lob in architecture["linesOfBusiness"])
+    assert len(set(shapes.values())) == len(expected_shapes)
+    record = next(item for item in records if item["marketingRole"] == "Data Platform Engineer" and item["industryDomain"] == "Banking / Financial Services")
+    program = SimpleNamespace(
+        id=1,
+        title=record["title"],
+        short_description=record["shortDescription"],
+        enterprise_context=record["enterpriseContext"],
+        industry_domain=record["industryDomain"],
+        application_landscape=record["applicationLandscape"],
+        cloud_architecture=record["cloudArchitecture"],
+        project_responsibilities=record["projectResponsibilities"],
+        key_deliverables=record["keyDeliverables"],
+        tools_and_technologies=record["toolsAndTechnologies"],
+        interview_story=record["interviewStory"],
+        resume_project_summary=record["resumeProjectSummary"],
+        production_support_scenarios=record["productionSupportScenarios"],
+        three_year_delivery_timeline=record["threeYearDeliveryTimeline"],
+        marketing_role=SimpleNamespace(name=record["marketingRole"], common_tools=", ".join(record["toolsAndTechnologies"])),
+    )
+    text = " ".join(block["text"] for block in _training_program_pdf_blocks(program, include_diagrams=True))
+    assert "600-Page Role And Domain Scenario Workbook" not in text
+    assert "Consultant explanation" in text
+    assert "Business analyst view" in text
+    assert "Senior architect view" in text
+    assert "Real interview questions" in text
+    assert "What exactly did you contribute" in text
+    assert len(text) < 450000
 
 
 def test_training_basics_topic_page_embeds_command_mindmap():
@@ -1472,7 +1527,9 @@ def test_basics_export_prioritizes_useful_content_over_page_count():
     )
     role_blocks = _training_program_pdf_blocks(program, include_diagrams=True)
     role_text = " ".join(block["text"] for block in role_blocks)
-    assert "600-Page Role And Domain Scenario Workbook" in role_text
+    assert "600-Page Role And Domain Scenario Workbook" not in role_text
+    assert "Consultant explanation" in role_text
+    assert "Real interview questions" in role_text
     assert "QA / Test Lead View" in role_text
     assert "Production Support / Operations View" in role_text
     assert "Security / Compliance View" in role_text
@@ -1480,7 +1537,7 @@ def test_basics_export_prioritizes_useful_content_over_page_count():
     assert "Product Owner View" in role_text
     role_pdf = _simple_text_pdf("Mintel Consultant Training Book", role_blocks, program=program)
     role_pages = int(re.search(rb"/Count (\d+)", role_pdf).group(1))
-    assert 575 <= role_pages <= 625
+    assert 180 <= role_pages <= 350
 
 
 def test_sre_training_includes_inline_datadog_diagrams():
@@ -1595,7 +1652,7 @@ def test_provider_document_source_pack_exists_for_each_mintel_role():
         assert all(item["use_cases"] and item["evidence"] for item in sources)
 
 
-def test_full_training_pdf_includes_at_least_25_diagrams():
+def test_full_training_pdf_includes_curated_visual_diagrams():
     record = next(
         item
         for item in training_program_seed_records()
@@ -1627,9 +1684,9 @@ def test_full_training_pdf_includes_at_least_25_diagrams():
     blocks = _training_program_pdf_blocks(program, include_diagrams=True)
     workbook_titles = {item["title"] for item in workbook}
     rendered_titles = {block["text"].split("||", 1)[0] for block in blocks if block.get("style") == "visual_flow"}
-    assert len(workbook_titles & rendered_titles) >= 25
+    assert 10 <= len(workbook_titles & rendered_titles) <= 16
     provider_diagrams = [block for block in blocks if block.get("style") == "provider_arch" and any(title in block["text"] for title in workbook_titles)]
-    assert len(provider_diagrams) >= 25
+    assert 10 <= len(provider_diagrams) <= 16
     datadog_reference_diagrams = [
         block
         for block in blocks

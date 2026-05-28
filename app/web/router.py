@@ -12200,7 +12200,7 @@ def _training_basics_course_overview() -> dict[str, Any]:
                 "trainingUse": [
                     "Use core banking as the ledger/system-of-record boundary, not the place where every digital workflow is built.",
                     "Explain the Mintel project as the platform layer that coordinates customer channels, operations workspaces, APIs, data, policy, and support evidence.",
-                    "Tie AI or automation claims to bounded context, audit trail, approval, and human handoff instead of generic chatbot language.",
+                    "Tie AI or automation claims to bounded context, audit trail, approval, and human handoff instead of broad chatbot language.",
                 ],
             },
             {
@@ -12222,6 +12222,92 @@ def _training_basics_course_overview() -> dict[str, Any]:
                     "Use salary-week or transfer-spike examples to explain targeted scaling, Kubernetes orchestration, and service-level recovery.",
                     "Compare monolithic release risk with microservice release boundaries using PR evidence, CI/CD gates, observability, rollback notes, and owner handoff.",
                 ],
+            },
+            {
+                "title": "KMS Technology: The future of core banking systems",
+                "url": "https://kms-technology.com/blog/core-banking-system/",
+                "whyUseful": "Useful for modernization vocabulary: core banking as transaction engine, data orchestration layer, compliance enforcement system, ecosystem integration platform, real-time event-driven processing, API lifecycle governance, data ownership, cloud-native migration, and compliance-by-design.",
+                "trainingUse": [
+                    "Use payment initiation as a layered flow: identity verification, fraud/risk scoring, business rules, ledger update, notification, and channel synchronization.",
+                    "Explain API integration as a lifecycle with versioning, throttling, security, monitoring, and governance rather than a simple endpoint call.",
+                    "Connect data engineering, real-time dashboards, fraud detection, compliance reporting, and cloud migration to observable system behavior under load.",
+                ],
+            },
+        ],
+        "referenceSignals": [
+            {
+                "signal": "Platform above core",
+                "source": "Backbase",
+                "guideUse": "Draw digital banking as a control/orchestration layer above the ledger so students do not describe every onboarding or payment workflow as a core-banking change.",
+            },
+            {
+                "signal": "Layered banking architecture",
+                "source": "Crassula",
+                "guideUse": "Separate user channels, orchestration services, core processing, security, data, and integrations before adding tools like Kubernetes, Terraform, queues, or observability.",
+            },
+            {
+                "signal": "Microservice tradeoff language",
+                "source": "Peerless",
+                "guideUse": "Use monolith versus microservice examples to explain scaling, release boundaries, regression risk, fault isolation, ownership, and rollback evidence.",
+            },
+            {
+                "signal": "Real-time modernization controls",
+                "source": "KMS Technology",
+                "guideUse": "Connect event-driven processing, API lifecycle governance, compliance-by-design, data ownership, and cloud migration to visible runtime behavior.",
+            },
+        ],
+        "visualDiagrams": [
+            {
+                "title": "Customer Onboarding Diagram",
+                "steps": [
+                    "Mobile/Web customer",
+                    "API gateway",
+                    "Onboarding service",
+                    "Identity and KYC",
+                    "Risk decision",
+                    "Core account creation",
+                    "Notification and audit trail",
+                ],
+                "interviewUse": "Explains how a customer request crosses channel, API, service, risk, core, notification, and audit layers.",
+            },
+            {
+                "title": "Payment Processing Diagram",
+                "steps": [
+                    "Payment request",
+                    "Auth and limits",
+                    "Fraud/risk scoring",
+                    "Payment service",
+                    "Core ledger posting",
+                    "Rail/partner response",
+                    "Real-time status sync",
+                ],
+                "interviewUse": "Shows where real-time processing, core-banking boundary, partner integration, and channel synchronization appear.",
+            },
+            {
+                "title": "Release And Evidence Diagram",
+                "steps": [
+                    "Git change",
+                    "CI tests and scans",
+                    "Image build",
+                    "Argo CD deploy",
+                    "Kubernetes rollout",
+                    "Metrics/logs/traces",
+                    "Rollback or signoff",
+                ],
+                "interviewUse": "Turns DevOps tools into a production-safe release story with observable proof.",
+            },
+            {
+                "title": "Incident And Governance Diagram",
+                "steps": [
+                    "Alert fires",
+                    "Dashboard triage",
+                    "Log and trace review",
+                    "Owner escalation",
+                    "Runbook action",
+                    "Audit note",
+                    "RCA and prevention",
+                ],
+                "interviewUse": "Connects monitoring, human escalation, governance, and compliance evidence instead of giving a tool-only answer.",
             },
         ],
         "audience": [
@@ -12297,7 +12383,7 @@ def _training_basics_master_architecture() -> dict[str, Any]:
         "flows": [
             "Customer opens account or initiates payment from mobile/web.",
             "Ingress/API gateway routes the request to AKS/EKS services.",
-            "Application pods read config/secrets, call database/cache/queue, and integrate with core banking, KYC, notification, and payment systems.",
+            "Application pods read config/secrets, call database/cache/queue, and integrate with identity, fraud/risk, core banking, notification, channel synchronization, and payment systems.",
             "Git, CI/CD, registry, Terraform, and Argo CD move changes safely through environments.",
             "Operations proves health and governance with logs, metrics, traces, alerts, access evidence, rollback notes, audit records, human escalation, and runbooks.",
         ],
@@ -12307,6 +12393,23 @@ def _training_basics_master_architecture() -> dict[str, Any]:
             "Topics 3-4: Docker and Kubernetes explain image, pod, service, config, secret, rollout, and failure behavior.",
             "Topics 5-9: Cloud, CI/CD, observability, Terraform, IAM, and secrets explain production safety, service-level scaling, and fault isolation.",
             "Topics 10-12: Agile, APIs, SQL, automation, cutover, and final evidence explain delivery and support ownership.",
+        ],
+        "realtime_patterns": [
+            {
+                "title": "Real-Time Payment Status",
+                "path": "Customer channel -> API gateway -> payment service -> fraud/risk -> core ledger -> payment rail -> event queue -> channel status update",
+                "proof": "Trace ID, payment status event, ledger reference, partner response code, notification record, and dashboard latency.",
+            },
+            {
+                "title": "Core Connectivity And API Governance",
+                "path": "Digital service -> API contract -> throttling/versioning -> core adapter -> normalized response -> audit log",
+                "proof": "API version, gateway log, rate-limit rule, adapter log, schema validation result, and audit evidence.",
+            },
+            {
+                "title": "Compliance-By-Design Escalation",
+                "path": "Risk signal -> policy rule -> human review queue -> decision note -> customer response -> audit package",
+                "proof": "Policy ID, reviewer identity, decision timestamp, approval trail, customer message, and retention record.",
+            },
         ],
     }
 
@@ -15316,6 +15419,8 @@ def _training_basics_pdf_blocks() -> list[dict[str, str]]:
     add_callout("Industry references", [f"{reference['title']}: {reference['url']}" for reference in references], "diagram")
     add_callout("Why these references are useful", [reference["whyUseful"] for reference in references], "key")
     add_callout("How Mintel uses the references", [item for reference in references for item in reference["trainingUse"]], "learn")
+    add_callout("Real-time source signals", [f"{item['source']}: {item['signal']} - {item['guideUse']}" for item in course_overview["referenceSignals"]], "diagram")
+    add_callout("Visual diagrams for the guide", [f"{item['title']}: {' -> '.join(item['steps'])}" for item in course_overview["visualDiagrams"]], "diagram")
     add_callout("Digital Banking Onboarding And Payments Platform project flows", [f"{item['name']}: {item['purpose']}" for item in course_overview["projects"]], "learn")
     add_callout("What Mintel adds", course_overview["learning"], "practice")
     add_callout("Who this prepares", course_overview["audience"], "interview")
@@ -17632,96 +17737,6 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Common weak spots", mistakes, "warning")
         add_callout("Concept checks", questions, "practice")
 
-    def add_role_answer_workspace() -> None:
-        add("Scenario notes", "subsection")
-        add("- Functional flow: ________________________________________________________", "body")
-        add("- System behavior: ________________________________________________________", "body")
-        add("- Role-owned change: ______________________________________________________", "body")
-        add("- Validation signal: ______________________________________________________", "body")
-        add("- Failure behavior: _______________________________________________________", "body")
-        add("- Evidence artifact: ______________________________________________________", "body")
-        add("- Interview narrative: ____________________________________________________", "body")
-        add("", "space")
-
-    def add_role_domain_rehearsal_appendix() -> None:
-        scenario_views = [
-            ("Business Function View", "Business workflow, users, line-of-business impact, and why the capability matters."),
-            ("System Flow View", "Request, release, data, or incident flow with ownership boundaries and downstream dependencies."),
-            ("Provider Reference View", "Official provider reference pattern and why it matches the implemented use case."),
-            ("Implementation Behavior View", "Configured, automated, monitored, migrated, deployed, or validated behavior."),
-            ("Jira Delivery View", "Jira story title, acceptance criteria, implementation note, and done evidence."),
-            ("Diagram Explanation View", "Diagram path from trigger to outcome, with the role-owned portion visible."),
-            ("Failure Behavior View", "Failure symptom, changed signal, affected system, and owner of the next action."),
-            ("Troubleshooting Signal View", "First diagnostic checks and the evidence each check produces."),
-            ("Observability View", "Metric, log, trace, dashboard, alert, or report connected to the use case."),
-            ("Security And Access View", "IAM, secrets, audit, encryption, approval, or policy concern in the flow."),
-            ("Data And State View", "Data object, state transition, schema, queue, warehouse, or model artifact involved."),
-            ("Automation And Recovery View", "Automated behavior, approval point, rollback path, and recovery evidence."),
-            ("Cloud Reliability View", "Availability, backup, DR, scaling, cost, or performance behavior."),
-            ("Product System View", "Product systems touched and the user-facing or business-facing impact."),
-            ("Resume Evidence View", "Truthful project bullet supported by the scenario evidence."),
-            ("Short Narrative View", "Problem, role-owned action, evidence, and result in a compact story."),
-            ("Deep-Dive Narrative View", "Architecture, role boundary, failure handling, and outcome."),
-            ("Follow-Up Question View", "Likely follow-up areas and the evidence connected to each one."),
-            ("Ownership Boundary View", "Owned, contributed, reviewed, supported, and non-owned areas."),
-            ("Incident Timeline View", "Incident timeline, suspected layer, action taken, validation, and prevention note."),
-            ("Review Artifact View", "Artifacts visible for validating the use-case story."),
-            ("JD Signal View", "Common active JD wording and the use-case behavior that maps to it."),
-            ("Domain Transfer View", "How the same pattern sounds in another domain without client-specific claims."),
-            ("Final Scenario View", "Clear project story with evidence, boundaries, and functional outcome."),
-        ]
-        use_cases = [item for item in _as_list(architecture.get("deliveredUseCases")) if isinstance(item, dict)]
-        if not use_cases:
-            return
-        add("600-Page Role And Domain Scenario Workbook", "section", page_break=True)
-        add(
-            f"These pages expand the {role_name} / {domain_name} program into a functionality-first scenario workbook. Each page explains business flow, system behavior, role-owned change, validation, failure behavior, evidence, and interview narrative.",
-            "chapter_intro",
-        )
-        add_callout(
-            "Scope boundary",
-            "The role/domain workbook stays tied to the selected marketing role and industry domain. It explains realistic project behavior without claiming client-specific details outside the training narrative.",
-            "warning",
-        )
-        for use_case_index, item in enumerate(use_cases, start=1):
-            title = item.get("title", f"Use Case {use_case_index}")
-            evidence = _as_list(item.get("evidenceToExplain"))
-            stories = [story for story in _as_list(item.get("jiraStories")) if isinstance(story, dict)]
-            for sheet_index, (sheet_title, prompt) in enumerate(scenario_views[:4], start=1):
-                add(f"Use Case Scenario {use_case_index}.{sheet_index}: {sheet_title}", "section", page_break=True)
-                add_callout("Use case", title, "key")
-                add_callout("Functional lens", prompt, "practice")
-                add_callout("Business problem", item.get("businessProblem"), "warning")
-                add_callout("Role boundary", item.get("roleBoundary"), "interview")
-                add_callout("Implemented behavior", item.get("deliveredScope"), "learn")
-                if include_diagrams:
-                    add_callout(
-                        "Diagram path",
-                        [
-                            "Business trigger -> Architecture/workflow -> Role-owned change -> Validation signal -> Outcome",
-                            "The diagram path keeps the functional behavior visible without adding unrelated theory.",
-                        ],
-                        "diagram",
-                    )
-                if evidence:
-                    add_callout("Evidence anchor", evidence[(sheet_index - 1) % len(evidence)], "key")
-                if stories:
-                    story = stories[(sheet_index - 1) % len(stories)]
-                    add_callout("Jira anchor", [story.get("key", ""), story.get("title", ""), story.get("summary", "")], "practice")
-                add_callout("Interview narrative", item.get("interviewAnswer") or item.get("interviewStory") or item.get("whatToRemember"), "interview")
-                add_role_answer_workspace()
-                add_callout(
-                    "Scenario artifact summary",
-                    [
-                        "Functional flow:",
-                        "System behavior:",
-                        "Role-owned change:",
-                        "Validation evidence:",
-                        "Interview narrative:",
-                    ],
-                    "learn",
-                )
-
     chapters = [
         "How This Program Is Structured",
         "Project Context",
@@ -17748,7 +17763,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
     add("Prepared by Mintel", "cover_meta")
     add_callout(
         "Book purpose",
-        "A print-ready role/domain reference guide for understanding product flow, architecture behavior, production support stories, and interview context.",
+        "A concise consultant guide written like project explanation: business problem, system flow, my contribution, evidence, and interview-ready questions.",
         "interview",
     )
     add_callout(
@@ -17760,17 +17775,16 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
     add("Front Matter", "section", page_break=True)
     add_callout(
         "Usage note",
-        "This guide explains the product flow, ownership boundaries, evidence, and delivery stories behind the selected role and domain.",
+        "This guide avoids bulk template text. It explains the product flow, ownership boundaries, evidence, and delivery stories in the voice a consultant can use during a real interview.",
         "key",
     )
     add_callout(
         "How the book is organized",
         [
-            "Project context explains the business environment and team model.",
-            "Architecture and workflows explain how systems behave from trigger to outcome.",
-            "Product system pages explain what each application does and where failures occur.",
-            "Use case studies connect business need, role-owned change, evidence, and outcome.",
-            "Glossary and revision notes define the product and role vocabulary.",
+            "BA lens: what business capability, actor, workflow, rule, exception, KPI, and report are involved.",
+            "Senior architect lens: which systems, dependencies, NFRs, controls, risks, and ownership boundaries matter.",
+            "Consultant voice: what I contributed, what I validated, what I handed off, and what evidence proves it.",
+            "Question quality: questions are scenario-based and realistic, not repeated generated prompts.",
         ],
         "learn",
     )
@@ -17788,7 +17802,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
     )
     add("Concept Coverage Map", "section", page_break=True)
     add(
-        "Every concept is explained either in Basics Prep or in the role/domain company context, then connected to system behavior, project scenarios, validation checks, and evidence artifacts.",
+        "Every concept is explained either in Basics Prep or in the role/domain company context, then connected to system behavior, business context, project contribution, validation checks, and evidence artifacts. The guide favors meaningful explanation over page count.",
         "chapter_intro",
     )
     add_callout(
@@ -17807,6 +17821,13 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Functional meaning", item["practice"], "practice")
         add_callout("Evidence visible", item["proof"], "interview")
         add_callout("Concepts", item["concepts"][:40], "learn")
+    platform_map = architecture.get("roleDomainPlatform") if isinstance(architecture.get("roleDomainPlatform"), dict) else {}
+    if platform_map:
+        add("Role / Domain Platform Reading Map", "section")
+        add_callout("Guide shape", platform_map.get("guideShape"), "key")
+        add_callout("Consultant learning path", platform_map.get("consultantLearningPath"), "diagram")
+        add_callout("Line-of-business reading", platform_map.get("lineOfBusinessReading"), "learn")
+        add_callout("Evidence style", platform_map.get("evidenceStyle"), "interview")
     add("Table Of Contents", "section")
     for index, chapter in enumerate(chapters, start=1):
         add(f"Chapter {index}: {chapter}", "toc")
@@ -17834,7 +17855,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
             "Every full document includes this diagram workbook so the role is explained through business flows, line-of-business maps, customer journeys, system paths, evidence paths, and interview story structure.",
             "body",
         )
-        for diagram in _training_document_diagram_workbook(program):
+        for diagram in _training_document_diagram_workbook(program)[:12]:
             add(diagram["title"], "subsection")
             add_callout("Purpose", diagram["purpose"], "key")
             if diagram.get("nodes"):
@@ -17857,7 +17878,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
                 add_callout("Published outcomes to reference", reference["outcomes"], "interview")
                 add_callout("Role-specific use", reference["roleUse"], "learn")
         add("Core architecture and training diagrams", "section")
-        for diagram in _training_architecture_diagram_cards(program):
+        for diagram in _training_architecture_diagram_cards(program)[:4]:
             add(diagram["title"], "subsection")
             add_callout("Purpose", diagram["purpose"], "key")
             add_visual_flow(diagram["title"], [node["label"] for node in diagram["nodes"]])
@@ -17868,7 +17889,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
             add_callout("Evidence to collect", diagram["evidence"], "diagram")
             add_callout("Interview use", diagram["interview"], "interview")
         add("Provider architecture diagrams for this role", "section")
-        for diagram in _training_provider_diagram_cards(program):
+        for diagram in _training_provider_diagram_cards(program)[:2]:
             add(diagram["title"], "subsection")
             add_callout("Learning path source model", diagram["source"], "key")
             if diagram.get("sourceUrl"):
@@ -17958,6 +17979,12 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Technology teams", operating_model.get("technologyTeams"), "key")
     add("Product Point Of View", "section")
     add(architecture.get("roleProductExplanation"))
+    if platform_map:
+        add("How I Explain This Platform", "section")
+        add_callout("Business analyst view", platform_map.get("domainPlatformSummary"), "key")
+        add_callout("Senior architect view", platform_map.get("roleLane"), "diagram")
+        add_callout("Platform stack to recognize", platform_map.get("platformStack"), "learn")
+        add_callout("Diagram priorities", platform_map.get("diagramPriorities"), "diagram")
     add_chapter_close(
         [
             "Start every project answer with business context, scale, systems, and team model.",
@@ -17989,6 +18016,14 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
     for index, item in enumerate(_as_list(program.application_landscape), start=1):
         product_rows.append([str(index), item, "Business workflow, integration, support, monitoring"])
     add_table(["S No", "Application", "Why It Matters"], product_rows[:25])
+    for lob in _as_list(architecture.get("linesOfBusiness")):
+        if isinstance(lob, dict):
+            add(lob.get("name"), "section")
+            add_callout("BA business context", lob.get("description"), "key")
+            add_callout("Senior architect platform view", lob.get("rolePlatformView"), "diagram")
+            add_callout("How I explain my contribution", lob.get("consultantExplanation"), "interview")
+            add_callout("Platform responsibilities", lob.get("platformResponsibilities"), "learn")
+            add_callout("Evidence model", lob.get("evidenceModel"), "key")
     add_chapter_close(
         [
             "Each product system has users, data, integrations, risks, and operational signals.",
@@ -18020,7 +18055,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
     )
     if include_diagrams:
         add("Role architecture diagrams", "section")
-        for diagram in _training_architecture_diagram_cards(program):
+        for diagram in _training_architecture_diagram_cards(program)[:4]:
             add(diagram["title"], "subsection")
             add_callout("Purpose", diagram["purpose"], "key")
             add_visual_flow(diagram["title"], [node["label"] for node in diagram["nodes"]])
@@ -18031,7 +18066,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
             add_callout("Evidence to collect", diagram["evidence"], "diagram")
             add_callout("Interview use", diagram["interview"], "interview")
         add("Provider architecture diagrams", "section")
-        for diagram in _training_provider_diagram_cards(program):
+        for diagram in _training_provider_diagram_cards(program)[:2]:
             add(diagram["title"], "subsection")
             add_callout("Learning path source model", diagram["source"], "key")
             if diagram.get("sourceUrl"):
@@ -18178,7 +18213,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         ["Channel", "Ledger", "Queue", "Reconciliation", "Fraud signal", "SLA"],
         "Most interviews move from role questions into system questions. These deep dives help the response sound like someone who supported real products.",
     )
-    for card in product_system_cards(program.application_landscape):
+    for card in product_system_cards(program.application_landscape)[:6]:
         system = product_system_detail(card["slug"], role_name, domain_name)
         if not system:
             continue
@@ -18199,11 +18234,10 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Architecture and support flow", system.get("architecture_flow") or system.get("support_ownership") or system.get("summary"), "diagram")
         add_callout("Failure points to watch", system.get("failure_points") or system.get("risks"), "warning")
         add_callout("Interview explanation", system.get("interview_answer"), "interview")
-        for section in _as_list(system.get("sections")):
+        for section in _as_list(system.get("sections"))[:2]:
             if isinstance(section, dict):
                 add(section.get("title"), "section")
-                for paragraph in _as_list(section.get("paragraphs")):
-                    add(paragraph)
+                add_list(_as_list(section.get("paragraphs"))[:2])
         add_callout("What to remember", system.get("what_to_remember") or system.get("capabilities"), "key")
 
     add_chapter(
@@ -18220,10 +18254,19 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Pattern pulled forward", item["pattern"], "key")
         add_callout("Priority use cases", item["use_cases"], "learn")
         add_callout("Evidence to collect", item["evidence"], "diagram" if include_diagrams else "key")
-    for index, item in enumerate(_as_list(architecture.get("deliveredUseCases"))[:12], start=1):
+    for index, item in enumerate(_as_list(architecture.get("deliveredUseCases"))[:6], start=1):
         if not isinstance(item, dict):
             continue
         add(f"Use Case {index}: {item.get('title', '')}", "section", page_break=True)
+        add_callout(
+            "Consultant explanation",
+            [
+                f"Business context: {item.get('businessProblem', '')}",
+                f"My contribution as {role_name}: {item.get('roleBoundary', '')}",
+                f"Evidence I can discuss: {', '.join(_as_list(item.get('evidenceToExplain'))[:3])}",
+            ],
+            "interview",
+        )
         for section in _as_list(item.get("textbookSections")):
             if isinstance(section, dict):
                 add(section.get("title"), "section")
@@ -18311,6 +18354,14 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("O. Production Outcome", item.get("productionOutcome") or item.get("outcome") or "The process became easier to validate, support, explain, and hand off during release or incident activity.", "interview")
         add_callout("P. Interview Answer", item.get("interviewAnswer") or item.get("interviewStory") or item.get("businessProblem"), "interview")
         add_callout("Q. What To Remember", item.get("whatToRemember") or item.get("deliveredScope"), "practice")
+        real_questions = [
+            f"Walk me through this {domain_name} workflow from business request to production evidence.",
+            f"What exactly did you contribute as a {role_name}, and what stayed with product, application, QA, security, data, or operations teams?",
+            "Which diagram would you draw first, and where does the failure or risk appear in that diagram?",
+            "What evidence would you show to prove the work was implemented, validated, and supportable?",
+            "If this failed in production, what signal would you check first and who would own the next action?",
+        ]
+        add_callout("Real interview questions", real_questions, "interview")
 
     add_chapter(
         9,
@@ -18498,7 +18549,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         ["Glossary", "Boundary", "Evidence", "Product workflow"],
         "Glossary fluency help explain sound natural when discussing unfamiliar product systems, support scenarios, and architecture.",
     )
-    for item in _as_list(architecture.get("productGlossary")):
+    for item in _as_list(architecture.get("productGlossary"))[:50]:
         if isinstance(item, dict):
             source_label = "ROLE TERM" if item.get("sourceType") == "role" else "DOMAIN TERM"
             term_style = "glossary_term" if item.get("sourceType") == "role" else "section"
@@ -18511,8 +18562,6 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         ["Memorizing terms without connecting them to systems.", "Using the same explanation for every term."],
         ["What does this term mean in the product?", "What evidence proves experience with it?", "What does the role not own?"],
     )
-
-    add_role_domain_rehearsal_appendix()
 
     return blocks
 

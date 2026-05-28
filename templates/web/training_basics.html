@@ -154,6 +154,29 @@
         {% endfor %}
       </div>
     {% endif %}
+    {% if course_overview.referenceSignals %}
+      <h2>Real-Time Reference Signals</h2>
+      <div class="course-project-grid">
+        {% for signal in course_overview.referenceSignals %}
+          <article class="mini-card">
+            <h3>{{ signal.signal }}</h3>
+            <p><strong>{{ signal.source }}:</strong> {{ signal.guideUse }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if course_overview.visualDiagrams %}
+      <h2>Visual Diagrams Used In The Guide</h2>
+      <div class="course-project-grid">
+        {% for diagram in course_overview.visualDiagrams %}
+          <article class="mini-card">
+            <h3>{{ diagram.title }}</h3>
+            <p>{{ diagram.steps|join(" -> ") }}</p>
+            <p class="muted">{{ diagram.interviewUse }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
   </section>
 
   <section class="card stack">

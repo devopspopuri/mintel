@@ -877,6 +877,111 @@ def filter_training_seed_records(programs: list[dict[str, Any]], selected_role: 
     return filtered
 
 
+def _role_guide_blueprint(role_name: str) -> dict[str, Any]:
+    blueprints: dict[str, dict[str, Any]] = {
+        "DevOps Engineer": {
+            "guideShape": "Release-story guide",
+            "consultantPath": ["Change request", "Repository and pipeline", "Artifact/image", "Deployment", "Smoke test", "Rollback and release note"],
+            "platformLens": "delivery platform, release controls, build evidence, deployment safety, and operational handoff",
+            "diagramFocus": ["release train", "pipeline gate", "artifact promotion", "rollback path", "runbook evidence"],
+            "evidenceStyle": "PR, pipeline, scan, image tag, deployment record, smoke test, rollback note, and release summary",
+        },
+        "Cloud Platform Engineer": {
+            "guideShape": "Platform-foundation guide",
+            "consultantPath": ["Business workload", "Landing zone", "Network path", "Identity boundary", "Runtime foundation", "Governance proof"],
+            "platformLens": "landing zone, private connectivity, IAM/RBAC, reusable Terraform, runtime standards, cost, backup, and DR guardrails",
+            "diagramFocus": ["account/subscription boundary", "VPC/VNet", "private endpoint", "Kubernetes platform", "policy and cost control"],
+            "evidenceStyle": "network diagram, route/private endpoint test, IAM/RBAC policy, Terraform plan, platform runbook, and cost/tag report",
+        },
+        "Site Reliability / AIOps Engineer": {
+            "guideShape": "Operations-control-room guide",
+            "consultantPath": ["User impact", "SLO/SLI", "Telemetry correlation", "Incident route", "Recovery validation", "RCA prevention"],
+            "platformLens": "SLOs, logs, metrics, traces, alert quality, incident response, noise reduction, and recovery evidence",
+            "diagramFocus": ["user journey", "golden signal", "trace/log correlation", "owner route", "post-incident action"],
+            "evidenceStyle": "SLO panel, monitor query, trace/log sample, incident timeline, recovery metric, RCA, and runbook update",
+        },
+        "Data Platform Engineer": {
+            "guideShape": "Source-to-consumer data guide",
+            "consultantPath": ["Source system", "Ingestion", "Transform/model", "Quality gate", "Serving layer", "Consumer trust"],
+            "platformLens": "data contracts, ingestion, orchestration, schema quality, lineage, warehouse/lake serving, and consumer communication",
+            "diagramFocus": ["source-to-target mapping", "DAG/dependency flow", "quality checkpoint", "semantic/reporting layer", "backfill route"],
+            "evidenceStyle": "DAG run, schema contract, row-count reconciliation, freshness metric, lineage note, query output, and stakeholder update",
+        },
+        "MLOps / AI Platform Engineer": {
+            "guideShape": "Model-lifecycle guide",
+            "consultantPath": ["Training data", "Feature pipeline", "Experiment/evaluation", "Registry", "Deployment", "Monitoring and retraining"],
+            "platformLens": "feature consistency, training pipeline, registry governance, inference runtime, drift monitoring, rollback, and responsible AI controls",
+            "diagramFocus": ["feature parity", "training pipeline", "model registry", "batch/real-time inference", "drift and rollback"],
+            "evidenceStyle": "pipeline run, model metrics, registry version, endpoint latency, drift dashboard, approval record, and rollback version",
+        },
+    }
+    return blueprints.get(role_name, blueprints["DevOps Engineer"])
+
+
+def _role_domain_lines_of_business(role_name: str, profile: DomainProfile, focus: list[str], tools: list[str]) -> list[dict[str, Any]]:
+    blueprint = _role_guide_blueprint(role_name)
+    rows: list[dict[str, Any]] = []
+    for index, lob in enumerate(profile.lines_of_business, start=1):
+        systems = [str(item) for item in _training_as_list(lob.get("systems")) if str(item).strip()]
+        signals = [str(item) for item in _training_as_list(lob.get("jobSignals")) if str(item).strip()]
+        primary_system = systems[0] if systems else f"{profile.short_key} platform"
+        secondary_system = systems[1] if len(systems) > 1 else primary_system
+        focus_term = focus[(index - 1) % len(focus)] if focus else role_name
+        tool_term = tools[(index - 1) % len(tools)] if tools else role_name
+        rows.append(
+            {
+                **lob,
+                "rolePlatformView": (
+                    f"For {role_name}, {lob['name']} is explained through {blueprint['platformLens']}. "
+                    f"I start with {primary_system}, name the connected system {secondary_system}, then show how {focus_term} changes or support evidence affects the business workflow."
+                ),
+                "consultantExplanation": (
+                    f"Do not describe this line of business as a broad {profile.short_key} area. Explain the actual flow: {lob['description']} "
+                    f"Then connect it to {role_name} work using {tool_term}, {focus_term}, role boundary, failure signal, and validation proof."
+                ),
+                "platformResponsibilities": [
+                    f"Business flow anchor: {primary_system} to {secondary_system}.",
+                    f"Role-owned lane: {focus_term} with {tool_term} evidence.",
+                    f"Non-owned lane: product priority, business rules, feature logic, and final policy approval stay with owning teams.",
+                    f"Support lane: first symptom, platform/data/runtime signal, owner route, and recovery proof.",
+                ],
+                "evidenceModel": [
+                    blueprint["evidenceStyle"],
+                    f"Domain signal examples: {', '.join(signals[:4])}.",
+                    f"Diagram emphasis: {', '.join(blueprint['diagramFocus'][:3])}.",
+                ],
+            }
+        )
+    return rows
+
+
+def _role_domain_platform_map(role_name: str, domain: str, profile: DomainProfile, applications: list[str], focus: list[str], tools: list[str]) -> dict[str, Any]:
+    blueprint = _role_guide_blueprint(role_name)
+    return {
+        "guideShape": blueprint["guideShape"],
+        "roleLane": f"{role_name} reads {domain} through {blueprint['platformLens']}.",
+        "consultantLearningPath": blueprint["consultantPath"],
+        "domainPlatformSummary": (
+            f"{domain} includes business platforms such as {', '.join(applications[:5])}. "
+            f"The guide should teach these systems through role-specific workflows, not repeated paragraphs with swapped product names."
+        ),
+        "lineOfBusinessReading": [
+            "Start with the business capability and user or operations actor.",
+            "Name the product system and connected system before naming tools.",
+            f"Explain the {role_name} lane using {', '.join(focus[:4]).lower()}.",
+            "Close with evidence, owner boundary, failure behavior, and recovery or delivery outcome.",
+        ],
+        "platformStack": _unique([
+            *applications[:4],
+            *tools[:5],
+            *focus[:5],
+            *profile.platform_signals[:4],
+        ]),
+        "diagramPriorities": blueprint["diagramFocus"],
+        "evidenceStyle": blueprint["evidenceStyle"],
+    }
+
+
 def build_training_program_record(role: Any, domain: str, display_order: int, active_market_jobs: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     profile = DOMAIN_PROFILES[domain]
     ownership = ROLE_OWNERSHIP[role.name]
@@ -884,11 +989,17 @@ def build_training_program_record(role: Any, domain: str, display_order: int, ac
     applications = profile.applications
     focus = ownership["focus"]
     tools = _unique([*ownership["tools"], "AWS", "Azure", "GCP"])
+    lines_of_business = _role_domain_lines_of_business(role.name, profile, focus, tools)
+    platform_map = _role_domain_platform_map(role.name, domain, profile, applications, focus, tools)
     title = f"{domain} - {role.name} Training Program"
-    short = f"{role.name} enterprise delivery narrative for {profile.short_key} systems, with delivered use cases, product boundaries, workflows, and evidence."
+    short = (
+        f"{role.name} enterprise delivery narrative for {profile.short_key} systems, with role-specific line-of-business platform context, "
+        "delivered use cases, product boundaries, workflows, and evidence."
+    )
     architecture_summary = (
         f"Traffic and integration flows for {domain.lower()} applications pass through DNS, CDN/WAF, API gateway, load balancers, Kubernetes or managed compute, private services, managed databases, queues, object storage, observability, and data platforms. "
-        f"The {role.name} owns the {', '.join(focus[:5]).lower()} layer while aligning with security, audit, reliability, environment standards, and the product team boundaries described in the use cases."
+        f"The {role.name} owns the {', '.join(focus[:5]).lower()} layer while aligning with security, audit, reliability, environment standards, and the product team boundaries described in the use cases. "
+        f"The line-of-business view is role-aware: {platform_map['roleLane']}"
     )
     responsibilities = _full_responsibilities(role.name, domain, [item.replace("domain", profile.short_key) for item in ownership["responsibilities"]])
     deliverables = _deliverables(role.name, domain, focus)
@@ -904,11 +1015,18 @@ def build_training_program_record(role: Any, domain: str, display_order: int, ac
         "title": title,
         "shortDescription": short,
         "enterpriseContext": profile.context,
-        "linesOfBusiness": profile.lines_of_business,
+        "linesOfBusiness": lines_of_business,
         "applicationLandscape": applications,
         "cloudArchitecture": {
             "cloudProviderOptions": ["AWS", "Azure", "GCP"],
-            "linesOfBusiness": profile.lines_of_business,
+            "linesOfBusiness": lines_of_business,
+            "roleDomainPlatform": platform_map,
+            "contentUniquenessStandard": {
+                "rule": "Every marketing role uses a different platform lane, use-case wording, evidence model, and line-of-business explanation inside the same domain.",
+                "role": role.name,
+                "domain": domain,
+                "antiRepetition": "Shared enterprise topics are rewritten through the target role ownership boundary instead of copied as repeated sections.",
+            },
             "architectureSummary": architecture_summary,
             "coreComponents": _unique(["DNS", "CDN", "WAF", "API Gateway", "Load Balancer", "Kubernetes", "Managed Databases", "Object Storage", "Event Queue", "Secrets Manager", "Prometheus", "Grafana", "OpenTelemetry", *tools[:8]]),
             "architectureLayers": _architecture_layers(role.name, domain, applications, focus, tools),
@@ -2710,15 +2828,55 @@ def _role_sprint_themes(role_name: str, domain: str, applications: list[str], fo
     ]
     selected = role_themes.get((role_name, domain), role_themes.get(role_name, default))
     automation = _automation_reference_use_cases(role_name, domain, applications)
-    shared = [
-        ("Sprint evidence packaging", app(0), app(-1), f"{domain} delivery needed clear grouping from Jira story to use case to interview evidence.", "Jira group, acceptance criteria, design note, implementation artifact, validation record, and support handoff", "sprint work became easy to explain as delivered project work"),
-        ("Cross-team ownership matrix", app(2), app(10), "Incidents bounced between application, platform, data, database, network, security, and vendor teams without a clear resolver path.", "ownership matrix, escalation route, support contact map, and resolver notes", "handoffs became evidence-based"),
-        ("Production readiness review", app(5), app(2), "Release candidates needed consistent readiness review before production change windows.", "readiness checklist, risk notes, approval record, validation evidence, and rollback criteria", "production changes had clearer go/no-go decisions"),
-    ]
+    shared = _role_specific_shared_sprint_items(role_name, domain, applications, focus)
     rows = [*selected, *automation, *shared]
     return [
         {"theme": theme, "primary": primary, "secondary": secondary, "problem": problem, "artifact": artifact, "outcome": outcome}
         for theme, primary, secondary, problem, artifact, outcome in rows
+    ]
+
+
+def _role_specific_shared_sprint_items(role_name: str, domain: str, applications: list[str], focus: list[str]) -> list[tuple[str, str, str, str, str, str]]:
+    def app(index: int) -> str:
+        if not applications:
+            return f"{domain} platform"
+        return applications[index % len(applications)]
+
+    role_focus = ", ".join(focus[:3]).lower()
+    if role_name == "DevOps Engineer":
+        return [
+            ("Release evidence story pack", app(0), app(-1), f"{domain} release work needed a consultant-friendly path from Jira story to PR, pipeline, deployment, smoke test, rollback note, and interview explanation.", "Jira group, PR/config diff, pipeline run, scan output, deployment marker, smoke-test result, rollback note, and support handoff", "release work became explainable without sounding like a tool-only checklist"),
+            ("Deployment owner routing board", app(2), app(10), "Failed deployments moved between application, DevOps, QA, security, and platform teams without a single evidence-backed owner route.", "stage failure taxonomy, resolver group map, pipeline log sample, approval route, rollback trigger, and runbook note", "release handoffs became evidence-based"),
+            ("Production promotion readiness gate", app(5), app(2), "Production changes needed a DevOps-specific gate around artifact version, environment values, deployment health, rollback trigger, and release note.", "image/chart version, values diff, approval record, rollout status, validation output, and rollback criteria", "go/no-go decisions became easier to defend"),
+        ]
+    if role_name == "Cloud Platform Engineer":
+        return [
+            ("Platform adoption evidence pack", app(0), app(-1), f"{domain} teams needed proof that cloud standards were adopted through network, identity, runtime, tagging, backup, and observability controls.", "landing-zone diagram, Terraform plan, private endpoint test, IAM/RBAC policy, tag report, backup proof, and platform onboarding note", "platform work became visible as reusable foundation, not one-off infrastructure"),
+            ("Cloud resolver ownership model", app(2), app(10), "Incidents crossed application, network, IAM, DNS, database, vendor, and platform boundaries without clear cloud ownership evidence.", "ownership matrix, route/private endpoint check, policy scope, DNS note, support contact map, and escalation record", "platform handoffs became precise and faster"),
+            ("Landing-zone production readiness review", app(5), app(2), "Workloads needed a platform readiness gate before production around connectivity, identity, quotas, cost tags, backup, DR, and monitoring baseline.", "readiness checklist, risk notes, Terraform output, policy compliance, connectivity proof, and operations signoff", "cloud onboarding had a clear go/no-go standard"),
+        ]
+    if role_name == "Site Reliability / AIOps Engineer":
+        return [
+            ("Incident narrative evidence pack", app(0), app(-1), f"{domain} support work needed a readable chain from user impact to SLO/SLI, alert, trace/log evidence, mitigation, recovery metric, and RCA.", "incident timeline, SLO panel, alert query, trace/log sample, recovery graph, RCA action, and runbook update", "incident work became easy to retell under interview pressure"),
+            ("AIOps signal ownership map", app(2), app(10), "Alerts moved between application, platform, data, network, security, and vendor teams without a signal-quality and resolver ownership model.", "alert grouping rule, service map, deployment marker, owner route, false-positive note, and escalation path", "alert handoffs became evidence-based instead of noisy"),
+            ("SRE production readiness review", app(5), app(2), "Release candidates needed an SRE review around user journey SLOs, monitors, dependency traces, rollback signal, incident channel, and post-release watch.", "SLO target, monitor list, synthetic check, trace dashboard, rollback threshold, and hypercare note", "releases had reliability proof before user impact"),
+        ]
+    if role_name == "Data Platform Engineer":
+        return [
+            ("Data product evidence pack", app(0), app(-1), f"{domain} data work needed a source-to-consumer story from Jira request to data contract, pipeline run, quality check, model/table change, dashboard/report, and stakeholder trust.", "source mapping, data contract, DAG run, schema check, row-count reconciliation, freshness dashboard, lineage note, and consumer signoff", "data work became explainable as a data product, not a tool-only ETL task"),
+            ("Data ownership and lineage matrix", app(2), app(10), "Data incidents bounced between source app, ingestion, transformation, warehouse, BI, governance, and consuming teams without clear lineage evidence.", "ownership matrix, source-to-target lineage, quality rule, failed-record sample, consumer list, and stewardship route", "data handoffs became traceable"),
+            ("Consumer trust readiness review", app(5), app(2), "Datasets needed readiness checks before users trusted dashboards, models, extracts, or operational reports.", "schema validation, row counts, freshness SLA, reconciliation report, access control, backfill plan, and stakeholder approval", "data releases had a clear trust gate"),
+        ]
+    if role_name == "MLOps / AI Platform Engineer":
+        return [
+            ("Model lifecycle evidence pack", app(0), app(-1), f"{domain} AI work needed a model story from dataset and features to experiment, evaluation, registry, deployment, inference monitoring, and rollback/retraining evidence.", "training dataset profile, feature validation, experiment metrics, registry version, endpoint config, drift dashboard, approval record, and rollback note", "model work became production-readable"),
+            ("AI ownership and governance matrix", app(2), app(10), "Model issues crossed data science, data platform, app, security, model risk, product, and operations teams without a clear responsibility route.", "RACI matrix, model card, approval route, feature owner map, endpoint owner, drift alert route, and exception record", "AI handoffs became governable"),
+            ("Inference readiness review", app(5), app(2), "Model releases needed readiness checks around latency, quality, feature parity, security, canary/shadow validation, fallback, and monitoring.", "evaluation report, canary metric, endpoint latency, feature parity check, access policy, fallback plan, and monitoring dashboard", "AI releases had a clear production gate"),
+        ]
+    return [
+        (f"{role_name} evidence pack", app(0), app(-1), f"{domain} delivery needed clear grouping from Jira story to role-owned use case to interview evidence.", "Jira group, acceptance criteria, design note, implementation artifact, validation record, and support handoff", f"{role_focus} became easier to explain as delivered project work"),
+        (f"{role_name} ownership matrix", app(2), app(10), "Incidents needed a role-specific resolver path across application, platform, data, security, and vendor teams.", "ownership matrix, escalation route, support contact map, and resolver notes", "handoffs became evidence-based"),
+        (f"{role_name} readiness review", app(5), app(2), "Release candidates needed consistent readiness review before production change windows.", "readiness checklist, risk notes, approval record, validation evidence, and rollback criteria", "production changes had clearer go/no-go decisions"),
     ]
 
 
