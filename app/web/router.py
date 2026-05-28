@@ -18152,8 +18152,18 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Architecture View", context_brief.get("architectureView"), "diagram")
         add_callout("Evidence Model", context_brief.get("evidenceModel"), "key")
         add_callout("Interview Frame", context_brief.get("interviewFrame"), "interview")
-        add("Full Project Narrative", "section")
-    add(architecture.get("consultantProjectContext") or program.enterprise_context)
+        add("Full Project Narrative - Readable Version", "section")
+        if reading_guide:
+            add_callout("Interview meaning", [f"{item[0]}: {item[1]}" for item in _as_list(reading_guide.get("quickRead")) if isinstance(item, list) and len(item) >= 2], "key")
+            add_callout("Say it naturally", reading_guide.get("sayThis"), "interview")
+            add_callout("Anchor sentence", reading_guide.get("anchorSentence"), "interview")
+        add_callout("Business systems", context_brief.get("businessFlow"), "diagram")
+        add_callout("My lane and team boundaries", context_brief.get("roleBoundary"), "interview")
+        add_callout("How work arrived", context_brief.get("deliveryModel"), "learn")
+        add_callout("Architecture layers", context_brief.get("architectureView"), "diagram")
+        add_callout("Evidence I used", context_brief.get("evidenceModel"), "key")
+    else:
+        add(program.enterprise_context)
     operating_model = architecture.get("enterpriseOperatingModel") or {}
     if operating_model:
         add("Enterprise Operating Model", "section")
@@ -18502,7 +18512,7 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         if product_lens:
             add_callout("H. Product Owner View", product_lens.get("productValue"), "interview")
             add_callout("H1. Product Fit And Acceptance", _as_list(product_lens.get("roadmapFit"))[:2] + _as_list(product_lens.get("productAcceptanceCriteria"))[:2], "learn")
-        add_callout("I. Environment Context", item.get("environmentContext") or architecture.get("consultantProjectContext") or program.enterprise_context, "key")
+        add_callout("I. Environment Context", item.get("environmentContext") or context_brief.get("summary") or program.enterprise_context, "key")
         add_callout("J. Role Ownership", item.get("roleBoundary"), "interview")
         lens = item.get("architectLens") if isinstance(item.get("architectLens"), dict) else {}
         if lens:

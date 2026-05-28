@@ -554,12 +554,21 @@
             </ul>
           </section>
         </div>
-        <details class="subtle-panel">
-          <summary><strong>Read full project narrative</strong></summary>
-          <p>{{ program.cloud_architecture.consultantProjectContext }}</p>
-        </details>
+        <section class="subtle-panel">
+          <strong>Readable project narrative</strong>
+          <ul class="stack-list">
+            {% if program.cloud_architecture.projectNarrativeReadingGuide %}
+              {% for item in program.cloud_architecture.projectNarrativeReadingGuide.sayThis %}
+                <li>{{ item }}</li>
+              {% endfor %}
+              <li><strong>Anchor:</strong> {{ program.cloud_architecture.projectNarrativeReadingGuide.anchorSentence }}</li>
+            {% else %}
+              {% for item in context_brief.interviewFrame %}<li>{{ item }}</li>{% endfor %}
+            {% endif %}
+          </ul>
+        </section>
       {% else %}
-        <p>{{ program.cloud_architecture.consultantProjectContext }}</p>
+        <ul class="stack-list"><li>{{ program.enterprise_context }}</li></ul>
       {% endif %}
       {% if program.cloud_architecture.enterpriseOperatingModel %}
         <h2>Enterprise Operating Model</h2>

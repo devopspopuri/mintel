@@ -1139,8 +1139,10 @@ def test_role_domain_guides_are_concise_consultant_explanations_not_bulk_templat
     assert "Consultant explanation" in text
     assert "Business analyst view" in text
     assert "Senior architect view" in text
+    assert "Full Project Narrative - Readable Version" in text
     assert "Real interview questions" in text
     assert "What exactly did you contribute" in text
+    assert "Enterprise delivery context for Banking / Financial Services technology systems" not in text
     assert len(text) < 450000
 
 
@@ -1500,7 +1502,9 @@ def test_role_program_maps_concepts_to_basics_or_company_context():
     assert "Concept Coverage Map" in role_text
     assert "How I Say This In An Interview" in role_text
     assert "Say it naturally" in role_text
+    assert "Full Project Narrative - Readable Version" in role_text
     assert "I did not own business rules or feature code" in role_text
+    assert "Enterprise delivery context for Healthcare / Health Insurance technology systems" not in role_text
     assert "Every concept is explained either in Basics Prep or in the role/domain company context" in role_text
     assert "Architect reading lens" in role_text
     assert "Decision Rationale" in role_text
