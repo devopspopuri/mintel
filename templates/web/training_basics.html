@@ -143,6 +143,17 @@
         <article class="mini-card"><h3>{{ project.name }}</h3><p>{{ project.purpose }}</p></article>
       {% endfor %}
     </div>
+    {% if course_overview.industryReferences %}
+      <div class="course-project-grid">
+        {% for reference in course_overview.industryReferences %}
+          <article class="mini-card">
+            <h3>{{ reference.title }}</h3>
+            <p>{{ reference.whyUseful }}</p>
+            <p class="muted"><a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">Open source</a></p>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
   </section>
 
   <section class="card stack">

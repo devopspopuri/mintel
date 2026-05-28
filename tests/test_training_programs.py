@@ -968,6 +968,15 @@ def test_training_path_is_twelve_topic_foundation_and_four_weeks_role_domain():
     assert len(overview["projects"]) == 4
     assert overview["courseTitle"] == "Merged 120-Hour Technical Basics + DevOps Foundation"
     assert any("120 hours" in item for item in overview["learning"])
+    reference_text = json.dumps(overview["industryReferences"])
+    assert "backbase.com/blog/digital-banking-platform" in reference_text
+    assert "crassula.io/blog/digital-banking-architecture" in reference_text
+    assert "bepeerless.co/blog/microservices-vs-monolithic-architecture" in reference_text
+    assert "core banking" in reference_text
+    assert "service and orchestration layer" in reference_text
+    assert "fault isolation" in reference_text
+    assert "targeted scaling" in reference_text
+    assert "security and compliance by design" in reference_text
     assert all("Digital Banking Onboarding And Payments Platform" in (overview["summary"] + " ".join(item["purpose"] for item in overview["projects"])) for _ in [None])
     pdf_text = " ".join(block["text"] for block in _training_basics_pdf_blocks())
     assert "12 topics at 10 hours per topic" in pdf_text
@@ -978,6 +987,10 @@ def test_training_path_is_twelve_topic_foundation_and_four_weeks_role_domain():
     assert "10-hour study structure" in pdf_text
     assert "Course spine" in pdf_text
     assert "Digital Banking Onboarding And Payments Platform project flows" in pdf_text
+    assert "Industry references" in pdf_text
+    assert "backbase.com/blog/digital-banking-platform" in pdf_text
+    assert "crassula.io/blog/digital-banking-architecture" in pdf_text
+    assert "bepeerless.co/blog/microservices-vs-monolithic-architecture" in pdf_text
     assert "Book Review App" not in pdf_text
     assert "8-10" not in pdf_text
 
@@ -1020,6 +1033,11 @@ def test_training_basics_index_embeds_master_architecture_diagram():
     assert "Master Architecture: Digital Banking Onboarding And Payments Platform" in body
     assert "AKS/EKS Runtime" in body
     assert "payment-api deployment and pods" in body
+    assert "Core banking ledger / system of record" in body
+    assert "Core connectivity and API normalization" in body
+    assert "Backbase: Digital banking platform architecture for the AI era" in body
+    assert "Crassula: Digital banking architecture key elements and best practices" in body
+    assert "Peerless: Microservices vs monolithic architecture for core banking" in body
     assert "Terraform modules and Ansible runbooks" in body
     assert "How The 12 Topics Attach" in body
 

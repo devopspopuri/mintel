@@ -12178,18 +12178,51 @@ def _training_basics_course_overview() -> dict[str, Any]:
     return {
         "title": "Technical Basics And DevOps Foundation Prep",
         "courseTitle": "Merged 120-Hour Technical Basics + DevOps Foundation",
-        "summary": "The foundation is 12 topics at 10 hours each. Every topic teaches full theory, then applies it to one continuous Digital Banking Onboarding And Payments Platform deployed on AKS/EKS, so consultants can answer intermediate interview questions with project evidence instead of definition-only answers.",
+        "summary": "The foundation is 12 topics at 10 hours each. Every topic teaches full theory, then applies it to one continuous Digital Banking Onboarding And Payments Platform deployed on AKS/EKS. The project is modeled as an orchestration layer above core banking systems, so consultants can answer intermediate interview questions with project evidence instead of definition-only answers.",
         "projects": [
-            {"name": "Banking Onboarding And Payments Flow", "purpose": "Customer opens an account, passes KYC, adds a beneficiary, initiates a transfer, receives notification, and operations validates status."},
+            {"name": "Banking Onboarding And Payments Flow", "purpose": "Customer opens an account, passes KYC, adds a beneficiary, initiates a transfer, receives notification, and operations validates status while the core banking ledger remains the system of record."},
             {"name": "AKS/EKS Release And Infrastructure Flow", "purpose": "Git, Docker, Kubernetes, CI/CD, Terraform, AWS/Azure cloud, and rollout evidence show how banking-platform changes move safely."},
-            {"name": "Operations And Security Flow", "purpose": "Logs, metrics, traces, IAM/RBAC, secrets, audit logs, and policy checks prove health, access, and ownership boundaries."},
+            {"name": "Operations And Security Flow", "purpose": "Logs, metrics, traces, IAM/RBAC, secrets, audit logs, policy checks, and human escalation prove health, access, governance, and ownership boundaries."},
             {"name": "Automation And Lifecycle Flow", "purpose": "Ansible, Shell, Python, runbooks, cutover, backup, and support handoff make the banking platform interview-ready."},
         ],
         "learning": [
             "120 hours of structured preparation across Linux, Git, Docker, Kubernetes, cloud, CI/CD, observability, Terraform, security, Agile/Jira, APIs, SQL, Ansible, Shell/Python automation, and lifecycle readiness.",
             "Full theory is included in each topic before commands or labs, so definitions, system behavior, healthy state, failed state, risks, and ownership boundaries are clear.",
             "Commands appear only when they prove something: context, change, health, failure, deployment state, access, data, or recovery.",
+            "Banking-platform explanations separate core systems of record from the orchestration, API, digital channel, operations, and governance layers above them.",
             "Every topic ends with intermediate project questions, interview examples, evidence artifacts, and a 15-question certification-style test.",
+        ],
+        "industryReferences": [
+            {
+                "title": "Backbase: Digital banking platform architecture for the AI era",
+                "url": "https://www.backbase.com/blog/digital-banking-platform",
+                "whyUseful": "Useful for neutral architecture vocabulary: digital channels, onboarding, payments, core-banking connectivity, APIs, orchestration, unified data context, governance, auditability, and human escalation.",
+                "trainingUse": [
+                    "Use core banking as the ledger/system-of-record boundary, not the place where every digital workflow is built.",
+                    "Explain the Mintel project as the platform layer that coordinates customer channels, operations workspaces, APIs, data, policy, and support evidence.",
+                    "Tie AI or automation claims to bounded context, audit trail, approval, and human handoff instead of generic chatbot language.",
+                ],
+            },
+            {
+                "title": "Crassula: Digital banking architecture key elements and best practices",
+                "url": "https://crassula.io/blog/digital-banking-architecture/",
+                "whyUseful": "Useful for implementation vocabulary: user-facing layer, service and orchestration layer, core processing engines, security and identity, data and analytics, connectivity fabric, API-first design, microservices, event-driven flows, cloud-native infrastructure, and DevOps tooling.",
+                "trainingUse": [
+                    "Use the layered architecture model to explain why channels, services, core processing, data, security, and integrations have separate ownership boundaries.",
+                    "Connect Kubernetes, CI/CD, Terraform, observability, IAM, APIs, queues, and databases to real digital-banking architecture decisions.",
+                    "Use security and compliance by design as the standard for every onboarding, payment, API, data, and third-party integration example.",
+                ],
+            },
+            {
+                "title": "Peerless: Microservices vs monolithic architecture for core banking",
+                "url": "https://bepeerless.co/blog/microservices-vs-monolithic-architecture-whats-the-best-choice-for-your-core-banking-system/",
+                "whyUseful": "Useful for interview tradeoff language: monolithic coupling, regression risk, whole-system scaling, microservice independence, API-first integration, fault isolation, targeted scaling, cloud-native orchestration, observability, security, and governance.",
+                "trainingUse": [
+                    "Explain why the Mintel project keeps ledger/core-banking concerns separate from channel, notification, transfer, KYC, reporting, and support services.",
+                    "Use salary-week or transfer-spike examples to explain targeted scaling, Kubernetes orchestration, and service-level recovery.",
+                    "Compare monolithic release risk with microservice release boundaries using PR evidence, CI/CD gates, observability, rollback notes, and owner handoff.",
+                ],
+            },
         ],
         "audience": [
             "Consultants entering DevOps, Cloud Platform, SRE/AIOps, Data Platform, or MLOps preparation who need credible project language.",
@@ -12202,7 +12235,7 @@ def _training_basics_course_overview() -> dict[str, Any]:
 def _training_basics_master_architecture() -> dict[str, Any]:
     return {
         "title": "Master Architecture: Digital Banking Onboarding And Payments Platform",
-        "summary": "This draw.io-style map anchors all 12 topics to one realistic banking platform. It shows how a customer request, code change, container image, Kubernetes workload, cloud service, database, security control, and operations signal fit together.",
+        "summary": "This draw.io-style map anchors all 12 topics to one realistic banking platform. It models the platform as a digital orchestration layer above core banking systems, showing how customer channels, APIs, code changes, Kubernetes workloads, cloud services, data, security controls, and operations signals fit together.",
         "lanes": [
             {
                 "title": "Users And Channels",
@@ -12234,6 +12267,8 @@ def _training_basics_master_architecture() -> dict[str, Any]:
             {
                 "title": "Data And Integration",
                 "items": [
+                    "Core banking ledger / system of record",
+                    "Core connectivity and API normalization",
                     "Managed PostgreSQL / SQL database",
                     "Redis cache for session and limits",
                     "Queue for KYC and payment events",
@@ -12262,15 +12297,15 @@ def _training_basics_master_architecture() -> dict[str, Any]:
         "flows": [
             "Customer opens account or initiates payment from mobile/web.",
             "Ingress/API gateway routes the request to AKS/EKS services.",
-            "Application pods read config/secrets, call database/cache/queue, and integrate with external systems.",
+            "Application pods read config/secrets, call database/cache/queue, and integrate with core banking, KYC, notification, and payment systems.",
             "Git, CI/CD, registry, Terraform, and Argo CD move changes safely through environments.",
-            "Operations proves health with logs, metrics, traces, alerts, access evidence, rollback notes, and runbooks.",
+            "Operations proves health and governance with logs, metrics, traces, alerts, access evidence, rollback notes, audit records, human escalation, and runbooks.",
         ],
         "topic_links": [
             "Topic 1: RHEL/admin checks explain host, process, port, firewall, DNS, and health evidence.",
             "Topic 2: Git and PRs explain how payment/onboarding changes are reviewed and traced.",
             "Topics 3-4: Docker and Kubernetes explain image, pod, service, config, secret, rollout, and failure behavior.",
-            "Topics 5-9: Cloud, CI/CD, observability, Terraform, IAM, and secrets explain production safety.",
+            "Topics 5-9: Cloud, CI/CD, observability, Terraform, IAM, and secrets explain production safety, service-level scaling, and fault isolation.",
             "Topics 10-12: Agile, APIs, SQL, automation, cutover, and final evidence explain delivery and support ownership.",
         ],
     }
@@ -15277,6 +15312,10 @@ def _training_basics_pdf_blocks() -> list[dict[str, str]]:
     add(course_overview["title"], "section", page_break=True)
     add(course_overview["courseTitle"], "chapter_intro")
     add_callout("Overview", course_overview["summary"], "key")
+    references = course_overview["industryReferences"]
+    add_callout("Industry references", [f"{reference['title']}: {reference['url']}" for reference in references], "diagram")
+    add_callout("Why these references are useful", [reference["whyUseful"] for reference in references], "key")
+    add_callout("How Mintel uses the references", [item for reference in references for item in reference["trainingUse"]], "learn")
     add_callout("Digital Banking Onboarding And Payments Platform project flows", [f"{item['name']}: {item['purpose']}" for item in course_overview["projects"]], "learn")
     add_callout("What Mintel adds", course_overview["learning"], "practice")
     add_callout("Who this prepares", course_overview["audience"], "interview")
