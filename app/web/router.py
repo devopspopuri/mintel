@@ -16847,6 +16847,68 @@ def _diagram_evidence_explanations(title: str, steps: list[str], purpose: str, r
     ]
 
 
+def _training_diagram_self_contained_explainer(diagram: dict[str, Any], role_name: str, domain_name: str) -> list[dict[str, Any]]:
+    title = _pdf_clean_text(diagram.get("title") or "Diagram")
+    purpose = _pdf_clean_text(diagram.get("purpose") or "This diagram explains the project flow.")
+    steps = [_pdf_clean_text(step) for step in _as_list(diagram.get("steps")) if _pdf_clean_text(step)]
+    nodes = [node for node in _as_list(diagram.get("nodes")) if isinstance(node, dict)]
+    evidence = [_pdf_clean_text(item) for item in _as_list(diagram.get("evidence")) if _pdf_clean_text(item)]
+    first_step = steps[0] if steps else "business trigger"
+    middle_step = steps[min(2, len(steps) - 1)] if steps else role_name
+    last_step = steps[-1] if steps else "validated outcome"
+    role_node = next((node for node in nodes if node.get("kind") == "role"), nodes[min(2, len(nodes) - 1)] if nodes else {})
+    role_label = _pdf_clean_text(role_node.get("label") or middle_step or role_name)
+    plain_terms = []
+    for node in nodes[:4]:
+        label = _pdf_clean_text(node.get("label"))
+        items = ", ".join(_pdf_clean_text(item) for item in _as_list(node.get("items"))[:3] if _pdf_clean_text(item))
+        if label and items:
+            plain_terms.append(f"{label}: in this project, this means {items}.")
+    if not plain_terms:
+        plain_terms = [f"{step}: explain where this step fits in the {domain_name} workflow." for step in steps[:4]]
+    proof_line = evidence[0] if evidence else "I kept a diagram, validation note, command output, dashboard, ticket, or runbook as proof."
+    return [
+        {
+            "title": "Plain-English meaning",
+            "body": (
+                f"This diagram is not for memorizing boxes. It shows how work moves from {first_step} to {last_step} in the {domain_name} project. "
+                f"The main idea is: {purpose} The part I should focus on as a {role_name} is {role_label}."
+            ),
+            "kind": "learn",
+        },
+        {
+            "title": "Say this if the interviewer asks about this diagram",
+            "body": (
+                f"In my project, I used this flow to explain {title}. I started from the business or system trigger, then walked through the affected applications and platform path. "
+                f"My ownership was around {role_label}. I validated the result, kept evidence, and handed off the support or release note instead of only saying I used a tool."
+            ),
+            "kind": "interview",
+        },
+        {
+            "title": "Terms decoded on this page",
+            "body": plain_terms[:4],
+            "kind": "key",
+        },
+        {
+            "title": "Example Jira story I can describe",
+            "body": (
+                f"A realistic story for this diagram is: validate the {role_label} path for {first_step} before production readiness. "
+                f"The acceptance criteria would be that the flow reaches {last_step}, evidence is attached, ownership is clear, and the rollback, recovery, or support note is documented."
+            ),
+            "kind": "practice",
+        },
+        {
+            "title": "Proof I should mention",
+            "body": [
+                proof_line,
+                "I should name the exact artifact: Jira story, PR/config change, command output, log query, dashboard screenshot, runbook, release note, or incident timeline.",
+                "I should explain what the proof showed and which team used it next.",
+            ],
+            "kind": "diagram",
+        },
+    ]
+
+
 def _diagram_nodes_from_steps(steps: list[str], role_name: str) -> list[dict[str, Any]]:
     clean_steps = [str(step) for step in steps if str(step).strip()]
     while len(clean_steps) < 6:
@@ -18137,6 +18199,8 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
                 add_provider_architecture_diagram(diagram)
             add_visual_flow(diagram["title"], diagram["steps"])
             add_callout("Evidence to connect", diagram["evidence"], "diagram")
+            for explainer in _training_diagram_self_contained_explainer(diagram, role_name, domain_name):
+                add_callout(explainer["title"], explainer["body"], explainer["kind"])
         microsoft_references = _microsoft_healthcare_customer_story_references(program)
         if microsoft_references:
             add("Role-Relevant Microsoft Healthcare Azure Reference Diagrams", "section")

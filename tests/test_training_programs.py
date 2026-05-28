@@ -1604,6 +1604,12 @@ def test_basics_export_prioritizes_useful_content_over_page_count():
     assert "These are near word-for-word interview answers" in role_text
     assert "Why Should We Believe This Experience Is Real?" in role_text
     assert "teams, apps, tools, stories, and evidence" in role_text
+    assert "Plain-English meaning" in role_text
+    assert "Say this if the interviewer asks about this diagram" in role_text
+    assert "Terms decoded on this page" in role_text
+    assert "Example Jira story I can describe" in role_text
+    assert "Proof I should mention" in role_text
+    assert "This diagram is not for memorizing boxes" in role_text
     assert "Consultant explanation" in role_text
     assert "Real interview questions" in role_text
     assert "QA / Test Lead View" in role_text
