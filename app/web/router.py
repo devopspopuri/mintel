@@ -16576,8 +16576,8 @@ def _training_role_specific_document_diagram_workbook(
 
     specs: dict[str, list[dict[str, Any]]] = {
         "Cloud Platform Engineer": [
-            d("01. Banking Landing Zone Account Structure", f"Shows how {domain_name} workloads are separated by account, subscription, project, environment, and ownership.", "AWS / Azure / GCP", [n("Enterprise root", [domain_name, "organization / tenant", "policy baseline"], "problem"), n("Environment boundary", ["dev / test / prod", "shared services", "break-glass access"]), n("Network foundation", ["VPC/VNet", "CIDR plan", "subnet tiers"], "role"), n("Security baseline", ["IAM/RBAC", "KMS/Key Vault", "logging"]), n("Governance", ["tags", "budgets", "policy checks"], "role"), n("Audit proof", ["account map", "policy result", "access review"], "support")], ["account/subscription map", "environment ownership table", "policy compliance output", "access review evidence"], "layered"),
-            d("02. Hub-Spoke VPC/VNet Network For Core Banking", f"Explains private connectivity between {app_pair}, shared services, and secure ingress.", "Azure / AWS", [n("Users and partners", ["branch users", "mobile users", "partner APIs"], "problem"), n("Edge", ["DNS", "CDN/WAF", "API gateway"]), n("Hub network", ["firewall", "NAT/egress", "private DNS"], "role"), n("Spoke network", ["app subnet", "data subnet", "private endpoints"], "role"), n("Shared services", ["directory", "logging", "secrets"]), n("Network proof", ["route table", "flow log", "connectivity test"], "support")], ["hub-spoke diagram", "route table validation", "firewall rule evidence", "private endpoint DNS test"], "network"),
+            d("01. Cloud Landing Zone Account Structure", f"Shows how {domain_name} workloads are separated by account, subscription, project, environment, and ownership.", "AWS / Azure / GCP", [n("Enterprise root", [domain_name, "organization / tenant", "policy baseline"], "problem"), n("Environment boundary", ["dev / test / prod", "shared services", "break-glass access"]), n("Network foundation", ["VPC/VNet", "CIDR plan", "subnet tiers"], "role"), n("Security baseline", ["IAM/RBAC", "KMS/Key Vault", "logging"]), n("Governance", ["tags", "budgets", "policy checks"], "role"), n("Audit proof", ["account map", "policy result", "access review"], "support")], ["account/subscription map", "environment ownership table", "policy compliance output", "access review evidence"], "layered"),
+            d("02. Hub-Spoke VPC/VNet Network For Shared Core Systems", f"Explains private connectivity between {app_pair}, shared services, and secure ingress.", "Azure / AWS", [n("Users and partners", ["business users", "mobile users", "partner APIs"], "problem"), n("Edge", ["DNS", "CDN/WAF", "API gateway"]), n("Hub network", ["firewall", "NAT/egress", "private DNS"], "role"), n("Spoke network", ["app subnet", "data subnet", "private endpoints"], "role"), n("Shared services", ["directory", "logging", "secrets"]), n("Network proof", ["route table", "flow log", "connectivity test"], "support")], ["hub-spoke diagram", "route table validation", "firewall rule evidence", "private endpoint DNS test"], "network"),
             d("03. Public Ingress To Private Workload Path", f"Traces a customer request into {primary_system} without exposing backend services directly.", "Cloud Edge", [n("Customer request", ["browser/mobile/API", "TLS", "domain name"], "problem"), n("Protection", ["WAF rule", "rate limit", "certificate"]), n("Routing", ["API gateway", "load balancer", "target group"], "role"), n("Private runtime", ["AKS/EKS/GKE", "VM scale set", "serverless"]), n("Private dependency", ["database", "cache", "queue"]), n("Validation", ["200/4xx/5xx", "health probe", "trace"], "support")], ["load balancer health", "WAF rule", "target health", "trace/request log"], "request"),
             d("04. Private Endpoint Pattern For Data Services", f"Shows how {secondary_system} reaches storage, database, and key services over private paths.", "AWS / Azure / GCP", [n("Workload subnet", ["pod/VM/function", "managed identity", "service account"], "problem"), n("Private DNS", ["zone link", "resolver", "record"]), n("Private endpoint", ["Private Link", "VPC endpoint", "PSC"], "role"), n("Managed data service", ["SQL/RDS", "object storage", "NoSQL"]), n("Access control", ["IAM/RBAC", "network ACL", "encryption"]), n("Proof", ["DNS lookup", "connection test", "deny public access"], "support")], ["private DNS lookup", "endpoint connection state", "public access disabled", "successful private connection"], "network"),
             d("05. Kubernetes Platform Runtime Blueprint", f"Explains how platform standards support container workloads for {lob_label}.", "AKS / EKS / GKE", [n("Namespace model", ["team namespace", "quota", "RBAC"], "problem"), n("Ingress", ["controller", "TLS", "network policy"]), n("Workload", ["deployment", "HPA", "probes"], "role"), n("Platform add-ons", ["secrets driver", "observability agent", "policy agent"]), n("Node pools", ["system/user pools", "autoscaling", "patching"]), n("Runtime proof", ["rollout status", "pod health", "events"], "support")], ["namespace/RBAC view", "deployment rollout", "HPA metric", "pod/event evidence"], "layered"),
@@ -18002,9 +18002,9 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add(f"Chapter {number}", "chapter_number", page_break=True)
         add(title, "chapter_title")
         add(overview, "chapter_intro")
-        add_callout("What the reader will learn", learn, "learn")
-        add_callout("Key terms covered", terms, "key")
-        add_callout("Why this chapter matters in interviews", interview, "interview")
+        add_callout("What I can explain in the interview", learn, "learn")
+        add_callout("Words I should be ready to use", terms, "key")
+        add_callout("How I say why this matters", interview, "interview")
 
     def add_chapter_close(takeaways: list[str], mistakes: list[str], questions: list[str]) -> None:
         add("Chapter summary", "section")
@@ -18049,29 +18049,29 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
 
     add("Front Matter", "section", page_break=True)
     add_callout(
-        "Usage note",
-        "This guide avoids bulk template text. It explains the product flow, ownership boundaries, evidence, and delivery stories in the voice a consultant can use during a real interview.",
+        "Opening answer I can say",
+        f"I worked as a {role_name} in a {domain_name} enterprise environment. I usually explain my project by starting with the business workflow, then the applications involved, then my technical ownership lane, and finally the proof I produced through Jira stories, diagrams, logs, dashboards, runbooks, validation outputs, and release or support notes.",
         "key",
     )
     add_callout(
-        "How the book is organized",
+        "How I explain the material in my own words",
         [
-            "BA lens: what business capability, actor, workflow, rule, exception, KPI, and report are involved.",
-            "Senior architect lens: which systems, dependencies, NFRs, controls, risks, and ownership boundaries matter.",
-            "Consultant voice: what I contributed, what I validated, what I handed off, and what evidence proves it.",
-            "Question quality: questions are scenario-based and realistic, not repeated generated prompts.",
+            f"When the interviewer asks about business context, I say which {domain_name} capability, user, workflow, rule, exception, KPI, or report was affected.",
+            "When the interviewer asks about architecture, I explain the systems, dependencies, NFRs, controls, risks, and ownership boundaries before naming tools.",
+            f"When the interviewer asks what I did, I answer in first person: I worked on the {role_name} lane, I validated the result, I handed off the support note, and I kept proof.",
+            "When the interviewer asks follow-up questions, I answer from a real scenario: one Jira epic, related stories, affected applications, tools used, evidence collected, and production outcome.",
         ],
         "learn",
     )
     add_callout(
-        "Learning outcomes",
+        "Interview answers I should be able to say",
         [
-            f"Explain {domain_name} product systems from a business and engineering point of view.",
-            "Master 10-12 use cases with reference architecture, diagrams, evidence, troubleshooting, and interview stories.",
-            f"Describe {role_name} ownership without claiming unrelated application, business, or security ownership.",
-            "Walk through request flow, release flow, incident flow, and evidence produced.",
-            "Answer architecture, scenario, troubleshooting, and behavioral questions with specific examples.",
-            "Connect resume bullets to delivered use cases and production support outcomes.",
+            f"I can explain the {domain_name} product systems from both business workflow and engineering implementation angles.",
+            "I can describe 10-12 delivered use cases using the same pattern: business trigger, affected systems, Jira work, implementation, validation, evidence, and outcome.",
+            f"I can explain my {role_name} ownership clearly without claiming application feature code, business rules, security approval, or database ownership that belonged to other teams.",
+            "I can walk through request flow, release flow, incident flow, support handoff, rollback or recovery path, and the evidence produced.",
+            "I can answer architecture, scenario, troubleshooting, and behavioral questions with one specific example instead of a generic definition.",
+            "I can connect each resume bullet to a real use case, team interaction, tool output, and production support result.",
         ],
         "interview",
     )
@@ -18875,14 +18875,14 @@ def _simple_text_pdf(title: str, blocks: list[dict[str, str]], *, program: Optio
         "toc": {"size": 11, "leading": 17},
         "cover_meta": {"size": 11, "leading": 16},
         "cover_summary": {"size": 12, "leading": 18},
-        "callout_title": {"size": 11, "leading": 19},
-        "callout": {"size": 10, "leading": 16},
-        "table_header": {"size": 9, "leading": 16},
-        "table_row": {"size": 9, "leading": 16},
-        "code": {"size": 9, "leading": 14},
+        "callout_title": {"size": 11, "leading": 20},
+        "callout": {"size": 10, "leading": 17},
+        "table_header": {"size": 9, "leading": 17},
+        "table_row": {"size": 9, "leading": 17},
+        "code": {"size": 9, "leading": 15},
         "visual_flow": {"size": 9, "leading": 92},
-        "meta": {"size": 9, "leading": 13},
-        "body": {"size": 10, "leading": 14},
+        "meta": {"size": 9, "leading": 14},
+        "body": {"size": 10, "leading": 15},
     }
     pages: list[list[tuple[int, int, int, str, str, str]]] = []
     current: list[tuple[int, int, int, str, str, str]] = []
@@ -19001,15 +19001,15 @@ def _build_pdf_bytes(pages: list[list[tuple[int, int, int, str, str, str]]], pag
                 commands.append("q 0.93 0.98 0.97 rg 58 {0} 496 22 re f Q".format(y - 6))
                 commands.append("q 0.00 0.45 0.40 rg 58 {0} 5 22 re f Q".format(y - 6))
             elif style_name == "callout_title":
-                commands.append(_pdf_box_command(x - 10, y - 5, 496, 23, box or "key", stroke=False))
+                commands.append(_pdf_box_command(x - 10, y - 6, 496, 24, box or "key", stroke=False))
             elif style_name == "callout":
-                commands.append(_pdf_box_command(x - 10, y - 5, 496, 21, box or "key", stroke=False))
+                commands.append(_pdf_box_command(x - 10, y - 6, 496, 22, box or "key", stroke=False))
             elif style_name == "table_header":
-                commands.append("q 0.91 0.95 0.96 rg 58 {0} 496 21 re f Q".format(y - 6))
+                commands.append("q 0.91 0.95 0.96 rg 58 {0} 496 22 re f Q".format(y - 7))
             elif style_name == "table_row":
-                commands.append(f"q 0.96 0.98 0.99 rg 58 {y - 6} 496 20 re f Q")
+                commands.append(f"q 0.96 0.98 0.99 rg 58 {y - 7} 496 21 re f Q")
             elif style_name == "code":
-                commands.append(f"q 0.07 0.10 0.16 rg 58 {y - 5} 496 18 re f Q")
+                commands.append(f"q 0.07 0.10 0.16 rg 58 {y - 6} 496 19 re f Q")
             elif style_name == "visual_flow":
                 commands.extend(_pdf_visual_flow_commands(x, y, text))
                 continue
@@ -19112,8 +19112,8 @@ def _pdf_visual_flow_commands(x: int, y: int, text: str) -> list[str]:
         f"q 0.00 0.45 0.40 RG {x} {y - 96} 496 104 re S Q",
         _pdf_text_command(x + 14, y - 20, 11, title, "0.02 0.20 0.20", font_name="F2"),
     ]
-    box_width = 72
-    gap = 10
+    box_width = 70
+    gap = 9
     start_x = x + 14
     box_y = y - 78
     for index, step in enumerate(steps[:6]):
@@ -19197,17 +19197,18 @@ def _pdf_provider_architecture_commands(x: int, y: int, text: str) -> list[str]:
 
     draw_panel(entry_x, entry_y, entry_w, entry_h, external.get("label", "Entry"), external.get("items", []), fill="1.00 0.97 0.91", stroke="0.74 0.45 0.12", badge="1")
     commands.append(f"q 0.95 1.00 0.98 rg {cloud_x} {cloud_y} {cloud_w} {cloud_h} re f 0.00 0.45 0.40 RG {cloud_x} {cloud_y} {cloud_w} {cloud_h} re S Q")
-    commands.append(f"q 1 1 1 rg {cloud_x + 12} {cloud_y + cloud_h - 12} 78 18 re f 0.00 0.45 0.40 RG {cloud_x + 12} {cloud_y + cloud_h - 12} 78 18 re S Q")
-    commands.append(_pdf_text_command(cloud_x + 20, cloud_y + cloud_h - 7, 8, provider.upper()[:14], "0.00 0.45 0.40", font_name="F2"))
+    provider_label = " / ".join(provider.upper().split(" / ")[:2])
+    commands.append(f"q 1 1 1 rg {cloud_x + 12} {cloud_y + cloud_h - 12} 88 18 re f 0.00 0.45 0.40 RG {cloud_x + 12} {cloud_y + cloud_h - 12} 88 18 re S Q")
+    commands.append(_pdf_text_command(cloud_x + 20, cloud_y + cloud_h - 7, 8, provider_label[:16], "0.00 0.45 0.40", font_name="F2"))
     draw_panel(ops_x, ops_y, ops_w, ops_h, operations.get("label", "Operations"), operations.get("items", []), fill="0.95 0.97 1.00", stroke="0.32 0.45 0.72", badge=str(max(len(nodes), 3)))
     arrow(entry_x + entry_w + 8, entry_y + 43, cloud_x - 8, entry_y + 43)
     arrow(cloud_x + cloud_w + 8, entry_y + 43, ops_x - 8, entry_y + 43)
 
     service_positions = [
-        (cloud_x + 14, cloud_y + 112),
-        (cloud_x + 114, cloud_y + 112),
-        (cloud_x + 14, cloud_y + 34),
-        (cloud_x + 114, cloud_y + 34),
+        (cloud_x + 14, cloud_y + 96),
+        (cloud_x + 114, cloud_y + 96),
+        (cloud_x + 14, cloud_y + 24),
+        (cloud_x + 114, cloud_y + 24),
     ]
     for index, node in enumerate(services[:4]):
         sx, sy = service_positions[index]
@@ -19233,7 +19234,7 @@ def _pdf_provider_architecture_commands(x: int, y: int, text: str) -> list[str]:
     if evidence:
         evidence_y = canvas_y + 14
         commands.append(_pdf_text_command(canvas_x + 14, evidence_y + 11, 7, "Evidence to collect:", "0.02 0.20 0.20", font_name="F2"))
-        draw_wrapped_text(canvas_x + 94, evidence_y + 11, 6, ", ".join(evidence), 380, "0.20 0.28 0.38", max_lines=1)
+        draw_wrapped_text(canvas_x + 94, evidence_y + 11, 6, ", ".join(evidence), 380, "0.20 0.28 0.38", max_lines=2, line_gap=7)
     return commands
 
 

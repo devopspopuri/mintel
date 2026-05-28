@@ -1596,6 +1596,10 @@ def test_basics_export_prioritizes_useful_content_over_page_count():
     role_blocks = _training_program_pdf_blocks(program, include_diagrams=True)
     role_text = " ".join(block["text"] for block in role_blocks)
     assert "600-Page Role And Domain Scenario Workbook" not in role_text
+    assert "Opening answer I can say" in role_text
+    assert "How I explain the material in my own words" in role_text
+    assert "I usually explain my project by starting with the business workflow" in role_text
+    assert "When the interviewer asks what I did, I answer in first person" in role_text
     assert "Interview-Ready Answer Scripts" in role_text
     assert "These are near word-for-word interview answers" in role_text
     assert "Why Should We Believe This Experience Is Real?" in role_text
@@ -1610,6 +1614,38 @@ def test_basics_export_prioritizes_useful_content_over_page_count():
     role_pdf = _simple_text_pdf("Mintel Consultant Training Book", role_blocks, program=program)
     role_pages = int(re.search(rb"/Count (\d+)", role_pdf).group(1))
     assert 180 <= role_pages <= 350
+
+
+def test_healthcare_cloud_platform_diagrams_use_domain_neutral_titles():
+    record = next(
+        item
+        for item in training_program_seed_records()
+        if item["marketingRole"] == "Cloud Platform Engineer"
+        and item["industryDomain"] == "Healthcare / Health Insurance"
+    )
+    program = SimpleNamespace(
+        id=1,
+        title=record["title"],
+        short_description=record["shortDescription"],
+        enterprise_context=record["enterpriseContext"],
+        industry_domain=record["industryDomain"],
+        application_landscape=record["applicationLandscape"],
+        cloud_architecture=record["cloudArchitecture"],
+        project_responsibilities=record["projectResponsibilities"],
+        key_deliverables=record["keyDeliverables"],
+        tools_and_technologies=record["toolsAndTechnologies"],
+        interview_story=record["interviewStory"],
+        resume_project_summary=record["resumeProjectSummary"],
+        production_support_scenarios=record["productionSupportScenarios"],
+        three_year_delivery_timeline=record["threeYearDeliveryTimeline"],
+        marketing_role=SimpleNamespace(name=record["marketingRole"], common_tools=", ".join(record["toolsAndTechnologies"])),
+    )
+    blocks = _training_program_pdf_blocks(program, include_diagrams=True)
+    first_provider_diagram = next(block for block in blocks if block.get("style") == "provider_arch")
+    diagram = json.loads(first_provider_diagram["text"])
+    assert diagram["title"] == "01. Cloud Landing Zone Account Structure"
+    assert "Banking" not in diagram["title"]
+    assert "Core Banking" not in " ".join(block["text"] for block in blocks[:80])
 
 
 def test_sre_training_includes_inline_datadog_diagrams():
