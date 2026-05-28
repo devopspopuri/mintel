@@ -1,0 +1,84 @@
+{% extends "web/base.html" %}
+{% block title %}{{ form_title }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ form_title }}</h1>
+      <p>Schedule and maintain one mock interview session from a dedicated form.</p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="/mock-interviews">Back To List</a>
+      <a class="button secondary" href="/mock-interviews/calendar">Calendar</a>
+      <a class="button secondary" href="/mock-interviews/trainer-availability">Interviewer Availability</a>
+    </div>
+  </section>
+
+  {% if conflicts %}
+    <div class="flash warn"><strong>Scheduling conflict:</strong> {{ conflicts|join(" ") }}</div>
+  {% endif %}
+
+  <div class="grid-2">
+    <form class="card stack" method="post" action="{{ form_action }}">
+      <h2>Session Details</h2>
+      {% if row %}
+        <label>Consultant<input value="{{ row.consultant.name or row.consultant.email }}" disabled></label>
+        <label>Marketing Role<input value="{{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else '') }}" disabled></label>
+      {% else %}
+        <label>Consultant<select name="consultant_id" required><option value="">Select consultant</option>{% for consultant in consultants %}<option value="{{ consultant.id }}">{{ consultant.name or consultant.email }}</option>{% endfor %}</select></label>
+        <label>Marketing Role<select name="marketing_role_id" required><option value="">Select role</option>{% for role in marketing_roles %}<option value="{{ role.id }}" {% if marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>{% endfor %}</select></label>
+      {% endif %}
+
+      {% if not row %}
+        <label>Training Program<select name="training_program_id"><option value="">Optional role/domain program</option>{% for program in training_programs %}<option value="{{ program.id }}">{{ program.marketing_role.name }} · {{ program.industry_domain }}</option>{% endfor %}</select></label>
+        <label>Submission<select name="submission_id"><option value="">Optional submission</option>{% for submission in submissions %}<option value="{{ submission.id }}">{{ submission.consultant.name or submission.consultant.email }} · {{ submission.job.company.name }} · {{ submission.job.title }}</option>{% endfor %}</select></label>
+      {% endif %}
+
+      <label>Assigned Staff<select name="assigned_staff_id"><option value="">Optional trainer/staff</option>{% for staff_member in assigned_staff_options %}<option value="{{ staff_member.id }}" {% if row and row.assigned_staff_id == staff_member.id %}selected{% endif %}>{{ staff_member.name or staff_member.email }}</option>{% endfor %}</select></label>
+      <div class="grid-2">
+        <label>Scheduled On<input type="date" name="scheduled_on" value="{{ row.scheduled_on if row else '' }}"></label>
+        <label>Scheduled Time<input type="time" name="scheduled_time" value="{{ row.scheduled_time if row else '' }}"></label>
+        <label>Timezone<select name="timezone">{% for value, label in timezone_options %}<option value="{{ value }}" {% if row and row.timezone == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Duration Minutes<input type="number" min="15" max="240" name="duration_minutes" value="{{ row.duration_minutes if row else 60 }}"></label>
+      </div>
+      <label>Round Type<select name="round_type">{% for value, label in round_type_options %}<option value="{{ value }}" {% if row and row.round_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label>Meeting Link<input name="meeting_link" value="{{ row.meeting_link if row else '' }}" placeholder="Zoom, Teams, Google Meet, or internal bridge"></label>
+      <label>Interviewer Name<input name="interviewer_name" value="{{ row.interviewer_name if row else '' }}" placeholder="Visible label if staff is not selected"></label>
+      <label>Status<select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if row and row.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label>Score<input type="number" min="0" max="100" name="score" value="{{ row.score if row else 0 }}"></label>
+
+      {% if not row %}
+        <label class="check-row"><input type="checkbox" name="require_acknowledgement" value="true"><span><strong>Require consultant acknowledgement</strong><span>Session stays pending until acknowledged.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="override_conflict" value="true"><span><strong>Override conflict if needed</strong><span>Use only when staff intentionally accepts a conflict.</span></span></label>
+        <label>Conflict Override Reason<textarea name="conflict_override_reason" placeholder="Required operational note when overriding a busy slot."></textarea></label>
+      {% endif %}
+
+      <h2>Interview Notes</h2>
+      <label>Question Coverage<textarea name="question_coverage" placeholder="Question areas covered in this mock.">{{ row.question_coverage if row else '' }}</textarea></label>
+      <label>Questions Asked<textarea name="questions_asked" placeholder="Exact questions asked and follow-up probes.">{{ row.questions_asked if row else '' }}</textarea></label>
+      <label>Strengths<textarea name="strengths" placeholder="What the consultant handled well.">{{ row.strengths if row else '' }}</textarea></label>
+      <label>Gaps<textarea name="gaps" placeholder="What needs improvement.">{{ row.gaps if row else '' }}</textarea></label>
+      <label>Action Items<textarea name="action_items" placeholder="Next preparation actions.">{{ row.action_items if row else '' }}</textarea></label>
+      <label>Prep Pack Snapshot<textarea name="prep_pack_snapshot" placeholder="Manual notes only; generated prep is intentionally not ported yet.">{{ row.prep_pack_snapshot if row else '' }}</textarea></label>
+
+      <div class="actions">
+        <button type="submit">{{ submit_label }}</button>
+        <a class="button secondary" href="{% if row %}/mock-interviews/{{ row.id }}{% else %}/mock-interviews{% endif %}">Cancel</a>
+      </div>
+    </form>
+
+    <section class="card stack">
+      <h2>Interviewer Availability Summary</h2>
+      <p class="muted">Scheduling context only. The system still checks consultant blocks and overlapping mock sessions when saving.</p>
+      <table class="data-list">
+        <thead><tr><th>Interviewer</th><th>Weekly</th><th>Ad-hoc</th></tr></thead>
+        <tbody>
+          {% for staff_member in assigned_staff_options %}
+            {% set summary = availability_by_staff.get(staff_member.id, {}) %}
+            <tr><td>{{ staff_member.name or staff_member.email }}</td><td>{{ summary.get("weekly", 0) }}</td><td>{{ summary.get("adhoc", 0) }}</td></tr>
+          {% endfor %}
+          {% if not assigned_staff_options %}<tr><td colspan="3" class="muted">No interviewers available for your assigned roles.</td></tr>{% endif %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

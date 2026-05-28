@@ -1,0 +1,43 @@
+{% extends "web/base.html" %}
+{% block title %}Trainer Dashboard | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div><h1>Trainer Dashboard</h1><p>Operational queues for mock interview scheduling, acknowledgement, requests, and feedback follow-up.</p></div>
+    <div class="actions"><a class="button secondary" href="/mock-interviews">List</a><a class="button secondary" href="/mock-interviews/calendar">Calendar</a></div>
+  </section>
+  <div class="metrics">
+    {% for tile in summary_tiles %}
+      <a class="metric" href="{{ tile.href }}"><strong>{{ tile.value }}</strong><span>{{ tile.label }}</span></a>
+    {% endfor %}
+  </div>
+
+  {% set sections = [
+    ("today", "Today", today_rows),
+    ("upcoming", "Upcoming", upcoming_rows),
+    ("pending-ack", "Pending Acknowledgement", pending_ack_rows),
+    ("requests", "Reschedule / Cancel Requests", requested_rows),
+    ("feedback", "Feedback Due", feedback_rows)
+  ] %}
+  {% for anchor, title, rows in sections %}
+    <section class="card" id="{{ anchor }}">
+      <h2>{{ title }}</h2>
+      <table class="data-list">
+        <thead><tr><th>S No</th><th>Consultant</th><th>Schedule</th><th>Role</th><th>Staff</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="sno">{{ loop.index }}</td>
+              <td>{{ row.consultant.name or row.consultant.email }}<div class="compact-meta">{{ row.consultant.email }}</div></td>
+              <td>{{ row.scheduled_on or "Not set" }}<div class="compact-meta">{{ row.scheduled_time }} · {{ row.timezone }}</div></td>
+              <td>{{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else "") }}<div class="compact-meta">{{ row.domain_snapshot }}</div></td>
+              <td>{{ row.assigned_staff.name if row.assigned_staff else row.interviewer_name or "Unassigned" }}</td>
+              <td><span class="pill">{{ row.status.replace("_", " ").title() }}</span></td>
+              <td><a class="button secondary" href="/mock-interviews/{{ row.id }}">Open</a></td>
+            </tr>
+          {% endfor %}
+          {% if not rows %}<tr><td colspan="7" class="muted">No records in this queue.</td></tr>{% endif %}
+        </tbody>
+      </table>
+    </section>
+  {% endfor %}
+{% endblock %}

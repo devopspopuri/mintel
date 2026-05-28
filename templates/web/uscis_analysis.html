@@ -1,0 +1,109 @@
+{% extends "web/base.html" %}
+{% block title %}USCIS Analysis | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>USCIS Analysis</h1>
+      <p>Find visa-friendly employers, then promote the ones worth pursuing.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      {% if can_manage(user) %}<a class="button secondary" href="/uscis/import">Import Data</a>{% endif %}
+    </div>
+  </section>
+  <form class="card filters" method="get">
+    <label class="wide">Employer<input name="q" value="{{ query }}" placeholder="Search employer"></label>
+    <label>Profile fit<select name="profile">{% for item in profile_options %}<option value="{{ item.value }}" {% if item.value == profile %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+    <label>Target size<select name="target_size">{% for item in target_size_options %}<option value="{{ item.value }}" {% if item.value == target_size %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+    <label>Decision type<select name="decision_type">{% for item in decision_options %}<option value="{{ item.value }}" {% if item.value == decision_type %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+    <label>Region<select name="region"><option value="">All</option>{% for item in region_options %}<option value="{{ item.code }}" {% if item.code == region %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>
+    <label>State<select name="state"><option value="">All</option>{% for item in state_options %}<option value="{{ item }}" {% if item == state %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+    <label>NAICS<input name="naics" value="{{ naics }}" placeholder="54"></label>
+    <label>Start year<input name="start_year" type="number" value="{{ start_year or '' }}"></label>
+    <label>End year<input name="end_year" type="number" value="{{ end_year or '' }}"></label>
+    <label>Min approvals<input name="min_approvals" type="number" value="{{ min_approvals }}"></label>
+    <label>Min approval %<input name="min_approval_rate" type="number" value="{{ min_approval_rate }}"></label>
+    <label>Sort<select name="sort">{% for item in sort_options %}<option value="{{ item.value }}" {% if item.value == sort %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+    <div class="inline-actions"><a class="button secondary" href="/uscis/analysis">Reset</a><button type="submit">Apply</button></div>
+  </form>
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ totals.companies }}</strong><span>Matching companies</span></div>
+    <div class="metric"><strong>{{ totals.decision_approvals }}</strong><span>Filtered approvals</span></div>
+    <div class="metric"><strong>{{ totals.decision_denials }}</strong><span>Filtered denials</span></div>
+    <div class="metric"><strong>{{ totals.decision_rate }}%</strong><span>Filtered approval rate</span></div>
+    <div class="metric"><strong>{{ totals.approvals }}</strong><span>All approvals in result</span></div>
+  </section>
+  <h2>Companies</h2>
+  <div class="listbar">
+    <span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }} matching companies</span>
+    <span>Page {{ page }} of {{ pages }} · {{ per_page }} per page</span>
+  </div>
+  <table class="data-list">
+    <thead><tr>
+      <th class="sno">S No</th>
+      <th><a class="sort-link {% if sort == 'name' %}active{% endif %}" href="{{ sort_urls.name }}">Employer{% if sort == 'name' %} ↑{% endif %}</a></th>
+      <th><a class="sort-link {% if sort == 'fit' %}active{% endif %}" href="{{ sort_urls.fit }}">Fit{% if sort == 'fit' %} ↓{% endif %}</a></th>
+      <th><a class="sort-link {% if sort == 'sponsor' %}active{% endif %}" href="{{ sort_urls.sponsor }}">Likely Sponsor{% if sort == 'sponsor' %} ↓{% endif %}</a></th>
+      <th>Recommended Region</th>
+      <th class="right">Years</th>
+      <th class="right">States</th>
+      <th class="right"><a class="sort-link {% if sort == 'latest' %}active{% endif %}" href="{{ sort_urls.latest }}">Latest{% if sort == 'latest' %} ↓{% endif %}</a></th>
+      <th class="right"><a class="sort-link {% if sort == 'new' %}active{% endif %}" href="{{ sort_urls.new }}">New{% if sort == 'new' %} ↓{% endif %}</a></th>
+      <th class="right"><a class="sort-link {% if sort == 'transfer' %}active{% endif %}" href="{{ sort_urls.transfer }}">Transfer{% if sort == 'transfer' %} ↓{% endif %}</a></th>
+      <th class="right"><a class="sort-link {% if sort == 'continue' %}active{% endif %}" href="{{ sort_urls.continue }}">Continue{% if sort == 'continue' %} ↓{% endif %}</a></th>
+      <th class="right"><a class="sort-link {% if sort == 'approvals' %}active{% endif %}" href="{{ sort_urls.approvals }}">Approvals{% if sort == 'approvals' %} ↓{% endif %}</a></th>
+      <th class="right"><a class="sort-link {% if sort == 'approval_rate' %}active{% endif %}" href="{{ sort_urls.approval_rate }}">Rate{% if sort == 'approval_rate' %} ↓{% endif %}</a></th>
+      <th></th>
+    </tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td class="company-cell">
+            {% if row.company %}<a href="/companies/{{ row.company.id }}/uscis?back={{ request.url.path }}?{{ params|urlencode }}"><strong>{{ row.employer_name }}</strong></a>{% else %}<strong>{{ row.employer_name }}</strong>{% endif %}
+            <div class="compact-meta">{{ row.cities }} cities · {{ row.decisions }} decisions</div>
+          </td>
+          <td class="nowrap" title="{{ row.fit_notes }}">
+            <span class="pill {% if row.fit_label == 'Prime target' %}hot{% elif row.fit_label == 'Watchlist' %}warn{% endif %}">{{ row.fit_label }}</span>
+            <div class="scoreline">Score {{ row.fit_score }}</div>
+          </td>
+          <td class="nowrap" title="{{ row.sponsor_notes }}">
+            <span class="pill {% if row.sponsor_label == 'Likely sponsor' %}hot{% elif row.sponsor_label == 'Possible sponsor' %}warn{% endif %}">{{ row.sponsor_label }}</span>
+            <div class="scoreline">{{ row.target_size_label }} · {{ row.annual_approvals }}/yr · Score {{ row.sponsor_score }}</div>
+          </td>
+          <td class="region-cell">
+            {% if row.region_signal.region %}
+              <strong>{{ row.region_signal.region.name }}</strong><br><span class="muted">{{ row.region_signal.states|join(", ") }}</span>
+            {% else %}
+              <span class="muted">Unmapped</span>
+            {% endif %}
+          </td>
+          <td class="right">{{ row.years }}</td>
+          <td class="right">{{ row.states }}</td>
+          <td class="right">{{ row.latest_year }}</td>
+          <td class="right">{{ row.new_employment_approvals }}</td>
+          <td class="right">{{ row.change_employer_approvals }}</td>
+          <td class="right">{{ row.continuation_approvals }}</td>
+          <td class="right">{{ row.approvals }}</td>
+          <td class="right">{{ row.approval_rate }}%</td>
+          <td class="right">
+            {% if row.company and can_manage(user) %}
+              <form method="post" action="/companies/{{ row.company.id }}/promote">
+                <input type="hidden" name="reason" value="Promoted from USCIS analysis">
+                <input type="hidden" name="next" value="{{ request.url.path }}?{{ params }}">
+                <button type="submit">Promote</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="14" class="muted">No USCIS companies match these filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="?page={{ page - 1 }}&{{ params }}">Previous</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="button secondary" href="?page={{ page + 1 }}&{{ params }}">Next</a>{% endif %}
+  </div>
+{% endblock %}

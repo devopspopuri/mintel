@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=4GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=512MB
+    mem_limit: 4g
+    mem_reservation: 1g
+    environment:
+      POSTGRES_DB: mintel
+      POSTGRES_USER: mintel
+      POSTGRES_PASSWORD: mintel
+    ports:
+      - "5437:5432"
+    volumes:
+      - mintel_postgres:/var/lib/postgresql/data
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://mintel:mintel@postgres:5432/mintel
+      DATABASE_POOL_SIZE: 30
+      DATABASE_MAX_OVERFLOW: 50
+      DATABASE_POOL_TIMEOUT: 10
+      MAAS_BASE_URL: http://host.docker.internal:8000
+    mem_limit: 2g
+    mem_reservation: 512m
+    ports:
+      - "8007:8007"
+    depends_on:
+      - postgres
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8007
+
+volumes:
+  mintel_postgres:

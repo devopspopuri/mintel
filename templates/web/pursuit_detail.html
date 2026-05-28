@@ -1,0 +1,1037 @@
+{% extends "web/base.html" %}
+{% block title %}{{ company.name }} | Pursuit Workspace | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ company.name }}</h1>
+      <p>Company pursuit workspace for profile details, requirements, contacts, vendors, and closing decision intelligence.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/pursuits">Back to Promoted</a>
+      <a class="button secondary" href="/companies/{{ company.id }}/uscis">USCIS Detail</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ company_context.totals.approvals }}</strong><span>Total approvals</span></div>
+    <div class="metric"><strong>{{ company_context.totals.approval_rate }}%</strong><span>Approval rate</span></div>
+    <div class="metric"><strong>{{ company_context.totals.new_employment }}</strong><span>New employment</span></div>
+    <div class="metric"><strong>{{ company_context.totals.change_employer }}</strong><span>Transfers</span></div>
+    <div class="metric"><strong>{{ company_context.totals.continuation }}</strong><span>Continuations</span></div>
+  </section>
+
+  {% if not can_edit_pursuit %}
+    <div class="flash warn">Your current role can view this pursuit workspace, but cannot edit research, contacts, evidence, or activity.</div>
+  {% elif not can_assign_pursuit %}
+    <div class="flash warn">You can add pursuit intelligence and activity. Assignment, priority, status, and closing decision fields are manager-only.</div>
+  {% endif %}
+
+  <form method="post" action="/pursuits/{{ pursuit.id }}/research">
+    <section class="workspace">
+      <aside class="card stack">
+        <div class="research-progress">
+          <div class="progress-head">
+            <strong>Research {{ research_completion.percent }}%</strong>
+            <span>{{ research_completion.complete }}/{{ research_completion.total }} complete</span>
+          </div>
+          <div class="progress-track"><span style="width: {{ research_completion.percent }}%"></span></div>
+        </div>
+        {% if pinned_notes %}
+          <div class="note-summary">
+            <strong>Pinned Notes</strong>
+            {% for note in pinned_notes[:3] %}
+              <p>{{ note.body }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="checklist">
+          {% for item in research_checklist %}
+            <a class="check-item {% if item.complete %}done{% endif %}" href="/pursuits/{{ pursuit.id }}?tab={{ item.tab }}">
+              <span>{{ "✓" if item.complete else "!" }}</span>
+              <strong>{{ item.label }}</strong>
+              <small>{{ item.detail }}</small>
+            </a>
+          {% endfor %}
+        </div>
+        <section class="workspace-summary">
+          <h2>Ownership</h2>
+          <dl>
+            <div><dt>Region</dt><dd>{{ pursuit.region.name if pursuit.region else "Unassigned" }}</dd></div>
+            <div><dt>Owner</dt><dd>{{ pursuit.assigned_staff_name or pursuit.assigned_staff_email or "Unassigned" }}</dd></div>
+            <div><dt>Status</dt><dd>{{ pursuit.status.replace("_", " ").title() }}</dd></div>
+            <div><dt>Decision</dt><dd>{{ pursuit.decision.replace("_", " ").title() if pursuit.decision else "Undecided" }}</dd></div>
+            <div><dt>Follow-up</dt><dd>{{ pursuit.next_follow_up_date or "Not set" }}</dd></div>
+          </dl>
+          <div class="side-actions">
+            <a class="button secondary" href="/pursuits/{{ pursuit.id }}?tab=workflow">Edit Ownership</a>
+            <a class="button secondary" href="/pursuits/{{ pursuit.id }}?tab=intelligence">Review Decision</a>
+          </div>
+        </section>
+      </aside>
+
+      <main>
+        {% set menu_groups = [
+          ("Company", [("profile", "Profile"), ("intelligence", "Decision"), ("workflow", "Ownership")]),
+          ("Market Evidence", [("job-postings", "Job Evidence"), ("tech-stack", "Tech Stack"), ("use-cases", "Use Cases"), ("requirements", "Requirements")]),
+          ("Relationships", [("contacts", "Contacts"), ("vendors", "Vendors"), ("managers", "C2C"), ("submissions", "Submission")]),
+          ("Workspace", [("notes", "Notes"), ("prompt", "OpenAI")])
+        ] %}
+        <nav class="workspace-menu" aria-label="Company workspace menu">
+          {% for group_label, group_tabs in menu_groups %}
+            <section class="menu-group">
+              <strong>{{ group_label }}</strong>
+              <div class="menu-links">
+                {% for tab_key, tab_label in group_tabs %}
+                  <a class="menu-link {% if active_tab == tab_key %}active{% endif %}" href="/pursuits/{{ pursuit.id }}?tab={{ tab_key }}">{{ tab_label }}</a>
+                {% endfor %}
+              </div>
+            </section>
+          {% endfor %}
+        </nav>
+        {% set latest_snapshot = structured.intelligence_snapshots[0] if structured.intelligence_snapshots else none %}
+        {% if active_tab != "workflow" %}
+          <input type="hidden" name="region_id" value="{{ pursuit.region_id or '' }}">
+          <input type="hidden" name="status" value="{{ pursuit.status }}">
+          <input type="hidden" name="priority" value="{{ pursuit.priority }}">
+          <input type="hidden" name="closing_probability" value="{{ pursuit.closing_probability }}">
+          <input type="hidden" name="decision" value="{{ pursuit.decision or '' }}">
+          <input type="hidden" name="assigned_staff_name" value="{{ pursuit.assigned_staff_name }}">
+          <input type="hidden" name="assigned_staff_email" value="{{ pursuit.assigned_staff_email }}">
+          <input type="hidden" name="next_follow_up_date" value="{{ pursuit.next_follow_up_date or '' }}">
+          <input type="hidden" name="pursuit_reason" value="{{ pursuit.pursuit_reason }}">
+          <input type="hidden" name="next_action" value="{{ pursuit.next_action }}">
+        {% endif %}
+
+        {% if active_tab == "workflow" %}
+          <section class="workflow-hero card">
+            <div>
+              <h2>Ownership & Decision</h2>
+              <p class="muted">Use this area to assign the company, set the staff follow-up path, and record the admin decision separately from company facts.</p>
+            </div>
+            <div class="workflow-pill">{{ pursuit.status.replace("_", " ").title() }}</div>
+          </section>
+          <section class="workflow-grid">
+            <fieldset class="card workflow-panel" {% if not can_assign_pursuit %}disabled{% endif %}>
+              <h2>Assignment</h2>
+              <label>Region<select name="region_id"><option value="">Unassigned</option>{% for region in regions %}<option value="{{ region.id }}" {% if pursuit.region_id == region.id %}selected{% endif %}>{{ region.name }}</option>{% endfor %}</select></label>
+              <label>Region Group Member<select name="owner_user_id">
+                <option value="">Manual owner</option>
+                {% for staff_member in owner_options %}
+                  <option value="{{ staff_member.id }}" {% if staff_member.email == pursuit.assigned_staff_email %}selected{% endif %}>{{ staff_member.name or staff_member.email }}</option>
+                {% endfor %}
+              </select></label>
+              <label>Staff Name<input name="assigned_staff_name" value="{{ pursuit.assigned_staff_name }}"></label>
+              <label>Staff Email<input name="assigned_staff_email" value="{{ pursuit.assigned_staff_email }}"></label>
+            </fieldset>
+            <fieldset class="card workflow-panel" {% if not can_assign_pursuit %}disabled{% endif %}>
+              <h2>Status & Decision</h2>
+              <label>Status<select name="status">{% for status in statuses %}<option value="{{ status.value }}" {% if pursuit.status == status.value %}selected{% endif %}>{{ status.label }}</option>{% endfor %}</select></label>
+              <label>Priority<input name="priority" type="number" value="{{ pursuit.priority }}"></label>
+              <label>Closing Probability<input name="closing_probability" type="number" min="0" max="100" value="{{ pursuit.closing_probability }}"></label>
+              <label>Decision<select name="decision">
+                <option value="" {% if not pursuit.decision %}selected{% endif %}>Undecided</option>
+                <option value="pursue" {% if pursuit.decision == "pursue" %}selected{% endif %}>Pursue</option>
+                <option value="watch" {% if pursuit.decision == "watch" %}selected{% endif %}>Watch</option>
+                <option value="do_not_pursue" {% if pursuit.decision == "do_not_pursue" %}selected{% endif %}>Do not pursue</option>
+              </select></label>
+            </fieldset>
+            <fieldset class="card workflow-panel wide" {% if not can_assign_pursuit %}disabled{% endif %}>
+              <h2>Follow-up Plan</h2>
+              <div class="workflow-two">
+                <label>Follow-up Date<input name="next_follow_up_date" type="date" value="{{ pursuit.next_follow_up_date or '' }}"></label>
+                <label>Promotion Reason<textarea name="pursuit_reason" placeholder="Why this company was promoted from USCIS analysis">{{ pursuit.pursuit_reason }}</textarea></label>
+              </div>
+              <label>Next Action<textarea name="next_action" placeholder="Concrete staff next step">{{ pursuit.next_action }}</textarea></label>
+              <div class="inline-actions"><button type="submit">Save Ownership</button></div>
+            </fieldset>
+          </section>
+        {% endif %}
+
+        {% if active_tab == "profile" %}
+          <h2>Company Profile</h2>
+          <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+            <label>Website<input name="website" value="{{ company.website }}" placeholder="https://company.com"></label>
+            <label>Careers URL<input name="careers_url" value="{{ company.careers_url }}" placeholder="https://company.com/careers"></label>
+            <label>LinkedIn<input name="linkedin_url" value="{{ company.linkedin_url }}" placeholder="https://linkedin.com/company/..."></label>
+            <label>Industry<input name="industry" value="{{ company.industry }}" placeholder="Healthcare, finance, retail"></label>
+            <label>Location<input name="location" value="{{ company.location }}" placeholder="Minneapolis, MN, USA"></label>
+            <label>HQ City<input name="headquarters_city" value="{{ company.headquarters_city }}" placeholder="Dallas"></label>
+            <label>HQ State<input name="headquarters_state" value="{{ company.headquarters_state }}" placeholder="TX"></label>
+            <label>Managed By<select name="managed_by_id"><option value="">Unassigned</option>{% for staff_member in company_owner_options %}<option value="{{ staff_member.id }}" {% if company.managed_by_id == staff_member.id %}selected{% endif %}>{{ staff_member.name or staff_member.email }}</option>{% endfor %}</select></label>
+            <label>ATS Type<select name="ats_type"><option value="">Unknown</option>{% for value, label in ats_type_options %}<option value="{{ value }}" {% if company.ats_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>ATS Platform<input name="ats_platform" value="{{ company.ats_platform }}" placeholder="Workday"></label>
+            <label>ATS API URL<input name="ats_api_url" value="{{ company.ats_api_url }}" placeholder="https://api.atsprovider.com/..."></label>
+            <label>Apply Minutes<input name="application_time_minutes" type="number" min="0" value="{{ company.application_time_minutes }}"></label>
+            <label>OPT<select name="opt_status">{% for value, label in company_signal_options %}<option value="{{ value }}" {% if company.opt_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>STEM OPT<select name="stem_opt_status">{% for value, label in company_signal_options %}<option value="{{ value }}" {% if company.stem_opt_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>Sponsorship<select name="sponsorship_status">{% for value, label in company_signal_options %}<option value="{{ value }}" {% if company.sponsorship_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>OPT Risk<select name="opt_risk">{% for value, label in opt_risk_options %}<option value="{{ value }}" {% if company.opt_risk == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>Recent OPT Hires<input name="opt_recent_hires" type="number" min="0" value="{{ company.opt_recent_hires }}"></label>
+            <label>Recent H1B Filings<input name="h1b_filings_recent" type="number" min="0" value="{{ company.h1b_filings_recent }}"></label>
+            <label>OPT Verified<input name="opt_last_verified" type="date" value="{{ company.opt_last_verified or '' }}"></label>
+            <label class="wide">Profile Source URL<input name="source_url" placeholder="Company site, LinkedIn, or credible profile"></label>
+            <label class="check-row"><input type="checkbox" name="requires_account_creation" value="true" {% if company.requires_account_creation %}checked{% endif %}><span><strong>Account required</strong><span>Application portal requires account creation.</span></span></label>
+            <label class="check-row"><input type="checkbox" name="requires_email_verification" value="true" {% if company.requires_email_verification %}checked{% endif %}><span><strong>Email verification</strong><span>Applicant must verify email before submitting.</span></span></label>
+            <label class="check-row"><input type="checkbox" name="accepts_cover_letter" value="true" {% if company.accepts_cover_letter %}checked{% endif %}><span><strong>Cover letter</strong><span>Portal accepts or requests a cover letter.</span></span></label>
+            <label class="check-row"><input type="checkbox" name="onsite_interview_required" value="true" {% if company.onsite_interview_required %}checked{% endif %}><span><strong>Onsite interview</strong><span>Known onsite interview requirement.</span></span></label>
+            <label class="full">Tech Stack<textarea name="tech_stack" placeholder="AWS, Java, Python">{{ company.tech_stack }}</textarea></label>
+            <label class="full">OPT / Sponsorship Notes<textarea name="opt_notes" placeholder="Evidence or recruiter notes">{{ company.opt_notes }}</textarea></label>
+            <label class="full">Background Process<textarea name="background_process" placeholder="Background check or screening notes">{{ company.background_process }}</textarea></label>
+            <label class="full">Submission Guidance<textarea name="submission_guidance" placeholder="Portal/application guidance">{{ company.submission_guidance }}</textarea></label>
+            <label class="full">Company Notes<textarea name="company_notes" placeholder="What this company does, buying centers, hiring model, important links">{{ company.notes }}</textarea></label>
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/company-profile" formmethod="post">Save Company Profile</button>
+          </fieldset>
+          <div class="grid-2">
+            <section>
+              <h2>Profile Snapshot</h2>
+              <table class="data-list">
+                <tbody>
+                  <tr><th>Region</th><td>{{ pursuit.region.name if pursuit.region else "Unassigned" }}</td></tr>
+                  <tr><th>Owner</th><td>{{ pursuit.assigned_staff_name or "Unassigned" }}</td></tr>
+                  <tr><th>Website</th><td>{% if company.website %}<a href="{{ company.website }}">{{ company.website }}</a>{% else %}<span class="muted">Missing</span>{% endif %}</td></tr>
+                  <tr><th>Industry</th><td>{{ company.industry or "Missing" }}</td></tr>
+                  <tr><th>HQ</th><td>{{ [company.headquarters_city, company.headquarters_state]|select|join(", ") or "Missing" }}</td></tr>
+                </tbody>
+              </table>
+            </section>
+            <section>
+              <h2>Company Jobs</h2>
+              <table class="data-list">
+                <thead><tr><th>Job</th><th>Source</th><th>Status</th></tr></thead>
+                <tbody>{% for job in company_jobs %}
+                  <tr><td><a href="/jobs/{{ job.id }}">{{ job.title }}</a><br><span class="muted">{{ job.location }}</span></td><td>{% if job.url %}<a href="{{ job.url }}">Source</a>{% else %}{{ job.source.replace("_", " ").title() }}{% endif %}</td><td><span class="pill {% if not job.active %}warn{% endif %}">{{ "active" if job.active else "inactive" }}</span></td></tr>
+                {% else %}<tr><td colspan="3" class="muted">No jobs created from this company yet.</td></tr>{% endfor %}</tbody>
+              </table>
+            </section>
+          </div>
+        {% endif %}
+
+        {% if active_tab == "intelligence" %}
+          <section class="decision-readiness card stack">
+            <div class="decision-head">
+              <div>
+                <h2>Decision Readiness</h2>
+                <p class="muted">USCIS is the source of truth. Imported JSON is supporting evidence from previous USA job postings.</p>
+              </div>
+              <div class="readiness-score">
+                <strong>{{ decision_readiness.score }}%</strong>
+                <span>{{ "Ready for admin review" if decision_readiness.ready_for_admin_review else "Needs evidence review" }}</span>
+              </div>
+            </div>
+            <section class="metrics compact">
+              <div class="metric"><strong>{{ decision_readiness.uscis.approvals }}</strong><span>USCIS approvals</span></div>
+              <div class="metric"><strong>{{ decision_readiness.uscis.approval_rate }}%</strong><span>USCIS approval rate</span></div>
+              <div class="metric"><strong>{{ decision_readiness.json_audit.stored_job_count }}</strong><span>Counted USA jobs</span></div>
+              <div class="metric"><strong>{{ decision_readiness.suggested_decision.replace("_", " ").title() }}</strong><span>Suggested decision</span></div>
+              <div class="metric"><strong>{{ pursuit.decision.replace("_", " ").title() if pursuit.decision else "Not set" }}</strong><span>Staff decision</span></div>
+            </section>
+            <section class="compact-card {% if pursue_gate.ready %}success-panel{% else %}caution-panel{% endif %}">
+              <h2>Pursue Now Gate</h2>
+              <p>{% if pursue_gate.ready %}This company has enough current job evidence, role fit, owner, region, and next action to be marked Pursue Now.{% else %}USCIS can support promotion, watch, or research. Pursue Now is blocked until these items are complete.{% endif %}</p>
+              <div class="gate-grid">
+                {% for check in pursue_gate.checks %}
+                  <span class="{% if check.done %}done{% endif %}"><strong>{{ "✓" if check.done else "!" }}</strong>{{ check.label }}</span>
+                {% endfor %}
+              </div>
+            </section>
+            <section class="grid-2">
+              <article class="compact-card">
+                <h2>Why This Decision</h2>
+                <p>{{ decision_readiness.rationale }}</p>
+                <p><strong>Rating:</strong> {{ decision_readiness.rating }}</p>
+                <p><strong>Top USCIS locations:</strong> {{ decision_readiness.uscis.top_locations|join("; ") or "No USCIS location detail available." }}</p>
+              </article>
+              <article class="compact-card">
+                <h2>Validation</h2>
+                <table class="data-list tight">
+                  <tbody>
+                    <tr><th>Company name match</th><td>{{ "Yes" if decision_readiness.json_audit.company_name_match else "Needs review" }}</td></tr>
+                    <tr><th>Imported name</th><td>{{ decision_readiness.json_audit.imported_company_name or "Not imported" }}</td></tr>
+                    <tr><th>Reported vs stored jobs</th><td>{{ decision_readiness.json_audit.reported_job_signal }} / {{ decision_readiness.json_audit.stored_job_count }}</td></tr>
+                    <tr><th>USA-confirmed jobs</th><td>{{ decision_readiness.json_audit.usa_confirmed_jobs }} / {{ decision_readiness.json_audit.stored_job_count }}</td></tr>
+                    <tr><th>Official job URLs</th><td>{{ decision_readiness.json_audit.official_job_urls }} / {{ decision_readiness.json_audit.stored_job_count }}</td></tr>
+                    <tr><th>Evidence window</th><td>{{ decision_readiness.json_audit.actual_evidence_window or "Not imported" }}</td></tr>
+                  </tbody>
+                </table>
+              </article>
+            </section>
+            {% if decision_readiness.blockers or decision_readiness.warnings %}
+              <section class="grid-2">
+                <article class="compact-card warn-panel">
+                  <h2>Blockers</h2>
+                  <ul class="stack-list">{% for item in decision_readiness.blockers %}<li>{{ item }}</li>{% else %}<li>No blockers.</li>{% endfor %}</ul>
+                </article>
+                <article class="compact-card caution-panel">
+                  <h2>Warnings</h2>
+                  <ul class="stack-list">{% for item in decision_readiness.warnings %}<li>{{ item }}</li>{% else %}<li>No warnings.</li>{% endfor %}</ul>
+                </article>
+              </section>
+            {% endif %}
+            <section class="grid-2">
+              <article class="compact-card">
+                <h2>Role Signal</h2>
+                <table class="data-list tight">
+                  <thead><tr><th>Role</th><th>Total</th><th>Verified</th><th>Estimated</th></tr></thead>
+                  <tbody>{% for role in decision_readiness.role_signals[:5] %}
+                    <tr><td>{{ role.name }}</td><td>{{ role.total }}</td><td>{{ role.verified }}</td><td>{{ role.estimated }}</td></tr>
+                  {% else %}<tr><td colspan="4" class="muted">No role signal yet.</td></tr>{% endfor %}</tbody>
+                </table>
+              </article>
+              <article class="compact-card">
+                <h2>Next Staff Actions</h2>
+                <ol>{% for item in decision_readiness.next_actions %}<li>{{ item }}</li>{% endfor %}</ol>
+              </article>
+            </section>
+            {% if decision_readiness.top_jobs %}
+              <section>
+                <h2>Top Supporting Postings</h2>
+                <table class="data-list">
+                  <thead><tr><th>Job</th><th>Role</th><th>Location</th><th>Confidence</th><th>Evidence</th></tr></thead>
+                  <tbody>{% for item in decision_readiness.top_jobs %}
+                    <tr><td>{{ item.job_title }}<br><span class="muted">{{ item.published_date or "date unknown" }}</span></td><td>{{ item.primary_marketing_role }}</td><td>{{ item.location }}</td><td>{{ item.confidence_score }}%</td><td>{% if item.official_job_url %}<a href="{{ item.official_job_url }}">Official posting</a>{% else %}<span class="pill warn">Missing URL</span>{% endif %}</td></tr>
+                  {% endfor %}</tbody>
+                </table>
+              </section>
+            {% endif %}
+          </section>
+
+          <h2>Company Intelligence Snapshot</h2>
+          {% if latest_snapshot %}
+            {% set role_counts = latest_snapshot.role_counts_json|from_json({}) %}
+            <section class="metrics compact">
+              <div class="metric"><strong>{{ latest_snapshot.total_eligible_usa_job_signal }}</strong><span>Total eligible USA signal</span></div>
+              <div class="metric"><strong>{{ latest_snapshot.verified_below_8_year_usa_jobs }}</strong><span>Verified &lt;8 YOE</span></div>
+              <div class="metric"><strong>{{ latest_snapshot.estimated_below_8_year_usa_jobs }}</strong><span>Estimated &lt;8 YOE</span></div>
+              <div class="metric"><strong>{{ "Yes" if latest_snapshot.is_full_window_coverage else "No" }}</strong><span>Full 12-month coverage</span></div>
+              <div class="metric"><strong>{{ latest_snapshot.company_rating or "Unrated" }}</strong><span>Company rating</span></div>
+            </section>
+            <section class="grid-2">
+              <article class="card stack">
+                <h2>Evidence Window</h2>
+                <table class="data-list">
+                  <tbody>
+                    <tr><th>Research date</th><td>{{ latest_snapshot.research_date or "Unknown" }}</td></tr>
+                    <tr><th>Requested window</th><td>{{ latest_snapshot.requested_research_window }}</td></tr>
+                    <tr><th>Actual evidence window</th><td>{{ latest_snapshot.actual_evidence_window or "Unknown" }}</td></tr>
+                    <tr><th>Count type</th><td>{{ latest_snapshot.count_type or "Unknown" }}</td></tr>
+                    <tr><th>Coverage gap</th><td>{{ latest_snapshot.coverage_gap_reason or "None recorded." }}</td></tr>
+                  </tbody>
+                </table>
+              </article>
+              <article class="card stack">
+                <h2>Recommendation</h2>
+                {% set recommendation = latest_snapshot.mintel_training_recommendation_json|from_json({}) %}
+                <p><strong>Top role:</strong> {{ latest_snapshot.top_marketing_role or "Not set" }}</p>
+                <p><strong>Second best:</strong> {{ latest_snapshot.second_best_role or "Not set" }}</p>
+                <p><strong>Priority role:</strong> {{ recommendation.priority_marketing_role or (recommendation.priority_marketing_roles or [])|join(", ") or "Not set" }}</p>
+                <p>{{ latest_snapshot.data_quality_notes or "No data quality notes recorded." }}</p>
+              </article>
+            </section>
+            <h2>Role Counts</h2>
+            <table class="data-list">
+              <thead><tr><th>Role</th><th>Verified &lt;8</th><th>Estimated &lt;8</th><th>Excluded Location</th><th>Excluded Seniority</th><th>Total Signal</th></tr></thead>
+              <tbody>
+                {% for slug, row in role_counts.items() %}
+                  <tr>
+                    <td><strong>{{ row.display_name or slug }}</strong><br><span class="muted">{{ slug }}</span></td>
+                    <td>{{ row.verified_below_8_yoe_usa_jobs or 0 }}</td>
+                    <td>{{ row.estimated_below_8_yoe_usa_jobs or 0 }}</td>
+                    <td>{{ row.excluded_location or 0 }}</td>
+                    <td>{{ row.excluded_seniority_risk or 0 }}</td>
+                    <td>{{ row.total_eligible_usa_signal or 0 }}</td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="6" class="muted">No role counts imported yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <div class="card stack">
+              <p class="muted">No company intelligence JSON has been imported yet.</p>
+              <a class="button" href="/pursuits/{{ pursuit.id }}?tab=prompt">Import OpenAI JSON</a>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        {% if active_tab == "job-postings" %}
+          <section class="job-evidence-hero card">
+            <div>
+              <h2>Job Evidence Review</h2>
+              <p class="muted">Use this page to decide whether previous USA postings support pursuing this USCIS-promoted company.</p>
+            </div>
+            <div class="job-evidence-score">
+              <strong>{{ job_posting_context.total }}</strong>
+              <span>Counted jobs</span>
+            </div>
+          </section>
+          <section class="metrics compact">
+            <div class="metric"><strong>{{ job_posting_context.verified }}</strong><span>Verified &lt;8 YOE</span></div>
+            <div class="metric"><strong>{{ job_posting_context.estimated }}</strong><span>Estimated &lt;8 YOE</span></div>
+            <div class="metric"><strong>{{ job_posting_context.usa_confirmed }}/{{ job_posting_context.total }}</strong><span>USA confirmed</span></div>
+            <div class="metric"><strong>{{ job_posting_context.official_urls }}/{{ job_posting_context.total }}</strong><span>Official URLs</span></div>
+            <div class="metric"><strong>{{ job_posting_context.average_confidence }}%</strong><span>Avg confidence</span></div>
+            <div class="metric"><strong>{{ job_posting_context.excluded_count }}</strong><span>Excluded jobs</span></div>
+          </section>
+          <div class="search-strip">
+            <input data-table-search="job-posting-table" placeholder="Search title, role, location, technology, experience, URL">
+            <span class="muted">Search review cards and detail rows</span>
+          </div>
+          <section class="job-evidence-layout">
+            <article class="card stack">
+              <h2>Role Coverage</h2>
+              {% for role in job_posting_context.role_groups %}
+                <div class="role-coverage-row">
+                  <div>
+                    <strong>{{ role.name }}</strong>
+                    <small>{{ role.slug }}</small>
+                  </div>
+                  <span>{{ role.total }} total</span>
+                  <em>{{ role.verified }} verified · {{ role.estimated }} estimated</em>
+                </div>
+              {% else %}
+                <p class="muted">No role coverage imported yet.</p>
+              {% endfor %}
+            </article>
+            <article class="card stack">
+              <h2>Repeated Technology Signals</h2>
+              <div class="tag-list">
+                {% for item in job_posting_context.top_technologies %}
+                  <span class="tech-chip"><strong>{{ item.name }}</strong><small>{{ item.count }}</small></span>
+                {% else %}
+                  <span class="muted">No technology signals imported yet.</span>
+                {% endfor %}
+              </div>
+            </article>
+          </section>
+
+          <section class="job-card-grid" id="job-posting-table">
+            {% for item in job_posting_context.jobs %}
+              {% set tech = item.technology_signals_json|from_json([]) %}
+              {% set use_cases = item.primary_use_cases_json|from_json([]) %}
+              <article class="job-review-card" data-search-row>
+                <div class="job-review-head">
+                  <div>
+                    <h2>{{ item.job_title }}</h2>
+                    <p>{{ item.location or "Location missing" }}{% if item.work_mode %} · {{ item.work_mode }}{% endif %}</p>
+                  </div>
+                  <span class="confidence-badge">{{ item.confidence_score }}%</span>
+                </div>
+                <div class="job-review-meta">
+                  <span>{{ item.primary_marketing_role or "Role not mapped" }}</span>
+                  <span>{{ item.published_date or "Date unknown" }}</span>
+                  <span>{{ item.match_strength or "Match" }}</span>
+                </div>
+                {% if item.official_job_url %}
+                  <div class="source-url-box">
+                    <span>Official source URL</span>
+                    <code>{{ item.official_job_url }}</code>
+                  </div>
+                {% endif %}
+                <dl class="job-review-facts">
+                  <div><dt>Experience</dt><dd>{{ item.experience_evidence_type.replace("_", " ") if item.experience_evidence_type else "Unknown" }}</dd></div>
+                  <div><dt>Evidence</dt><dd>{{ "Imported snapshot + URL" if item.official_job_url else "Imported snapshot only" }}</dd></div>
+                  <div><dt>USA</dt><dd>{{ "Confirmed" if item.usa_location_confirmed else "Needs review" }}</dd></div>
+                </dl>
+                {% if item.exact_experience_text_from_jd or item.estimated_experience_band or item.experience_filter_reason %}
+                  <p class="job-evidence-line">{{ item.exact_experience_text_from_jd or item.estimated_experience_band or item.experience_filter_reason }}</p>
+                {% endif %}
+                <div class="tag-list">{% for value in tech[:8] %}<span class="tag">{{ value }}</span>{% endfor %}</div>
+                <ul class="stack-list">{% for value in use_cases[:3] %}<li>{{ value }}</li>{% endfor %}</ul>
+                <details class="job-proof">
+                  <summary>Captured evidence for blocked or expired postings</summary>
+                  <dl>
+                    <div><dt>Why counted</dt><dd>{{ item.why_counted or "No reason imported." }}</dd></div>
+                    <div><dt>Experience reason</dt><dd>{{ item.experience_filter_reason or "No experience filter reason imported." }}</dd></div>
+                    <div><dt>Duplicate check</dt><dd>{{ item.duplicate_check or "No duplicate check imported." }}</dd></div>
+                  </dl>
+                </details>
+                <div class="inline-actions">
+                  {% if item.official_job_url %}<a class="button secondary" href="{{ item.official_job_url }}" target="_blank" rel="noreferrer noopener">Open Official Posting</a><button class="secondary copy-source-url" type="button" data-copy="{{ item.official_job_url }}">Copy URL</button>{% endif %}
+                  <a class="button secondary" href="/pursuits/{{ pursuit.id }}?tab=tech-stack">Review Stack</a>
+                </div>
+              </article>
+            {% else %}
+              <article class="card"><p class="muted">No imported job postings yet. Import OpenAI JSON from the OpenAI tab.</p></article>
+            {% endfor %}
+          </section>
+
+          <details class="raw-details">
+            <summary>View compact audit table</summary>
+            <table class="data-list searchable-table">
+              <thead><tr><th class="sno">S No</th><th>Job</th><th>Role</th><th>Location</th><th>Experience</th><th>Evidence</th></tr></thead>
+              <tbody>
+                {% for item in job_posting_context.jobs %}
+                  <tr><td class="sno">{{ loop.index }}</td><td><strong>{{ item.job_title }}</strong><br><span class="muted">{{ item.job_id or "No job ID" }} · {{ item.published_date or "date unknown" }}</span></td><td>{{ item.primary_marketing_role }}</td><td>{{ item.location }}</td><td>{{ item.experience_evidence_type or "Unknown" }}</td><td>{% if item.official_job_url %}<a href="{{ item.official_job_url }}" target="_blank" rel="noreferrer noopener">Official</a>{% else %}<span class="pill warn">Missing URL</span>{% endif %}</td></tr>
+                {% else %}
+                  <tr><td colspan="6" class="muted">No imported job postings yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </details>
+          {% if structured.excluded_job_postings %}
+            <details class="raw-details">
+              <summary>Review {{ structured.excluded_job_postings|length }} excluded jobs</summary>
+              <table class="data-list searchable-table">
+                <thead><tr><th>Group</th><th>Job</th><th>Location</th><th>Role</th><th>Reason</th><th>URL</th></tr></thead>
+                <tbody>{% for item in structured.excluded_job_postings %}
+                  <tr><td>{{ item.exclusion_group }}</td><td>{{ item.job_title }}</td><td>{{ item.location }}</td><td>{{ item.primary_marketing_role }}</td><td>{{ item.exclusion_reason or item.experience_filter_reason }}</td><td>{% if item.official_job_url %}<a href="{{ item.official_job_url }}" target="_blank" rel="noreferrer noopener">Source</a>{% endif %}</td></tr>
+                {% endfor %}</tbody>
+              </table>
+            </details>
+          {% endif %}
+        {% endif %}
+
+        {% if active_tab == "tech-stack" %}
+          <section class="tech-stack-hero card">
+            <div>
+              <h2>Company Technology Signal</h2>
+              <p class="muted">Consolidated from imported company summary, role signal, structured evidence, and counted USA job postings.</p>
+            </div>
+            <div class="tech-stack-stat">
+              <strong>{{ tech_stack_context.total }}</strong>
+              <span>Technologies</span>
+            </div>
+          </section>
+          <div class="search-strip">
+            <input data-table-search="tech-stack-rows" placeholder="Search technology, category, role, or source">
+            <span class="muted">Search the detail rows below</span>
+          </div>
+
+          <section class="tech-priority-grid">
+            <article class="card stack">
+              <h2>Most Supported Technologies</h2>
+              <div class="ranked-tech-list">
+                {% for item in tech_stack_context.featured %}
+                  <div class="ranked-tech">
+                    <span class="rank">{{ loop.index }}</span>
+                    <div>
+                      <strong>{{ item.name }}</strong>
+                      <small>{{ item.category }}{% if item.roles %} · {{ item.roles|join(", ") }}{% endif %}</small>
+                    </div>
+                    <em>{{ item.posting_count or "summary" }}</em>
+                  </div>
+                {% else %}
+                  <p class="muted">No consolidated technology signal yet.</p>
+                {% endfor %}
+              </div>
+            </article>
+            <article class="card stack">
+              <h2>Role Alignment</h2>
+              {% for role in tech_stack_context.role_groups[:5] %}
+                <div class="role-tech-row">
+                  <strong>{{ role.role }}</strong>
+                  <span>{{ role.posting_support }} posting signals</span>
+                  <div class="tag-list">{% for item in role.technologies[:6] %}<span class="tag">{{ item.name }}</span>{% endfor %}</div>
+                </div>
+              {% else %}
+                <p class="muted">No role-linked technology evidence yet.</p>
+              {% endfor %}
+            </article>
+          </section>
+
+          <section class="tech-category-grid">
+            {% for category in tech_stack_context.categories %}
+              <article class="tech-category-card">
+                <strong>{{ category.category }}</strong>
+                <span>{{ category.count }} technologies · {{ category.posting_support }} posting signals</span>
+                <div class="tag-list">{% for item in category.top %}<span class="tag">{{ item.name }}</span>{% endfor %}</div>
+              </article>
+            {% else %}
+              <article class="card"><p class="muted">No imported tech stack yet. Import company intelligence JSON from the OpenAI tab.</p></article>
+            {% endfor %}
+          </section>
+
+          <h2>Category Inventory</h2>
+          <section class="tech-inventory-list">
+            {% for group in tech_stack_context.grouped %}
+              <details class="tech-inventory-card" data-search-row {% if loop.index <= 4 %}open{% endif %}>
+                <summary class="tech-inventory-head">
+                  <span>{{ group.category }}</span>
+                  <strong>{{ group.technologies|length }}</strong>
+                </summary>
+                <div class="tech-chip-list">
+                  {% for item in group.technologies %}
+                    <span class="tech-chip" title="{{ item.sources|join(', ') }}{% if item.roles %} · {{ item.roles|join(', ') }}{% endif %}">
+                      <strong>{{ item.name }}</strong>
+                      {% if item.posting_count %}<small>{{ item.posting_count }}</small>{% endif %}
+                    </span>
+                  {% endfor %}
+                </div>
+              </details>
+            {% else %}
+              <article class="card"><p class="muted">No imported tech stack yet. Import company intelligence JSON from the prompt tab.</p></article>
+            {% endfor %}
+          </section>
+          <h2>Consolidated Search Rows</h2>
+          <table class="data-list searchable-table" id="tech-stack-rows">
+            <thead><tr><th class="sno">S No</th><th>Category</th><th>Technology</th><th>Posting Support</th><th>Roles</th><th>Sources</th></tr></thead>
+            <tbody>{% for item in tech_stack_context.flat %}
+              <tr data-search-row><td class="sno">{{ loop.index }}</td><td>{{ item.category }}</td><td><strong>{{ item.name }}</strong></td><td>{{ item.posting_count or "Summary" }}</td><td>{{ item.roles|join(", ") or "Company-level" }}</td><td>{{ item.sources|join(", ") }}</td></tr>
+            {% else %}<tr><td colspan="6" class="muted">No imported technologies yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          {% if structured.technologies %}
+            <details class="raw-details">
+              <summary>View raw imported technology evidence</summary>
+              <table class="data-list">
+                <thead><tr><th class="sno">S No</th><th>Imported Category</th><th>Technology</th><th>Evidence</th><th>Confidence</th></tr></thead>
+                <tbody>{% for item in structured.technologies %}
+                  <tr><td class="sno">{{ loop.index }}</td><td>{{ item.category }}</td><td><strong>{{ item.name }}</strong></td><td>{{ item.evidence }}</td><td>{{ item.confidence }}</td></tr>
+                {% endfor %}</tbody>
+              </table>
+            </details>
+          {% endif %}
+        {% endif %}
+
+        {% if active_tab == "use-cases" %}
+          <h2>Use Cases</h2>
+          {% if latest_snapshot %}
+            {% set company_use_cases = latest_snapshot.company_level_use_cases_json|from_json([]) %}
+            {% set role_use_cases = latest_snapshot.role_wise_use_cases_json|from_json({}) %}
+            {% set recommendation = latest_snapshot.mintel_training_recommendation_json|from_json({}) %}
+            <section class="grid-2">
+              <article class="card stack">
+                <h2>Company-Level Use Cases</h2>
+                <ol>{% for item in company_use_cases %}<li>{{ item }}</li>{% else %}<li class="muted">No company use cases imported.</li>{% endfor %}</ol>
+              </article>
+              <article class="card stack">
+                <h2>Training Recommendation</h2>
+                <p><strong>Priority role:</strong> {{ recommendation.priority_marketing_role or (recommendation.priority_marketing_roles or [])|join(", ") or "Not set" }}</p>
+                <p><strong>Teach first:</strong> {{ (recommendation.technologies_to_teach_first or [])|join(", ") }}</p>
+                <p><strong>Resume keywords:</strong> {{ (recommendation.resume_keywords_to_emphasize or [])|join(", ") }}</p>
+              </article>
+            </section>
+            <h2>Role-Wise Use Cases</h2>
+            <section class="role-usecase-grid">
+              {% for role, values in role_use_cases.items() %}
+                <article class="compact-card">
+                  <h2>{{ role.replace("_", " ").title() }}</h2>
+                  <ul class="stack-list">{% for item in values %}<li>{{ item }}</li>{% else %}<li>No use cases imported.</li>{% endfor %}</ul>
+                </article>
+              {% else %}
+                <p class="muted">No role-wise use cases imported.</p>
+              {% endfor %}
+            </section>
+          {% else %}
+            <p class="muted">Import company intelligence JSON to see use cases.</p>
+          {% endif %}
+        {% endif %}
+
+        {% if active_tab == "requirements" %}
+          <h2>Structured Requirements</h2>
+          <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+            <label>Title<input name="title" placeholder="Data Engineer"></label>
+            <label>Location<input name="location" placeholder="Dallas, TX"></label>
+            <label>Seen<input name="posted_or_seen_date" placeholder="2026-05"></label>
+            <label>Type<input name="employment_type" placeholder="Contract"></label>
+            <label class="wide">Technologies<input name="technologies" placeholder="Python, AWS, Snowflake"></label>
+            <label>Marketing Role<select name="marketing_role_id"><option value="">Auto classify</option>{% for role in marketing_roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label>
+            <label>Confidence<select name="confidence"><option value="">Unknown</option><option>high</option><option>medium</option><option>low</option></select></label>
+            <label>Source URL<input name="source_url" placeholder="https://"></label>
+            <label class="full">Work Auth Language<input name="work_auth_language" placeholder="Sponsorship / C2C / W2 language"></label>
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/requirements" formmethod="post">Add Requirement</button>
+          </fieldset>
+          <table class="data-list">
+            <thead><tr><th class="sno">S No</th><th>Title</th><th>Marketing Role</th><th>Location</th><th>Seen</th><th>Technologies</th><th>Evidence</th><th>Confidence</th><th></th></tr></thead>
+            <tbody>{% for item in structured.requirements %}
+              <tr><td class="sno">{{ loop.index }}</td><td>{{ item.title }}</td><td>{% if item.marketing_role %}<span class="pill">{{ item.marketing_role.name }}</span>{% else %}<span class="muted">Unclassified</span>{% endif %}</td><td>{{ item.location }}</td><td>{{ item.posted_or_seen_date }}</td><td>{{ item.technologies }}</td><td>{% if item.source_url %}<a href="{{ item.source_url }}">Source</a>{% else %}<span class="pill warn">Missing source</span>{% endif %}</td><td>{{ item.confidence }}</td><td class="right">{% if can_edit_pursuit %}<button class="secondary" type="submit" formaction="/pursuits/{{ pursuit.id }}/requirements/{{ item.id }}/create-job" formmethod="post">Create Job</button>{% endif %}</td></tr>
+            {% else %}<tr><td colspan="9" class="muted">No structured requirements yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          <section class="card stack">
+            <h2>Imported Requirements Summary</h2>
+            <div class="summary-rendered">{{ (pursuit.recent_requirements|summary_html) or "No imported requirement summary yet." }}</div>
+          </section>
+          {% if can_edit_pursuit %}
+            <details class="raw-details">
+              <summary>Edit manual requirements summary</summary>
+              <label>Requirements Posted In Last 12 Months<textarea name="recent_requirements" placeholder="Paste staff notes for recent job requirements">{{ pursuit.recent_requirements }}</textarea></label>
+            </details>
+          {% else %}
+            <input type="hidden" name="recent_requirements" value="{{ pursuit.recent_requirements }}">
+          {% endif %}
+        {% else %}
+          <input type="hidden" name="recent_requirements" value="{{ pursuit.recent_requirements }}">
+        {% endif %}
+
+        {% if active_tab == "technologies" %}
+          <h2>Structured Technologies</h2>
+          <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+            <label>Category<select name="category"><option value="languages">Languages</option><option value="frameworks">Frameworks</option><option value="cloud">Cloud</option><option value="data_platforms">Data Platforms</option><option value="devops_tools">DevOps Tools</option><option value="enterprise_tools">Enterprise Tools</option><option value="role_families">Role Families</option></select></label>
+            <label>Name<input name="name" placeholder="AWS"></label>
+            <label class="wide">Evidence<input name="evidence" placeholder="Seen in recent requirements"></label>
+            <label>Confidence<select name="confidence"><option value="">Unknown</option><option>high</option><option>medium</option><option>low</option></select></label>
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/technologies" formmethod="post">Add Technology</button>
+          </fieldset>
+          <table class="data-list">
+            <thead><tr><th class="sno">S No</th><th>Category</th><th>Name</th><th>Evidence</th><th>Confidence</th></tr></thead>
+            <tbody>{% for item in structured.technologies %}
+              <tr><td class="sno">{{ loop.index }}</td><td>{{ item.category }}</td><td>{{ item.name }}</td><td>{{ item.evidence }}</td><td>{{ item.confidence }}</td></tr>
+            {% else %}<tr><td colspan="5" class="muted">No structured technologies yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          <section class="card stack">
+            <h2>Imported Technology Summary</h2>
+            <div class="summary-rendered">{{ (pursuit.technology_stack|summary_html) or "No imported technology summary yet." }}</div>
+          </section>
+          {% if can_edit_pursuit %}
+            <details class="raw-details">
+              <summary>Edit manual technology summary</summary>
+              <label>Technologies Used<textarea name="technology_stack" placeholder="Languages, frameworks, cloud, data platforms, tools, enterprise systems">{{ pursuit.technology_stack }}</textarea></label>
+            </details>
+          {% else %}
+            <input type="hidden" name="technology_stack" value="{{ pursuit.technology_stack }}">
+          {% endif %}
+        {% else %}
+          <input type="hidden" name="technology_stack" value="{{ pursuit.technology_stack }}">
+        {% endif %}
+
+        {% if active_tab == "submissions" %}
+          <section class="card stack">
+            <h2>Submission Intelligence</h2>
+            <div class="summary-rendered">{{ (pursuit.submission_intelligence|summary_html) or "No submission intelligence imported yet." }}</div>
+          </section>
+          {% if can_edit_pursuit %}
+            <details class="raw-details">
+              <summary>Edit manual submission intelligence</summary>
+              <label>Submission Intelligence<textarea name="submission_intelligence" placeholder="Best profiles, departments, locations, work-auth language, submission risks">{{ pursuit.submission_intelligence }}</textarea></label>
+            </details>
+          {% else %}
+            <input type="hidden" name="submission_intelligence" value="{{ pursuit.submission_intelligence }}">
+          {% endif %}
+        {% else %}
+          <input type="hidden" name="submission_intelligence" value="{{ pursuit.submission_intelligence }}">
+        {% endif %}
+
+        {% if active_tab == "contacts" %}
+          <h2>Structured Contacts</h2>
+          <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+            <label>Name<input name="name" placeholder="Contact name"></label>
+            <label>Title<input name="title" placeholder="Talent Acquisition"></label>
+            <label>Department<input name="department" placeholder="HR / Engineering"></label>
+            <label>Location<input name="location" placeholder="City, ST"></label>
+            <label>Email<input name="email" placeholder="name@company.com"></label>
+            <label>Phone<input name="phone"></label>
+            <label class="wide">LinkedIn<input name="linkedin_url" placeholder="https://linkedin.com/in/..."></label>
+            <label class="wide">Source URL<input name="source_url" placeholder="https://"></label>
+            <label>Confidence<select name="confidence"><option value="">Unknown</option><option>high</option><option>medium</option><option>low</option></select></label>
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/contacts" formmethod="post">Add Contact</button>
+          </fieldset>
+          <table class="data-list">
+            <thead><tr><th class="sno">S No</th><th>Name</th><th>Title</th><th>Department</th><th>Email</th><th>LinkedIn</th><th>Confidence</th></tr></thead>
+            <tbody>{% for item in structured.contacts %}
+              <tr><td class="sno">{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.title }}</td><td>{{ item.department }}</td><td>{{ item.email }}</td><td>{% if item.linkedin_url %}<a href="{{ item.linkedin_url }}">Profile</a>{% endif %}</td><td>{{ item.confidence }}</td></tr>
+            {% else %}<tr><td colspan="7" class="muted">No structured contacts yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          {% if can_edit_pursuit %}
+            <details class="raw-details">
+              <summary>Edit manual contact notes</summary>
+              <label>Company Points Of Contact<textarea name="company_contacts" placeholder="Recruiters, hiring managers, engineering/data/cloud leaders, procurement contacts">{{ pursuit.company_contacts }}</textarea></label>
+            </details>
+          {% else %}
+            <input type="hidden" name="company_contacts" value="{{ pursuit.company_contacts }}">
+          {% endif %}
+        {% else %}
+          <input type="hidden" name="company_contacts" value="{{ pursuit.company_contacts }}">
+        {% endif %}
+
+        {% if active_tab == "vendors" %}
+          <h2>Structured Prime Vendors</h2>
+          <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+            <label>Vendor<input name="vendor_name" placeholder="Prime vendor"></label>
+            <label class="wide">Relationship Evidence<input name="relationship_evidence" placeholder="Evidence of relationship"></label>
+            <label class="wide">Focus<input name="technology_or_role_focus" placeholder="Data, cloud, QA, implementation"></label>
+            <label>Source URL<input name="source_url" placeholder="https://"></label>
+            <label>Confidence<select name="confidence"><option value="">Unknown</option><option>high</option><option>medium</option><option>low</option></select></label>
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/vendors" formmethod="post">Add Vendor</button>
+          </fieldset>
+          <table class="data-list">
+            <thead><tr><th class="sno">S No</th><th>Vendor</th><th>Relationship Evidence</th><th>Focus</th><th>Source</th><th>Confidence</th></tr></thead>
+            <tbody>{% for item in structured.vendors %}
+              <tr><td class="sno">{{ loop.index }}</td><td>{{ item.vendor_name }}</td><td>{{ item.relationship_evidence }}</td><td>{{ item.technology_or_role_focus }}</td><td>{% if item.source_url %}<a href="{{ item.source_url }}">Source</a>{% endif %}</td><td>{{ item.confidence }}</td></tr>
+            {% else %}<tr><td colspan="6" class="muted">No structured prime vendors yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          {% if can_edit_pursuit %}
+            <details class="raw-details">
+              <summary>Edit manual vendor notes</summary>
+              <label>Prime Vendors / Implementation Partners<textarea name="prime_vendors" placeholder="Prime vendors, implementation partners, relationship evidence, technology focus">{{ pursuit.prime_vendors }}</textarea></label>
+            </details>
+          {% else %}
+            <input type="hidden" name="prime_vendors" value="{{ pursuit.prime_vendors }}">
+          {% endif %}
+        {% else %}
+          <input type="hidden" name="prime_vendors" value="{{ pursuit.prime_vendors }}">
+        {% endif %}
+
+        {% if active_tab == "managers" %}
+          <h2>Structured C2C Managers</h2>
+          <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+            <label>Name<input name="name" placeholder="Manager / recruiter"></label>
+            <label>Company/Vendor<input name="company_or_vendor" placeholder="Vendor"></label>
+            <label>Title<input name="title" placeholder="Recruiting Manager"></label>
+            <label class="wide">Role Focus<input name="role_focus" placeholder="C2C Java, Data Engineer, DevOps"></label>
+            <label class="wide">LinkedIn<input name="linkedin_url" placeholder="https://linkedin.com/in/..."></label>
+            <label>Source URL<input name="source_url" placeholder="https://"></label>
+            <label>Confidence<select name="confidence"><option value="">Unknown</option><option>high</option><option>medium</option><option>low</option></select></label>
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/managers" formmethod="post">Add Manager</button>
+          </fieldset>
+          <table class="data-list">
+            <thead><tr><th class="sno">S No</th><th>Name</th><th>Company/Vendor</th><th>Title</th><th>Role Focus</th><th>LinkedIn</th><th>Confidence</th></tr></thead>
+            <tbody>{% for item in structured.managers %}
+              <tr><td class="sno">{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.company_or_vendor }}</td><td>{{ item.title }}</td><td>{{ item.role_focus }}</td><td>{% if item.linkedin_url %}<a href="{{ item.linkedin_url }}">Profile</a>{% endif %}</td><td>{{ item.confidence }}</td></tr>
+            {% else %}<tr><td colspan="7" class="muted">No structured C2C managers yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          {% if can_edit_pursuit %}
+            <details class="raw-details">
+              <summary>Edit manual C2C notes</summary>
+              <label>C2C Managers / Vendor Recruiters<textarea name="c2c_managers" placeholder="Managers or recruiters tied to C2C roles, vendor contacts, source links">{{ pursuit.c2c_managers }}</textarea></label>
+            </details>
+          {% else %}
+            <input type="hidden" name="c2c_managers" value="{{ pursuit.c2c_managers }}">
+          {% endif %}
+        {% else %}
+          <input type="hidden" name="c2c_managers" value="{{ pursuit.c2c_managers }}">
+        {% endif %}
+
+        {% if active_tab == "prompt" %}
+          {% if can_run_research %}
+          <div class="inline-actions">
+            <button type="submit" formaction="/pursuits/{{ pursuit.id }}/research/run-openai" formmethod="post">Run OpenAI Research</button>
+          </div>
+          {% endif %}
+          <h2>Research Jobs</h2>
+          <table class="data-list">
+            <thead><tr><th class="sno">S No</th><th>Status</th><th>Model</th><th>Error</th><th>Created</th></tr></thead>
+            <tbody>{% for item in structured.jobs %}
+              <tr><td class="sno">{{ loop.index }}</td><td>{{ item.status }}</td><td>{{ item.model }}</td><td>{{ item.error }}</td><td>{{ item.created_at }}</td></tr>
+            {% else %}<tr><td colspan="5" class="muted">No research jobs yet.</td></tr>{% endfor %}</tbody>
+          </table>
+          <label>OpenAI Company Research Prompt<textarea name="research_prompt">{{ research_prompt }}</textarea></label>
+          <label>Import OpenAI JSON<textarea name="research_json" placeholder="Paste valid JSON response here to populate structured tabs"></textarea></label>
+          {% if can_edit_pursuit %}<button type="submit" formaction="/pursuits/{{ pursuit.id }}/research/import-json" formmethod="post">Import JSON To Tabs</button>{% endif %}
+        {% else %}
+          <input type="hidden" name="research_prompt" value="{{ research_prompt }}">
+        {% endif %}
+
+        {% if active_tab == "notes" %}
+          <div class="stack">
+            <label>Research Summary<textarea name="research_summary" placeholder="Short decision-ready summary">{{ pursuit.research_summary }}</textarea></label>
+            <label>Decision Notes<textarea name="notes" placeholder="Staff notes, objections, closing strategy, risks">{{ pursuit.notes }}</textarea></label>
+            <h2>Managed Owner Notes</h2>
+            <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+              <label>Category<select name="category"><option value="owner_note">Owner Note</option><option value="opportunity">Opportunity</option><option value="risk">Risk</option><option value="follow_up">Follow-up</option><option value="decision">Decision</option></select></label>
+              <label class="wide">Note<input name="body" placeholder="Add a managed owner note"></label>
+              <label class="check-inline"><input type="checkbox" name="pinned" value="true"> Pinned</label>
+              <button type="submit" formaction="/pursuits/{{ pursuit.id }}/notes" formmethod="post">Add Note</button>
+            </fieldset>
+            <table class="data-list">
+              <thead><tr><th class="sno">S No</th><th>Category</th><th>Note</th><th>Owner</th><th>Created</th><th></th></tr></thead>
+              <tbody>{% for item in structured.notes %}
+                <tr><td class="sno">{{ loop.index }}</td><td><input form="note-edit-{{ item.id }}" name="category" value="{{ item.category }}"></td><td><input form="note-edit-{{ item.id }}" name="body" value="{{ item.body }}"></td><td>{{ item.author }}</td><td>{{ item.created_at }}</td><td class="right">{% if can_edit_pursuit %}<label class="check-inline"><input form="note-edit-{{ item.id }}" type="checkbox" name="pinned" value="true" {% if item.pinned %}checked{% endif %}> Pin</label><button class="secondary" type="submit" form="note-edit-{{ item.id }}">Save</button><button class="secondary" type="submit" formaction="/pursuits/{{ pursuit.id }}/notes/{{ item.id }}/archive" formmethod="post">Archive</button>{% endif %}</td></tr>
+              {% else %}<tr><td colspan="6" class="muted">No managed owner notes yet.</td></tr>{% endfor %}</tbody>
+            </table>
+            <h2>Evidence</h2>
+            <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+              <label>Kind<input name="kind" placeholder="requirement"></label>
+              <label>Label<input name="label" placeholder="Evidence label"></label>
+              <label class="wide">URL<input name="url" placeholder="https://"></label>
+              <label class="wide">Notes<input name="evidence_notes" placeholder="Why this evidence matters"></label>
+              <label>Confidence<select name="confidence"><option value="">Unknown</option><option>high</option><option>medium</option><option>low</option></select></label>
+              <button type="submit" formaction="/pursuits/{{ pursuit.id }}/evidence" formmethod="post">Add Evidence</button>
+            </fieldset>
+            <table class="data-list">
+              <thead><tr><th class="sno">S No</th><th>Kind</th><th>Label</th><th>URL</th><th>Confidence</th></tr></thead>
+              <tbody>{% for item in structured.evidence %}
+                <tr><td class="sno">{{ loop.index }}</td><td>{{ item.kind }}</td><td>{{ item.label }}</td><td><a href="{{ item.url }}">Source</a></td><td>{{ item.confidence }}</td></tr>
+              {% else %}<tr><td colspan="5" class="muted">No evidence links yet.</td></tr>{% endfor %}</tbody>
+            </table>
+            <h2>Activity</h2>
+            <fieldset class="card mini-form" {% if not can_edit_pursuit %}disabled{% endif %}>
+              <label>Type<input name="activity_type" value="note"></label>
+              <label class="wide">Summary<input name="summary" placeholder="Called recruiter, sent profile, reviewed posting"></label>
+              <label>Due<input name="due_at" placeholder="2026-05-20"></label>
+              <button type="submit" formaction="/pursuits/{{ pursuit.id }}/activities" formmethod="post">Add Activity</button>
+            </fieldset>
+            <table class="data-list">
+              <thead><tr><th class="sno">S No</th><th>Type</th><th>Summary</th><th>Actor</th><th>Created</th></tr></thead>
+              <tbody>{% for item in structured.activities %}
+                <tr><td class="sno">{{ loop.index }}</td><td>{{ item.activity_type }}</td><td>{{ item.summary }}</td><td>{{ item.actor }}</td><td>{{ item.created_at }}</td></tr>
+              {% else %}<tr><td colspan="5" class="muted">No activity yet.</td></tr>{% endfor %}</tbody>
+            </table>
+          </div>
+        {% else %}
+          <input type="hidden" name="research_summary" value="{{ pursuit.research_summary }}">
+          <input type="hidden" name="notes" value="{{ pursuit.notes }}">
+        {% endif %}
+      </main>
+    </section>
+  </form>
+  {% for item in structured.notes %}
+    <form id="note-edit-{{ item.id }}" method="post" action="/pursuits/{{ pursuit.id }}/notes/{{ item.id }}/update"></form>
+  {% endfor %}
+  <style>
+    .workspace-menu { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 16px; }
+    .menu-group { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px; }
+    .menu-group > strong { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+    .menu-links { display: flex; flex-wrap: wrap; gap: 6px; }
+    .menu-link { display: inline-flex; align-items: center; min-height: 32px; border: 1px solid #dbe4ec; border-radius: 6px; background: #f8fafc; color: var(--ink); padding: 5px 8px; text-decoration: none; font-size: 13px; font-weight: 800; }
+    .menu-link.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .workspace-summary { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fbfdff; padding: 12px; }
+    .workspace-summary h2 { margin: 0; font-size: 16px; }
+    .workspace-summary dl { display: grid; gap: 7px; margin: 0; }
+    .workspace-summary dl div { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: start; }
+    .workspace-summary dt { color: var(--muted); font-weight: 850; }
+    .workspace-summary dd { margin: 0; overflow-wrap: anywhere; }
+    .side-actions { display: grid; gap: 8px; }
+    .side-actions .button { justify-content: center; text-align: center; }
+    .workflow-hero { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+    .workflow-hero h2 { margin: 0 0 4px; }
+    .workflow-hero p { margin: 0; }
+    .workflow-pill { border: 1px solid rgba(15, 118, 110, .25); border-radius: 999px; background: #eefcf8; color: var(--accent-dark); padding: 6px 10px; font-weight: 850; white-space: nowrap; }
+    .workflow-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .workflow-panel { display: grid; gap: 10px; align-content: start; margin: 0; }
+    .workflow-panel h2 { margin: 0; font-size: 16px; }
+    .workflow-panel.wide { grid-column: 1 / -1; }
+    .workflow-two { display: grid; grid-template-columns: minmax(180px, .6fr) minmax(0, 1.4fr); gap: 10px; align-items: stretch; }
+    .workflow-panel textarea { min-height: 120px; }
+    .job-evidence-hero { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .job-evidence-hero h2 { margin: 0 0 4px; }
+    .job-evidence-hero p { margin: 0; }
+    .job-evidence-score { min-width: 130px; border: 1px solid rgba(15, 118, 110, .22); border-radius: 8px; background: #eefcf8; color: var(--accent-dark); padding: 10px 12px; text-align: right; }
+    .job-evidence-score strong { display: block; font-size: 30px; line-height: 1; }
+    .job-evidence-score span { display: block; font-size: 12px; font-weight: 850; }
+    .job-evidence-layout { display: grid; grid-template-columns: minmax(320px, .85fr) minmax(0, 1.15fr); gap: 12px; margin-bottom: 12px; }
+    .role-coverage-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; border-bottom: 1px solid var(--line); padding: 8px 0; }
+    .role-coverage-row:first-of-type { padding-top: 0; }
+    .role-coverage-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .role-coverage-row small { display: block; margin-top: 2px; color: var(--muted); }
+    .role-coverage-row > span { color: var(--accent-dark); font-weight: 850; }
+    .role-coverage-row em { grid-column: 1 / -1; color: var(--muted); font-size: 12px; font-style: normal; font-weight: 800; }
+    .job-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .job-review-card { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 14px; }
+    .job-review-head { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+    .job-review-head h2 { margin: 0 0 4px; font-size: 18px; line-height: 1.2; }
+    .job-review-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .confidence-badge { display: inline-grid; place-items: center; min-width: 48px; height: 34px; border-radius: 999px; background: #eefcf8; color: var(--accent-dark); font-weight: 900; }
+    .job-review-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+    .job-review-meta span { border: 1px solid #d8e2ea; border-radius: 999px; background: #f8fafc; padding: 4px 8px; color: var(--muted); font-size: 12px; font-weight: 800; }
+    .source-url-box { display: grid; gap: 4px; border: 1px solid #d8e2ea; border-radius: 8px; background: #fbfdff; padding: 8px; }
+    .source-url-box span { color: var(--muted); font-size: 11px; font-weight: 850; text-transform: uppercase; }
+    .source-url-box code { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); font-size: 12px; }
+    .job-review-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+    .job-review-facts div { border: 1px solid var(--line); border-radius: 8px; background: #fbfdff; padding: 8px; }
+    .job-review-facts dt { color: var(--muted); font-size: 11px; font-weight: 850; text-transform: uppercase; }
+    .job-review-facts dd { margin: 3px 0 0; font-size: 13px; font-weight: 800; overflow-wrap: anywhere; }
+    .job-evidence-line { margin: 0; color: var(--muted); line-height: 1.4; }
+    .job-proof { border: 1px solid var(--line); border-radius: 8px; background: #fbfdff; padding: 8px 10px; }
+    .job-proof summary { cursor: pointer; color: var(--accent-dark); font-weight: 850; }
+    .job-proof dl { display: grid; gap: 8px; margin: 10px 0 0; }
+    .job-proof dt { color: var(--muted); font-size: 11px; font-weight: 850; text-transform: uppercase; }
+    .job-proof dd { margin: 2px 0 0; line-height: 1.4; }
+    .search-strip { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
+    .search-strip input { max-width: 520px; }
+    .decision-readiness { margin-bottom: 18px; border-left: 4px solid var(--accent); }
+    .decision-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+    .decision-head h2 { margin: 0 0 4px; }
+    .decision-head p { margin: 0; }
+    .readiness-score { min-width: 160px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; text-align: right; background: #f8fafc; }
+    .readiness-score strong { display: block; font-size: 28px; line-height: 1; color: var(--accent-dark); }
+    .readiness-score span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 800; }
+    .data-list.tight th, .data-list.tight td { padding: 6px 8px; }
+    .warn-panel { border-left: 4px solid #b42318; }
+    .caution-panel { border-left: 4px solid #b7791f; }
+    .success-panel { border-left: 4px solid var(--accent); }
+    .gate-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .gate-grid span { align-items: center; border: 1px solid var(--line); border-radius: 999px; display: inline-flex; gap: 6px; padding: 6px 10px; }
+    .gate-grid span strong { align-items: center; background: #fff4d6; border-radius: 999px; color: #92400e; display: inline-flex; height: 22px; justify-content: center; width: 22px; }
+    .gate-grid span.done strong { background: #dff5f1; color: var(--accent-dark); }
+    .emphasis-tags .tag { font-size: 13px; padding: 5px 8px; background: #eefcf8; border-color: rgba(15, 118, 110, 0.25); color: var(--accent-dark); }
+    .tech-stack-hero { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .tech-stack-hero h2 { margin: 0 0 4px; }
+    .tech-stack-hero p { margin: 0; }
+    .tech-stack-stat { min-width: 130px; border: 1px solid rgba(15, 118, 110, .22); border-radius: 8px; background: #eefcf8; color: var(--accent-dark); padding: 10px 12px; text-align: right; }
+    .tech-stack-stat strong { display: block; font-size: 30px; line-height: 1; }
+    .tech-stack-stat span { display: block; color: var(--accent-dark); font-size: 12px; font-weight: 850; }
+    .tech-priority-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: 12px; margin-bottom: 12px; }
+    .ranked-tech-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .ranked-tech { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: #fbfdff; padding: 8px; }
+    .ranked-tech .rank { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 999px; background: #dff5f1; color: var(--accent-dark); font-size: 12px; font-weight: 900; }
+    .ranked-tech strong, .role-tech-row strong { display: block; overflow-wrap: anywhere; }
+    .ranked-tech small { display: block; margin-top: 2px; color: var(--muted); line-height: 1.3; }
+    .ranked-tech em { font-style: normal; color: var(--muted); font-size: 12px; font-weight: 850; }
+    .role-tech-row { display: grid; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 9px; }
+    .role-tech-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .role-tech-row > span { color: var(--muted); font-size: 12px; font-weight: 800; }
+    .tech-category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+    .tech-category-card { display: grid; gap: 8px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: #fff; padding: 10px; }
+    .tech-category-card > span { color: var(--muted); font-size: 12px; font-weight: 800; }
+    .tech-inventory-list { display: grid; gap: 8px; margin: 8px 0 18px; }
+    .tech-inventory-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; }
+    .tech-inventory-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; color: var(--accent-dark); font-weight: 850; }
+    .tech-inventory-head strong { display: inline-grid; place-items: center; min-width: 28px; height: 24px; border-radius: 999px; background: #eefcf8; color: var(--accent-dark); font-size: 12px; }
+    .tech-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    details.tech-inventory-card .tech-chip-list { margin-top: 10px; }
+    .tech-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d8e2ea; background: #f8fafc; border-radius: 999px; padding: 5px 8px; line-height: 1.2; }
+    .tech-chip strong { font-size: 13px; }
+    .tech-chip small { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 999px; background: #dff5f1; color: var(--accent-dark); font-weight: 850; font-size: 11px; }
+    .tech-summary-grid, .role-usecase-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .tech-summary-grid > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff; }
+    .tech-summary-grid strong { display: block; margin-bottom: 8px; }
+    .searchable-table small { display: block; margin-top: 4px; line-height: 1.35; }
+    .summary-rendered { display: grid; gap: 12px; }
+    .summary-section { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fbfdff; }
+    .summary-section h3 { margin: 0 0 8px; font-size: 15px; color: var(--accent-dark); }
+    .summary-list { margin: 0; padding-left: 20px; color: var(--ink); line-height: 1.45; }
+    .summary-list li { margin: 4px 0; }
+    .summary-kv { display: grid; gap: 8px; margin: 0; }
+    .summary-kv div { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 10px; }
+    .summary-kv dt { color: var(--muted); font-weight: 800; }
+    .summary-kv dd { margin: 0; color: var(--ink); }
+    .summary-nested { display: grid; gap: 8px; margin-top: 10px; }
+    .summary-nested > strong { color: var(--ink); }
+    .summary-copy { line-height: 1.5; color: var(--ink); }
+    .summary-copy p { margin: 0 0 8px; }
+    .plain-summary { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; border: 0; background: transparent; color: var(--ink); font-family: inherit; line-height: 1.5; }
+    .raw-details { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px 12px; }
+    .raw-details summary { cursor: pointer; color: var(--accent-dark); font-weight: 800; }
+    .raw-details label { display: block; margin-top: 10px; }
+    .workspace textarea { min-height: 112px; font-family: inherit; line-height: 1.45; }
+    .raw-details textarea,
+    textarea[name="research_prompt"],
+    textarea[name="research_json"] { min-height: 320px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    @media (max-width: 900px) {
+      .search-strip { align-items: stretch; flex-direction: column; }
+      .search-strip input { max-width: none; }
+      .decision-head { display: grid; }
+      .readiness-score { text-align: left; }
+      .workspace-menu, .workflow-grid, .workflow-two, .job-evidence-layout, .job-card-grid, .job-review-facts, .tech-priority-grid, .ranked-tech-list, .tech-category-grid, .tech-summary-grid, .role-usecase-grid { grid-template-columns: 1fr; }
+      .workflow-hero, .job-evidence-hero, .tech-stack-hero { display: grid; }
+      .job-evidence-score, .tech-stack-stat { text-align: left; }
+      .summary-kv div { grid-template-columns: 1fr; gap: 2px; }
+    }
+  </style>
+  <script>
+    document.querySelectorAll("[data-table-search]").forEach((input) => {
+      const table = document.getElementById(input.dataset.tableSearch);
+      if (!table) return;
+      const rows = Array.from(table.querySelectorAll("[data-search-row]"));
+      input.addEventListener("input", () => {
+        const term = input.value.trim().toLowerCase();
+        rows.forEach((row) => {
+          row.style.display = !term || row.textContent.toLowerCase().includes(term) ? "" : "none";
+        });
+      });
+    });
+    document.querySelectorAll(".copy-source-url").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const value = button.dataset.copy || "";
+        if (!value) return;
+        try {
+          await navigator.clipboard.writeText(value);
+          button.textContent = "Copied";
+          setTimeout(() => { button.textContent = "Copy URL"; }, 1200);
+        } catch (error) {
+          button.textContent = "Copy failed";
+          setTimeout(() => { button.textContent = "Copy URL"; }, 1200);
+        }
+      });
+    });
+  </script>
+{% endblock %}

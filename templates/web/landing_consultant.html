@@ -1,0 +1,67 @@
+{% extends "web/base.html" %}
+{% block title %}Consultant Landing | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Consultant Landing</h1>
+      <p>{% if mode == "consultant" %}Your readiness, campaigns, submissions, mocks, and evidence package.{% else %}Your owned consultant queue and readiness blockers.{% endif %}</p>
+    </div>
+    {% if mode == "consultant" %}<a class="button" href="/training-programs">Open Training</a>{% else %}<a class="button" href="/consultants">Open Consultants</a>{% endif %}
+  </section>
+
+  {% if mode == "consultant" %}
+    {% set unlocked_links = consultant_nav_links(user) %}
+    <section class="metrics compact">
+      <div class="metric"><strong>{{ consultant.marketing_readiness_percent }}%</strong><span>Readiness</span></div>
+      <div class="metric"><strong>{{ "Yes" if gate.ready else "No" }}</strong><span>Marketing Ready</span></div>
+      <div class="metric"><strong>{{ submissions|length }}</strong><span>Recent submissions</span></div>
+      <div class="metric"><strong>{{ campaigns|length }}</strong><span>Campaigns</span></div>
+      <div class="metric"><strong>{{ mocks|length }}</strong><span>Mock interviews</span></div>
+    </section>
+    {% if not gate.ready %}
+      <div class="subtle-panel">
+        <strong>Before marketing:</strong>
+        <span class="muted">{{ gate.missing_labels|join(", ") }}</span>
+      </div>
+    {% endif %}
+    <section class="grid-3">
+      {% for link in unlocked_links %}
+        <a class="card workflow-link-card" href="{{ link.href }}"><h2>{{ link.label }}</h2><p>{% if link.key == "training" %}Assigned learning material for fundamentals and role preparation.{% elif link.key == "onboarding" %}Readiness checklist, profile validation, and staff-reviewed preparation status.{% elif link.key == "positioning" %}Role/domain positioning, project story, and interview narrative.{% elif link.key == "mock_interviews" %}Scheduled practice interviews, feedback, and next preparation actions.{% elif link.key == "marketing_activity" %}Unlocked only after readiness evidence supports marketing activity.{% elif link.key == "full_profile" %}Final consultant profile after marketing readiness is complete.{% else %}Your consultant workspace opens as readiness steps are completed.{% endif %}</p><span class="tile-open-indicator">Open</span></a>
+      {% endfor %}
+    </section>
+    <h2>Recent Activity</h2>
+    <table class="data-list">
+      <thead><tr><th>Type</th><th>Item</th><th>Status</th><th>Next Step</th></tr></thead>
+      <tbody>
+        {% for row in submissions %}
+          <tr><td>Submission</td><td>{{ row.job.title if row.job else "Job" }}</td><td>{{ row.status|replace("_", " ") }}</td><td>{{ row.next_step or "Follow up" }}</td></tr>
+        {% endfor %}
+        {% for row in campaigns %}
+          <tr><td>Campaign</td><td>{{ row.name }}</td><td>{{ row.status|replace("_", " ") }}</td><td>{{ row.notes or "Review target companies" }}</td></tr>
+        {% endfor %}
+        {% for row in mocks %}
+          <tr><td>Mock</td><td>{{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else "Mock interview") }}</td><td>{{ row.status|replace("_", " ") }}</td><td>{{ row.feedback_summary if row.feedback_summary is defined else "Prepare or collect feedback" }}</td></tr>
+        {% endfor %}
+        {% if not submissions and not campaigns and not mocks %}<tr><td colspan="4" class="muted">No recent consultant activity yet.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  {% else %}
+    <section class="metrics compact">
+      <a class="metric" href="/consultants"><strong>{{ summary.owned }}</strong><span>Owned consultants</span></a>
+      <a class="metric" href="/reports/role-journeys"><strong>{{ summary.marketing_ready }}</strong><span>Marketing Ready</span></a>
+      <a class="metric" href="/mock-interviews"><strong>{{ summary.needs_mock }}</strong><span>Needs mock</span></a>
+      <a class="metric" href="/consultants"><strong>{{ summary.needs_evidence }}</strong><span>Needs final evidence</span></a>
+      <a class="metric" href="/reports/role-journeys"><strong>{{ summary.owned - summary.marketing_ready }}</strong><span>Blocked</span></a>
+    </section>
+    <table class="data-list">
+      <thead><tr><th class="sno">S No</th><th>Consultant</th><th>Role</th><th>Status</th><th>Readiness</th><th></th></tr></thead>
+      <tbody>
+        {% for consultant in owned_consultants %}
+          <tr><td class="sno">{{ loop.index }}</td><td><a href="/consultants/{{ consultant.id }}">{{ consultant.name or consultant.email }}</a><div class="compact-meta">{{ consultant.email }}</div></td><td>{{ consultant.marketing_role.name if consultant.marketing_role else "Role not set" }}</td><td><span class="pill">{{ consultant.marketing_status|replace("_", " ") }}</span></td><td>{{ consultant.marketing_readiness_percent }}%</td><td class="right"><a class="button secondary" href="/consultants/{{ consultant.id }}/journey">Journey</a></td></tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">No consultant profile found for this login and no owned consultants matched your staff identity.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+<div id="import-job-status"
+  class="space-y-3"
+  {% if job.status in ["queued", "running"] %}
+    hx-get="/uscis/import/jobs/{{ job.id }}/status"
+    hx-trigger="load delay:2s, every 2s"
+    hx-swap="outerHTML"
+  {% endif %}
+>
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ job.status }}</strong><span>Status</span></div>
+    <div class="metric"><strong>{{ job.processed_rows }}</strong><span>Processed rows</span></div>
+    <div class="metric"><strong>{{ job.imported }}</strong><span>Imported</span></div>
+    <div class="metric"><strong>{{ job.updated }}</strong><span>Updated</span></div>
+    <div class="metric"><strong>{{ job.skipped }}</strong><span>Skipped</span></div>
+  </section>
+  <div class="listbar">
+    <span>Job details</span>
+    {% if job.status in ["queued", "running"] %}
+      <span class="htmx-indicator">Refreshing status...</span>
+    {% endif %}
+  </div>
+  <table class="data-list">
+    <tbody>
+      <tr><td>Requested By</td><td>{{ job.requested_by }}</td></tr>
+      <tr><td>Queued</td><td>{{ job.created_at }}</td></tr>
+      <tr><td>Started</td><td>{{ job.started_at or "" }}</td></tr>
+      <tr><td>Completed</td><td>{{ job.completed_at or "" }}</td></tr>
+      <tr><td>Error</td><td>{{ job.error or "" }}</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,84 @@
+{% extends "web/base.html" %}
+{% block title %}{{ region.name }} Landing | Mintel{% endblock %}
+{% block content %}
+  <section class="breadcrumbs">
+    <a href="/landings">Landing Pages</a><span class="crumb-separator">/</span><span class="crumb-current">{{ region.name }}</span>
+  </section>
+  <section class="page-head">
+    <div>
+      <h1>{{ region.name }}</h1>
+      <p>{{ region.description or "Region operating homepage for staff-owned company pursuit." }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ links.workbench }}">Workbench</a>
+      <a class="button" href="{{ links.targeting }}">Company Queue</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <a class="metric" href="{{ links.pursuits }}"><strong>{{ summary.active_companies }}</strong><span>Active companies</span></a>
+    <a class="metric" href="{{ links.workbench }}"><strong>{{ summary.needs_owner }}</strong><span>Needs owner</span></a>
+    <a class="metric" href="{{ links.targeting }}"><strong>{{ summary.needs_research }}</strong><span>Needs research</span></a>
+    <a class="metric" href="{{ links.targeting }}"><strong>{{ summary.current_jobs }}</strong><span>Imported job signals</span></a>
+    <a class="metric" href="{{ links.workbench }}"><strong>{{ summary.overdue }}</strong><span>Overdue follow-ups</span></a>
+  </section>
+
+  <section class="grid-3">
+    <div class="card">
+      <h2>Region Team</h2>
+      <div class="tag-list">
+        {% for member in staff %}
+          <span class="tag">{{ member.name or member.email }}</span>
+        {% else %}
+          <span class="pill warn">No staff assigned</span>
+        {% endfor %}
+      </div>
+    </div>
+    <a class="card workflow-link-card" href="{{ links.pursuits }}">
+      <h2>Primary Action</h2>
+      <p>Keep every active company owned, researched with current postings, and marked Pursue Now, Watch, Reject, or Needs Research.</p>
+      <span class="tile-open-indicator">Open Region Companies</span>
+    </a>
+    <a class="card workflow-link-card" href="{{ links.matches }}">
+      <h2>Matching</h2>
+      <p>Use consultant-company matches after the company has current role evidence and a clear region owner.</p>
+      <span class="tile-open-indicator">Open Matches</span>
+    </a>
+  </section>
+
+  <h2>Needs Staff Action</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Company</th><th>Owner</th><th>Status</th><th>Next Action</th></tr></thead>
+    <tbody>
+      {% for pursuit in needs_action %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td><a href="/pursuits/{{ pursuit.id }}"><strong>{{ pursuit.company.name }}</strong></a><div class="compact-meta">{{ pursuit.company.industry or "Industry missing" }}</div></td>
+          <td>{{ pursuit.assigned_staff_name or pursuit.assigned_staff_email or "Unassigned" }}</td>
+          <td><span class="pill">{{ pursuit.status|replace("_", " ") }}</span></td>
+          <td>{{ pursuit.next_action or "Set research or pursuit next action" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No urgent region actions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Current Job Evidence</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Posting</th><th>Role</th><th>Location</th><th>Confidence</th></tr></thead>
+    <tbody>
+      {% for job in current_jobs %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td>{% if job.official_job_url %}<a href="{{ job.official_job_url }}" target="_blank" rel="noreferrer noopener"><strong>{{ job.job_title }}</strong></a>{% else %}<strong>{{ job.job_title }}</strong>{% endif %}<div class="compact-meta">{{ job.published_date or "Date unknown" }}</div></td>
+          <td>{{ job.primary_marketing_role or "Role not mapped" }}</td>
+          <td>{{ job.location or "Location missing" }}</td>
+          <td>{{ job.confidence_score }}%</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No imported current job evidence for this region yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "web/base.html" %}
+{% block title %}Edit Staff Assignment | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Edit Staff Assignment</h1>
+      <p>{{ staff_member.name or staff_member.email }} · {{ staff_member.email }}</p>
+    </div>
+    <a class="button secondary" href="/staff-assignments/{{ staff_member.id }}">Cancel</a>
+  </section>
+
+  <form method="post" action="/staff-assignments/{{ staff_member.id }}" class="stack">
+    <section class="card">
+      <h2>Regions</h2>
+      <div class="checkbox-grid">
+        {% for region in regions %}
+          <label class="check-row">
+            <input type="checkbox" name="region_ids" value="{{ region.id }}" {% if region.id in assigned_region_ids %}checked{% endif %}>
+            <span>
+              <strong>{{ region.name }}</strong>
+              <span>{{ region.description }}</span>
+            </span>
+          </label>
+        {% else %}
+          <p class="muted">No active regions are available.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Marketing Roles</h2>
+      <div class="checkbox-grid">
+        {% for role in marketing_roles %}
+          <label class="check-row">
+            <input type="checkbox" name="marketing_role_ids" value="{{ role.id }}" {% if role.id in assigned_role_ids %}checked{% endif %}>
+            <span>
+              <strong>{{ role.name }}</strong>
+              <span>{{ role.description }}</span>
+            </span>
+          </label>
+        {% else %}
+          <p class="muted">No active marketing roles are available.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div class="inline-actions">
+      <a class="button secondary" href="/staff-assignments/{{ staff_member.id }}">Cancel</a>
+      <button type="submit">Save Assignment</button>
+    </div>
+  </form>
+{% endblock %}

@@ -1,0 +1,389 @@
+{% extends "web/base.html" %}
+{% block title %}Operating Workbench | Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Operating Workbench</h1>
+      <p>Daily Mintel view across region companies, consultant journeys, role fit, mocks, submissions, and interviews.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ queue_url }}">Company Queue</a>
+      <a class="button secondary" href="{{ journey_url }}">Role Journeys</a>
+      <a class="button secondary" href="{{ matches_url }}">Company Matches</a>
+      <a class="button secondary" href="/reports">Reports Home</a>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/operating-workbench">
+    <div>
+      <label>USCIS Year</label>
+      <select name="fiscal_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if fiscal_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Region</label>
+      <select name="region_id">
+        <option value="" {% if not selected_region_id %}selected{% endif %}>All regions</option>
+        {% for region in regions %}
+          <option value="{{ region.id }}" {% if selected_region_id == region.id %}selected{% endif %}>{{ region.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Staff</label>
+      <select name="staff_email">
+        <option value="" {% if not staff_email %}selected{% endif %}>All staff</option>
+        {% for item in staff_options %}
+          <option value="{{ item.email }}" {% if staff_email == item.email %}selected{% endif %}>{{ item.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Capacity / Staff</label>
+      <input name="capacity_per_staff" type="number" min="10" max="500" value="{{ capacity_per_staff }}">
+    </div>
+    <div>
+      <label>Min Approvals</label>
+      <input name="min_approvals" type="number" min="0" value="{{ min_approvals }}">
+    </div>
+    <div>
+      <label>Min Approval Rate</label>
+      <input name="min_approval_rate" type="number" min="0" max="100" value="{{ min_approval_rate }}">
+    </div>
+    <div><button type="submit">Refresh Workbench</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.visible_companies or 0 }}</strong><span>Region Companies</span></div>
+    <div class="metric"><strong>{{ summary.candidate_ready or 0 }}</strong><span>Candidate-Ready</span></div>
+    <div class="metric"><strong>{{ summary.needs_promotion or 0 }}</strong><span>Need Promotion</span></div>
+    <div class="metric"><strong>{{ summary.needs_intelligence or 0 }}</strong><span>Need Intelligence</span></div>
+    <div class="metric"><strong>{{ summary.active_journeys or 0 }}</strong><span>Consultant Journeys</span></div>
+    <div class="metric"><strong>{{ summary.open_submissions or 0 }}</strong><span>Open Submissions</span></div>
+  </section>
+
+  <section class="workbench-grid top">
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Today's Priority Stack</h2>
+        <span class="muted">Highest-signal decisions across companies, consultants, mocks, and submissions</span>
+      </div>
+      <div class="priority-list">
+        {% for item in priorities %}
+          <a class="priority-row" href="{{ item.url }}">
+            <span class="priority-rank">{{ item.rank }}</span>
+            <span>
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.type }} · {{ item.status }} · {{ item.detail }}</small>
+            </span>
+            <em>{{ item.next_action }}</em>
+          </a>
+        {% else %}
+          <p class="muted">No urgent priorities for this selection. The workbench is clear.</p>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="workbench-grid lifecycle-grid">
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Lifecycle Backbone</h2>
+        <span class="muted">One operating language across source data, companies, consultants, submissions, and mocks</span>
+      </div>
+      <div class="lifecycle-metrics">
+        <div><strong>{{ lifecycle.summary.total }}</strong><span>Total tracked</span></div>
+        <div><strong>{{ lifecycle.summary.companies }}</strong><span>Companies</span></div>
+        <div><strong>{{ lifecycle.summary.consultants }}</strong><span>Consultants</span></div>
+        <div><strong>{{ lifecycle.summary.submissions }}</strong><span>Submissions</span></div>
+        <div><strong>{{ lifecycle.summary.mocks }}</strong><span>Mocks</span></div>
+        <div><strong>{{ lifecycle.summary.blocked + lifecycle.summary.overdue + lifecycle.summary.stale + lifecycle.summary.unowned + lifecycle.summary.attention }}</strong><span>Need action</span></div>
+      </div>
+      <div class="lifecycle-columns">
+        <div>
+          <h3>States</h3>
+          <div class="state-list">
+            {% for row in lifecycle.state_rows %}
+              <span><strong>{{ row.count }}</strong>{{ row.state }}</span>
+            {% else %}
+              <p class="muted">No lifecycle states yet.</p>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <h3>Risk Queue</h3>
+          <div class="risk-list">
+            {% for row in lifecycle.risk_rows %}
+              <a href="{{ row.url }}" class="risk-row {{ row.risk }}">
+                <span>{{ row.risk_label }}</span>
+                <strong>{{ row.title }}</strong>
+                <small>{{ row.kind }} · {{ row.state_label }} · {{ row.owner }} · {{ row.age_days }}d</small>
+                <em>{{ row.next_action }}</em>
+              </a>
+            {% else %}
+              <p class="muted">No blocked, overdue, stale, or unowned work in this selection.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="workbench-perspectives">
+    {% for item in perspectives %}
+      <article class="card perspective-card">
+        <div class="perspective-head">
+          <div>
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.focus }}</p>
+          </div>
+          <div class="perspective-metric"><strong>{{ item.metric }}</strong><span>{{ item.label }}</span></div>
+        </div>
+        <div class="perspective-foot">
+          <span><strong>Gap:</strong> {{ item.gap }}</span>
+          <span><strong>Next:</strong> {{ item.action }}</span>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="workbench-grid">
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Company Decision Lanes</h2>
+        <a href="{{ queue_url }}">Open queue</a>
+      </div>
+      {% set lane_titles = {
+        "candidate_ready": "Candidate-ready",
+        "needs_promotion": "Promote from USCIS",
+        "needs_intelligence": "Import job intelligence",
+        "needs_review": "Staff review",
+        "eliminated": "Eliminate first pass"
+      } %}
+      <div class="lane-grid">
+        {% for key, title in lane_titles.items() %}
+          <div class="work-lane">
+            <div class="lane-title"><strong>{{ title }}</strong><span>{{ company_lane_counts[key] }}</span></div>
+            {% for row in company_lanes[key] %}
+              <div class="mini-work-card">
+                <a href="{% if row.pursuit %}/pursuits/{{ row.pursuit.id }}{% else %}/companies/{{ row.company_id }}/uscis{% endif %}"><strong>{{ row.company_name }}</strong></a>
+                <span>{{ row.watch_score }} score · {{ row.approvals }} approvals · {{ row.region_name }}</span>
+                <small>{{ row.next_staff_action }}</small>
+              </div>
+            {% else %}
+              <p class="muted">No companies in this lane.</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Consultant Journey Lanes</h2>
+        <a href="{{ journey_url }}">Open journeys</a>
+      </div>
+      {% set journey_titles = {
+        "intake": "Intake",
+        "training": "Training",
+        "positioning": "Positioning",
+        "mock": "Mock ready",
+        "evidence": "Evidence package",
+        "company_matching": "Company matching",
+        "in_market": "Campaign active",
+        "submissions": "Submissions",
+        "interviews": "Interviews"
+      } %}
+      <div class="journey-lane-grid">
+        {% for key, title in journey_titles.items() %}
+          <div class="work-lane">
+            <div class="lane-title"><strong>{{ title }}</strong><span>{{ journey_lane_counts[key] }}</span></div>
+            {% for row in journey_lanes[key] %}
+              <div class="mini-work-card">
+                <a href="/consultants/{{ row.consultant_id }}/journey"><strong>{{ row.consultant_name }}</strong></a>
+                <span>{{ row.target_role }} · {{ row.readiness_score }} readiness</span>
+                <small>{{ row.next_action }}</small>
+              </div>
+            {% else %}
+              <p class="muted">No consultants in this lane.</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="workbench-grid lower">
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Role Operating View</h2>
+        <a href="/reports/role-journeys">Open role journeys</a>
+      </div>
+      <table class="data-list">
+        <thead><tr><th>Marketing Role</th><th>Consultants</th><th>Ready</th><th>Candidate-Ready Companies</th><th>Work Needed</th></tr></thead>
+        <tbody>
+          {% for row in role_rows %}
+            <tr>
+              <td><strong>{{ row.role }}</strong></td>
+              <td>{{ row.consultants }}</td>
+              <td>{{ row.ready }}</td>
+              <td>{{ row.companies }}</td>
+              <td>
+                Training {{ row.needs_training }} · Positioning {{ row.needs_positioning }} · Mock {{ row.needs_mock }}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="muted">No role operating rows are available yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Journey Handoffs</h2>
+        <span class="muted">Where work should move next</span>
+      </div>
+      <table class="data-list">
+        <thead><tr><th>From</th><th>To</th><th>Ready</th><th>Handoff Rule</th></tr></thead>
+        <tbody>
+          {% for row in handoff_rows %}
+            <tr>
+              <td>{{ row["from"] }}</td>
+              <td><strong>{{ row["to"] }}</strong></td>
+              <td>{{ row.ready }}</td>
+              <td>{{ row.handoff }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+  <section class="workbench-grid lower">
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Submissions Needing Follow-up</h2>
+        <a href="/submissions">Open submissions</a>
+      </div>
+      <table class="data-list">
+        <thead><tr><th>Consultant</th><th>Company / Job</th><th>Status</th><th>Next Step</th></tr></thead>
+        <tbody>
+          {% for row in submission_rows %}
+            <tr>
+              <td><a href="/consultants/{{ row.consultant_id }}">{{ row.consultant_name }}</a></td>
+              <td><strong>{{ row.company_name }}</strong><br><span class="muted">{{ row.job_title }}</span></td>
+              <td>{{ row.status }}</td>
+              <td>{{ row.next_step }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="muted">No active submission follow-ups for this selection.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card stack">
+      <div class="section-head">
+        <h2>Mock & Interview Readiness</h2>
+        <a href="/mock-interviews">Open mocks</a>
+      </div>
+      <table class="data-list">
+        <thead><tr><th>Consultant</th><th>Role</th><th>Schedule</th><th>Next Action</th></tr></thead>
+        <tbody>
+          {% for row in mock_rows %}
+            <tr>
+              <td><a href="/mock-interviews/{{ row.id }}">{{ row.consultant_name }}</a></td>
+              <td>{{ row.role }}<br><span class="muted">{{ row.status }}</span></td>
+              <td>{{ row.scheduled_on or "Not scheduled" }} {{ row.scheduled_time }}</td>
+              <td>{{ row.next_action }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="muted">No mock interviews for this selection.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+  <section class="card stack">
+    <h2>Staff Capacity</h2>
+    <table class="data-list">
+      <thead><tr><th>Region</th><th>Staff</th><th>Assigned Companies</th><th>Capacity</th><th>Remaining</th></tr></thead>
+      <tbody>
+        {% for row in staff_rows %}
+          <tr>
+            <td>{{ row.region_name }}</td>
+            <td>{{ row.staff }}<br><span class="muted">{{ row.email }}</span></td>
+            <td>{{ row.assigned }}</td>
+            <td>{{ row.capacity }}</td>
+            <td>{% if row.over_capacity %}<span class="pill hot">{{ row.over_capacity }} over</span>{% else %}{{ row.remaining }}{% endif %}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="muted">No staff capacity rows are available for this selection.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <style>
+    .workbench-grid.top { grid-template-columns: 1fr; }
+    .lifecycle-grid { grid-template-columns: 1fr; }
+    .lifecycle-metrics { display: grid; gap: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .lifecycle-metrics div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .lifecycle-metrics strong { color: var(--accent-dark); display: block; font-size: 24px; }
+    .lifecycle-metrics span { color: var(--muted); font-size: 12px; }
+    .lifecycle-columns { display: grid; gap: 14px; grid-template-columns: minmax(260px, .75fr) minmax(0, 1.25fr); }
+    .lifecycle-columns h3 { margin: 0 0 8px; }
+    .state-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .state-list span { align-items: center; border: 1px solid var(--line); border-radius: 999px; display: inline-flex; gap: 6px; padding: 6px 10px; }
+    .state-list strong { background: #dff5f1; border-radius: 999px; color: var(--accent-dark); min-width: 22px; padding: 2px 7px; text-align: center; }
+    .risk-list { display: grid; gap: 8px; }
+    .risk-row { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; color: var(--ink); display: grid; gap: 3px; padding: 9px 10px; text-decoration: none; }
+    .risk-row:hover { background: #f8fafc; border-color: var(--accent); }
+    .risk-row > span { color: var(--accent-dark); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+    .risk-row small, .risk-row em { color: var(--muted); font-size: 12px; font-style: normal; line-height: 1.35; }
+    .risk-row.blocked { border-left-color: #b91c1c; }
+    .risk-row.overdue { border-left-color: #d97706; }
+    .risk-row.stale, .risk-row.unowned, .risk-row.attention { border-left-color: #ca8a04; }
+    .priority-list { display: grid; gap: 8px; }
+    .priority-row { align-items: center; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); display: grid; gap: 10px; grid-template-columns: 34px minmax(220px, .9fr) minmax(0, 1.1fr); padding: 10px; text-decoration: none; }
+    .priority-row:hover { border-color: var(--accent); background: #f0fdfa; }
+    .priority-rank { align-items: center; background: var(--accent); border-radius: 999px; color: #fff; display: inline-flex; font-size: 13px; font-weight: 900; height: 28px; justify-content: center; width: 28px; }
+    .priority-row strong, .priority-row small, .priority-row em { display: block; }
+    .priority-row small { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .priority-row em { color: var(--muted); font-size: 13px; font-style: normal; line-height: 1.4; }
+    .workbench-perspectives { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
+    .perspective-card { display: grid; gap: 12px; }
+    .perspective-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; }
+    .perspective-head h2 { margin: 0 0 6px; }
+    .perspective-head p { margin: 0; }
+    .perspective-metric { border: 1px solid var(--line); border-radius: 8px; min-width: 96px; padding: 8px; text-align: center; }
+    .perspective-metric strong { display: block; color: var(--accent-dark); font-size: 24px; }
+    .perspective-metric span { color: var(--muted); font-size: 12px; }
+    .perspective-foot { display: grid; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .workbench-grid { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 14px; }
+    .workbench-grid.lower { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .section-head { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
+    .section-head h2 { margin: 0; }
+    .lane-grid { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .journey-lane-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .work-lane { border: 1px solid var(--line); border-radius: 8px; background: #fbfcfd; padding: 10px; min-width: 0; }
+    .lane-title { align-items: center; display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .lane-title span { align-items: center; background: #dff5f1; border-radius: 999px; color: var(--accent-dark); display: inline-flex; font-size: 12px; font-weight: 850; height: 24px; justify-content: center; min-width: 24px; }
+    .mini-work-card { border: 1px solid var(--line); border-radius: 7px; background: #fff; display: grid; gap: 4px; margin-top: 8px; padding: 9px; }
+    .mini-work-card a { color: var(--ink); text-decoration: none; }
+    .mini-work-card a:hover { color: var(--accent-dark); text-decoration: underline; }
+    .mini-work-card span, .mini-work-card small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    @media (max-width: 1100px) {
+      .workbench-perspectives, .workbench-grid.lower, .lane-grid, .journey-lane-grid, .lifecycle-columns, .lifecycle-metrics { grid-template-columns: 1fr; }
+      .priority-row { grid-template-columns: 34px 1fr; }
+      .priority-row em { grid-column: 2; }
+      .perspective-head { display: grid; }
+      .perspective-metric { text-align: left; }
+    }
+  </style>
+{% endblock %}

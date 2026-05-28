@@ -1,0 +1,224 @@
+{% extends "web/base.html" %}
+{% block title %}Company Targeting Queue | Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Company Targeting Queue</h1>
+      <p>Staff-ready company queue for OPT/H1B targeting: USCIS source of truth, job evidence, hiring-bar elimination, and next action.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      <a class="button secondary" href="/reports/company-watchlist">Watchlist</a>
+      <a class="button secondary" href="/reports">Reports Home</a>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/company-targeting">
+    <div>
+      <label>USCIS Year</label>
+      <select name="fiscal_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if fiscal_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Region</label>
+      <select name="region_id">
+        <option value="" {% if not selected_region_id %}selected{% endif %}>All regions</option>
+        {% for region in regions %}
+          <option value="{{ region.id }}" {% if selected_region_id == region.id %}selected{% endif %}>{{ region.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Staff</label>
+      <select name="staff_email">
+        <option value="" {% if not staff_email %}selected{% endif %}>All staff</option>
+        {% for item in staff_options %}
+          <option value="{{ item.email }}" {% if staff_email == item.email %}selected{% endif %}>{{ item.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Stage</label>
+      <select name="stage">
+        {% for value, label in stage_options %}
+          <option value="{{ value }}" {% if stage == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Source</label>
+      <select name="source">
+        {% for value, label in source_options %}
+          <option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Min Approvals</label>
+      <input name="min_approvals" type="number" min="0" value="{{ min_approvals }}">
+    </div>
+    <div>
+      <label>Min Approval Rate</label>
+      <input name="min_approval_rate" type="number" min="0" max="100" value="{{ min_approval_rate }}">
+    </div>
+    <div>
+      <label>Capacity / Staff</label>
+      <input name="capacity_per_staff" type="number" min="10" max="500" value="{{ capacity_per_staff }}">
+    </div>
+    <div>
+      <label>Sort</label>
+      <select name="sort">
+        {% for value, label in sort_options %}
+          <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Build Queue</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.candidate_count or 0 }}</strong><span>Visible Queue</span></div>
+    <div class="metric"><strong>{{ summary.actionable_count or 0 }}</strong><span>Candidate-Ready</span></div>
+    <div class="metric"><strong>{{ summary.ready_to_promote_count or 0 }}</strong><span>Ready To Promote</span></div>
+    <div class="metric"><strong>{{ summary.needs_json_count or 0 }}</strong><span>Needs JSON</span></div>
+    <div class="metric"><strong>{{ summary.needs_review_count or 0 }}</strong><span>Needs Review</span></div>
+    <div class="metric"><strong>{{ summary.eliminated_count or 0 }}</strong><span>Eliminated</span></div>
+  </section>
+
+  <section class="card stack targeting-rules">
+    <h2>How Staff Should Use This</h2>
+    <div class="rule-grid">
+      <div><strong>1. Promote</strong><span>USCIS-only companies with strong latest-year signal move into a workspace.</span></div>
+      <div><strong>2. Enrich</strong><span>Promoted companies without job JSON need OpenAI job intelligence before decision.</span></div>
+      <div><strong>3. Match</strong><span>Candidate-ready companies should be matched by role, tech stack, location, and experience bar.</span></div>
+      <div><strong>4. Eliminate</strong><span>Very senior-heavy companies are skipped in the first pass to protect staff and candidate time.</span></div>
+    </div>
+  </section>
+
+  <div class="listbar">
+    <span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }} companies · Page {{ page }} of {{ pages }}</span>
+    <span>Year {{ fiscal_year }} · {{ stage.replace("_", " ").title() }}</span>
+  </div>
+
+  <section class="targeting-list">
+    {% for row in rows %}
+      <article class="card targeting-card">
+        <div class="targeting-main">
+          <div>
+            <div class="compact-meta">#{{ row.rank }} · {{ row.region_name }} · {{ row.suggested_staff }}</div>
+            <h2><a href="{% if row.pursuit %}/pursuits/{{ row.pursuit.id }}?tab=intelligence{% else %}/companies/{{ row.company_id }}/uscis{% endif %}">{{ row.company_name }}</a></h2>
+            <div class="company-subline">
+              <span class="pill {% if row.action_stage == 'eliminated' %}warn{% endif %}">{{ row.stage_label }}</span>
+              <span class="tag">Score {{ row.watch_score }}</span>
+              <span class="tag">{{ row.approvals }} approvals</span>
+              <span class="tag">{{ row.approval_rate }}% approval</span>
+              <span class="tag">{{ row.standard_risk }} standards</span>
+            </div>
+          </div>
+          <div class="targeting-actions">
+            {% if row.pursuit %}
+              <a class="button secondary" href="/pursuits/{{ row.pursuit.id }}?tab=intelligence">Open Brief</a>
+              <a class="button secondary" href="/pursuits/{{ row.pursuit.id }}?tab=job-postings">Jobs</a>
+            {% elif can_manage(user) %}
+              <form method="post" action="/companies/{{ row.company_id }}/promote">
+                <input type="hidden" name="reason" value="Promoted from company targeting queue">
+                <input type="hidden" name="next" value="/reports/company-targeting?{{ page_params }}">
+                <button class="secondary" type="submit">Promote</button>
+              </form>
+              <a class="button secondary" href="/companies/{{ row.company_id }}/uscis">USCIS</a>
+            {% else %}
+              <a class="button secondary" href="/companies/{{ row.company_id }}/uscis">USCIS</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="targeting-grid">
+          <div>
+            <h3>Candidate Fit</h3>
+            <p>{{ row.candidate_pitch }}</p>
+            <ul class="stack-list compact">
+              <li><strong>Roles:</strong> {{ row.best_roles_label }}</li>
+              <li><strong>Tech:</strong> {{ row.tech_stack_label }}</li>
+              <li><strong>Evidence:</strong> {{ row.evidence_quality }}</li>
+              <li><strong>Candidates:</strong> {{ row.candidate_match_label }}</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Staff Next Action</h3>
+            <p>{{ row.next_staff_action }}</p>
+            <ul class="stack-list compact">
+              <li><strong>Eligible jobs:</strong> {{ row.eligible_jobs }} total, {{ row.verified_jobs }} verified, {{ row.estimated_jobs }} estimated</li>
+              <li><strong>USCIS:</strong> {{ row.new_employment }} new employment, {{ row.change_employer }} transfers</li>
+              {% if row.elimination_reason %}<li><strong>Why skipped:</strong> {{ row.elimination_reason }}</li>{% endif %}
+            </ul>
+          </div>
+          <div>
+            <h3>Candidate Matches</h3>
+            {% if row.candidate_matches %}
+              <ul class="match-list">
+                {% for item in row.candidate_matches %}
+                  <li>
+                    <a href="/consultants/{{ item.id }}"><strong>{{ item.name }}</strong></a>
+                    <span>{{ item.role }} · {{ item.score }} match · {{ item.why }}</span>
+                    {% if item.skill_hits %}<small>{{ item.skill_hits|join(", ") }}</small>{% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="muted">No active consultant has enough role, skill, and readiness overlap yet.</p>
+            {% endif %}
+          </div>
+        </div>
+        <details class="targeting-details">
+          <summary>Use cases and training signal</summary>
+          {% if row.top_use_cases %}
+            <ul class="stack-list compact">{% for item in row.top_use_cases %}<li>{{ item }}</li>{% endfor %}</ul>
+          {% else %}
+            <p class="muted">Import job intelligence JSON to extract use cases.</p>
+          {% endif %}
+        </details>
+      </article>
+    {% else %}
+      <section class="card"><p class="muted">No companies match this targeting queue selection.</p></section>
+    {% endfor %}
+  </section>
+
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="/reports/company-targeting?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="button secondary" href="/reports/company-targeting?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+
+  <style>
+    .targeting-rules { margin-bottom: 16px; }
+    .rule-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .rule-grid div { border: 1px solid var(--line); border-radius: 7px; padding: 10px; background: #fbfcfd; }
+    .rule-grid strong, .rule-grid span { display: block; }
+    .rule-grid span { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .targeting-list { display: grid; gap: 12px; }
+    .targeting-card { display: grid; gap: 14px; }
+    .targeting-main { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .targeting-main h2 { margin: 4px 0 8px; }
+    .targeting-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .targeting-actions form { margin: 0; }
+    .targeting-grid { display: grid; gap: 12px; grid-template-columns: 1.1fr 1fr 1fr; }
+    .targeting-grid h3 { margin: 0 0 6px; }
+    .targeting-grid p { margin: 0; }
+    .stack-list.compact { margin: 8px 0 0; }
+    .stack-list.compact li { margin-bottom: 5px; }
+    .match-list { display: grid; gap: 8px; list-style: none; margin: 8px 0 0; padding: 0; }
+    .match-list li { border: 1px solid var(--line); border-radius: 7px; padding: 8px; background: #fbfcfd; }
+    .match-list strong, .match-list span, .match-list small { display: block; }
+    .match-list span, .match-list small { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .targeting-details { border-top: 1px solid var(--line); padding-top: 10px; }
+    .targeting-details summary { color: var(--accent-dark); cursor: pointer; font-weight: 800; }
+    @media (max-width: 980px) {
+      .rule-grid, .targeting-grid { grid-template-columns: 1fr; }
+      .targeting-main { display: grid; }
+      .targeting-actions { justify-content: flex-start; }
+    }
+  </style>
+{% endblock %}

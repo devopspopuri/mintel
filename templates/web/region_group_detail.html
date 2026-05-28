@@ -1,0 +1,49 @@
+{% extends "web/base.html" %}
+{% block title %}{{ group.name }} | Region Group | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ group.name }}</h1>
+      <p>{{ group.description or "Region permission group" }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/region-groups">Back</a>
+      <a class="button" href="/region-groups/{{ group.id }}/edit">Edit Group</a>
+      {% if group.active %}
+        <form method="post" action="/region-groups/{{ group.id }}/archive"><button class="secondary" type="submit">Archive</button></form>
+      {% else %}
+        <form method="post" action="/region-groups/{{ group.id }}/restore"><button class="secondary" type="submit">Restore</button></form>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ assigned_regions|length }}</strong><span>Regions</span></div>
+    <div class="metric"><strong>{{ members|length }}</strong><span>Members</span></div>
+    <div class="metric"><strong>{{ "Active" if group.active else "Inactive" }}</strong><span>Status</span></div>
+  </section>
+
+  <section class="detail-grid">
+    <article class="card">
+      <h2>Regions</h2>
+      <div class="tag-list">
+        {% for region in assigned_regions %}
+          <span class="tag">{{ region.name }}</span>
+        {% else %}
+          <span class="muted">No regions assigned.</span>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Members</h2>
+      <div class="tag-list">
+        {% for staff_member in members %}
+          <span class="tag">{{ staff_member.name or staff_member.email }}</span>
+        {% else %}
+          <span class="muted">No members assigned.</span>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "web/base.html" %}
+{% block title %}{{ "Edit" if group else "Create" }} Region Group | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ "Edit" if group else "Create" }} Region Group</h1>
+      <p>Groups own one or more regions and grant members access to those region pursuits.</p>
+    </div>
+    <a class="button secondary" href="{{ '/region-groups/' ~ group.id if group else '/region-groups' }}">Cancel</a>
+  </section>
+
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+  <form method="post" action="{{ '/region-groups/' ~ group.id if group else '/region-groups' }}" class="stack">
+    <section class="card">
+      <h2>Group</h2>
+      <div class="grid-2">
+        <label>Name<input name="name" required value="{{ group.name if group else '' }}" placeholder="Northeast ownership group"></label>
+        <label class="check-inline"><input type="checkbox" name="active" value="true" {% if not group or group.active %}checked{% endif %}> Active</label>
+      </div>
+      <label>Description<textarea name="description" placeholder="Coverage, handoff rules, or notes">{{ group.description if group else '' }}</textarea></label>
+    </section>
+
+    <section class="card">
+      <h2>Regions</h2>
+      <div class="checkbox-grid">
+        {% for region in regions %}
+          <label class="check-row">
+            <input type="checkbox" name="region_ids" value="{{ region.id }}" {% if region.id in assigned_region_ids %}checked{% endif %}>
+            <span><strong>{{ region.name }}</strong><span>{{ region.description }}</span></span>
+          </label>
+        {% else %}
+          <p class="muted">No active regions are available.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Members</h2>
+      <div class="checkbox-grid">
+        {% for staff_member in staff %}
+          <label class="check-row">
+            <input type="checkbox" name="member_ids" value="{{ staff_member.id }}" {% if staff_member.id in assigned_member_ids %}checked{% endif %}>
+            <span><strong>{{ staff_member.name or staff_member.email }}</strong><span>{{ staff_member.email }} · {{ staff_member.role.replace("_", " ").title() }}</span></span>
+          </label>
+        {% else %}
+          <p class="muted">No active staff members are available.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ '/region-groups/' ~ group.id if group else '/region-groups' }}">Cancel</a>
+      <button type="submit">Save Group</button>
+    </div>
+  </form>
+{% endblock %}

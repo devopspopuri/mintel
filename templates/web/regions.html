@@ -1,0 +1,72 @@
+{% extends "web/base.html" %}
+{% block title %}Regions | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Regions</h1>
+      <p>Eight pursuit regions for assigning staff ownership.</p>
+    </div>
+    <a class="button secondary" href="/landings">Region Landing Pages</a>
+  </section>
+  <div class="listbar">
+    <span>{{ total_rows }} regions</span>
+    <span class="muted">Use region groups to grant ownership and permissions.</span>
+  </div>
+  <table class="data-list">
+    <thead><tr>
+      <th class="sno">S No</th>
+      <th><a class="sort-link {% if sort == 'name' %}active{% endif %}" href="{{ sort_urls.name }}">Region{% if sort == 'name' %} ↑{% endif %}</a><br><a class="sort-link {% if sort == 'code' %}active{% endif %}" href="{{ sort_urls.code }}">Code{% if sort == 'code' %} ↑{% endif %}</a></th>
+      <th><a class="sort-link {% if sort == 'tier' %}active{% endif %}" href="{{ sort_urls.tier }}">IT Market Zone{% if sort == 'tier' %} ↑{% endif %}</a></th>
+      <th>States</th>
+      <th>Owner Group</th>
+      <th><a class="sort-link {% if sort == 'owner' %}active{% endif %}" href="{{ sort_urls.owner }}">Owner{% if sort == 'owner' %} ↑{% endif %}</a></th>
+      <th>Status</th>
+      <th class="right">Actions</th>
+    </tr></thead>
+    <tbody>
+      {% for region in regions %}
+        {% set meta = region_metadata.get(region.code) %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td><a href="/regions/{{ region.id }}"><strong>{{ region.name }}</strong></a><br><span class="muted">{{ region.code }}</span></td>
+          <td>{% if meta %}<span class="pill">{{ meta.tier }}</span><br><span class="muted">{{ meta.description }}</span>{% else %}<span class="muted">{{ region.description }}</span>{% endif %}</td>
+          <td>{% if meta %}{{ meta.states|join(", ") }}{% else %}<span class="muted">Not mapped</span>{% endif %}</td>
+          <td>
+            <div class="tag-list">
+              {% for staff_member in group_members.get(region.id, []) %}
+                <span class="tag">{{ staff_member.name or staff_member.email }}</span>
+              {% else %}
+                <span class="muted">No assigned group members</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td>{{ region.staff_owner_name or "Unassigned" }}{% if region.staff_owner_email %}<div class="compact-meta">{{ region.staff_owner_email }}</div>{% endif %}</td>
+          <td><span class="pill {% if not region.active %}warn{% endif %}">{{ "Active" if region.active else "Inactive" }}</span></td>
+          <td class="right">
+            <div class="icon-actions">
+              <a class="icon-button" href="/landings/regions/{{ region.id }}" title="Open region landing" aria-label="Open region landing">
+                <svg viewBox="0 0 24 24"><path d="M3 11 12 3l9 8"></path><path d="M5 10v10h14V10"></path><path d="M9 20v-6h6v6"></path></svg>
+              </a>
+              <a class="icon-button" href="/regions/{{ region.id }}" title="View region" aria-label="View region">
+                <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </a>
+              {% if can_manage(user) %}
+                <a class="icon-button" href="/regions/{{ region.id }}/edit" title="Edit region" aria-label="Edit region">
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>
+                </a>
+                <form class="icon-form" method="post" action="/regions/{{ region.id }}/status">
+                  <input type="hidden" name="active" value="{{ 'false' if region.active else 'true' }}">
+                  <button class="icon-button danger" type="submit" title="{{ 'Deactivate region' if region.active else 'Reactivate region' }}" aria-label="{{ 'Deactivate region' if region.active else 'Reactivate region' }}">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg>
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="muted">No regions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

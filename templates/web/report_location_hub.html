@@ -1,0 +1,110 @@
+{% extends "web/base.html" %}
+{% block title %}{{ hub.hub }} | Location Expansion | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ hub.hub }}</h1>
+      <p>{{ hub.coverage_notes }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      <a class="button secondary" href="/reports/location-expansion">Location Plan</a>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/location-expansion/{{ hub_key }}">
+    <div>
+      <label>USCIS Year</label>
+      <select name="fiscal_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if fiscal_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Status</label>
+      <select name="status">
+        {% for value, label in status_options %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Min Approvals</label>
+      <input name="min_approvals" type="number" min="0" value="{{ min_approvals }}">
+    </div>
+    <div>
+      <label>Queue Size</label>
+      <input name="limit" type="number" min="25" max="500" value="{{ limit }}">
+    </div>
+    <div>
+      <label>Sort</label>
+      <select name="sort">
+        {% for value, label in sort_options %}
+          <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Build Queue</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.visible_count or 0 }}</strong><span>Visible Queue</span></div>
+    <div class="metric"><strong>{{ summary.new_employment or 0 }}</strong><span>New Employment</span></div>
+    <div class="metric"><strong>{{ summary.approvals or 0 }}</strong><span>Approvals</span></div>
+    <div class="metric"><strong>{{ summary.promoted_count or 0 }}</strong><span>Already Promoted</span></div>
+    <div class="metric"><strong>{{ summary.suggested_staff }}</strong><span>Default Owner</span></div>
+  </section>
+
+  <section class="card stack">
+    <h2>How To Use This Queue</h2>
+    <div class="rule-grid">
+      <div><strong>1. Start with USCIS</strong><span>Companies here have filing signal inside this operating hub.</span></div>
+      <div><strong>2. Promote</strong><span>Promotion creates or reopens the company workspace and assigns region ownership.</span></div>
+      <div><strong>3. Research</strong><span>Staff imports job JSON, checks below-8-year roles, and records notes.</span></div>
+      <div><strong>4. Decide</strong><span>Keep, watch, or eliminate based on job evidence and hiring standards.</span></div>
+    </div>
+  </section>
+
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Company</th><th>USCIS Signal</th><th>Location Evidence</th><th>Owner</th><th>Status</th><th class="right">Actions</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sno">{{ row.rank }}</td>
+          <td><strong>{{ row.company_name }}</strong><div class="compact-meta">{{ row.region_name }}</div></td>
+          <td>{{ row.new_employment }} new<br><span class="muted">{{ row.approvals }} approvals · {{ row.approval_rate }}% · {{ row.decisions }} decisions</span></td>
+          <td>{{ row.cities_label }}<div class="compact-meta">{{ row.states_label }}</div></td>
+          <td>{{ row.suggested_staff }}{% if row.suggested_staff_email %}<div class="compact-meta">{{ row.suggested_staff_email }}</div>{% endif %}</td>
+          <td><span class="pill {% if not row.promoted %}warn{% endif %}">{{ "Promoted" if row.promoted else "USCIS Only" }}</span></td>
+          <td class="right">
+            <div class="inline-actions">
+              {% if row.pursuit %}
+                <a class="button secondary" href="/pursuits/{{ row.pursuit.id }}?tab=intelligence">Open Brief</a>
+              {% else %}
+                <a class="button secondary" href="/companies/{{ row.company_id }}/uscis?back=/reports/location-expansion/{{ hub_key }}?{{ page_params }}">USCIS</a>
+                {% if can_manage(user) %}
+                  <form method="post" action="/companies/{{ row.company_id }}/promote">
+                    <input type="hidden" name="reason" value="Promoted from {{ hub.hub }} location expansion queue">
+                    <input type="hidden" name="next" value="/reports/location-expansion/{{ hub_key }}?{{ page_params }}">
+                    <button class="secondary" type="submit">Promote</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="muted">No companies match this location queue.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <style>
+    .rule-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .rule-grid div { border: 1px solid var(--line); border-radius: 7px; padding: 10px; background: #fbfcfd; }
+    .rule-grid strong, .rule-grid span { display: block; }
+    .rule-grid span { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    @media (max-width: 980px) { .rule-grid { grid-template-columns: 1fr; } }
+  </style>
+{% endblock %}

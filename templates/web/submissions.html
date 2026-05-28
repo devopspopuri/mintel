@@ -1,0 +1,54 @@
+{% extends "web/base.html" %}
+{% block title %}Submissions | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head"><div><h1>Submissions</h1><p>Consultant submissions require promoted-company jobs and Marketing Ready consultants. Admin can override with a reason.</p></div></section>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form class="filters" method="get" action="/submissions">
+    {% if role_value(user) != 'consultant' %}
+      <div><label>Consultant</label><select name="consultant_id"><option value="">All consultants</option>{% for consultant in consultants %}<option value="{{ consultant.id }}" {% if consultant_id == consultant.id %}selected{% endif %}>{{ consultant.name or consultant.email }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <div><label>Company</label><select name="company_id"><option value="">All promoted companies</option>{% for company in promoted_companies %}<option value="{{ company.id }}" {% if company_id == company.id %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
+    <div><label>Status</label><select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label>Per Page</label><select name="per_page">{% for size in [10,25,50,100] %}<option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+  {% if can_manage(user) %}
+    <form class="card stack" method="post" action="/submissions">
+      <h2>Add Submission</h2>
+      <div class="grid-2">
+        <label>Consultant<select name="consultant_id" required><option value="">Select consultant</option>{% for consultant in consultants %}<option value="{{ consultant.id }}">{{ consultant.name or consultant.email }}</option>{% endfor %}</select></label>
+        <label>Promoted-Company Job<select name="job_id" required><option value="">Select promoted-company job</option>{% for job in promoted_jobs %}<option value="{{ job.id }}">{{ job.company.name }} · {{ job.title }}</option>{% endfor %}</select></label>
+        <label>Resume Version<select name="resume_version_id"><option value="">Optional tailored resume</option>{% for resume in resume_versions %}<option value="{{ resume.id }}">{{ resume.consultant.name or resume.consultant.email }} · {{ resume.version_name }}</option>{% endfor %}</select></label>
+        <label>Status<select name="status">{% for value, label in status_options if value != "all" %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+        <label>Submitted On<input type="date" name="submitted_on"></label>
+        <label>Bill Rate<input name="bill_rate" placeholder="$70/hr C2C"></label>
+        <label>Vendor Contact<input name="vendor_contact" placeholder="Recruiter/vendor contact"></label>
+      </div>
+      <label>Submission Notes<textarea name="submission_notes" placeholder="Submitted resume version, JD match, vendor notes, required follow-up"></textarea></label>
+      <label>Next Step<textarea name="next_step" placeholder="Follow-up date, interview expected, documents needed"></textarea></label>
+      {% if is_admin(user) %}
+        <label>Admin Override Reason<textarea name="admin_override_reason" placeholder="Only use when submitting before Marketing Ready. The reason is stored in submission notes."></textarea></label>
+      {% endif %}
+      <div><button type="submit">Save Submission</button></div>
+    </form>
+  {% endif %}
+  <div class="listbar"><span>Filtered records: {{ total_rows }}</span><span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span></div>
+  <table class="data-list">
+    <thead><tr><th>S No</th><th>Consultant</th><th>Promoted Company</th><th>Job</th><th>Status</th><th>Resume</th><th>Next Step</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td><strong>{{ row.consultant.name or row.consultant.email }}</strong></td>
+          <td>{{ row.job.company.name }}</td>
+          <td>{{ row.job.title }}<br><span class="muted">{{ row.job.location }}</span></td>
+          <td><span class="pill">{{ row.status.replace("_", " ").title() }}</span><br><span class="muted">{{ row.submitted_on or "" }}</span></td>
+          <td>{{ row.resume_version.version_name if row.resume_version else "Not attached" }}</td>
+          <td>{{ row.next_step or row.submission_notes }}</td>
+        </tr>
+      {% endfor %}
+      {% if not rows %}<tr><td colspan="7" class="muted">No submissions found.</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <div class="pagination">{% if page > 1 %}<a class="button secondary" href="/submissions?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}{% if page < pages %}<a class="button secondary" href="/submissions?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}</div>
+{% endblock %}

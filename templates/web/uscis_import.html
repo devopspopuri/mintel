@@ -1,0 +1,49 @@
+{% extends "web/base.html" %}
+{% block title %}Import USCIS Data | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Import USCIS Data</h1>
+      <p>Load employer yearly CSV or TSV files. Imported employers become the company analysis pool.</p>
+    </div>
+  </section>
+  <form class="card" method="post" enctype="multipart/form-data">
+    <div class="grid-2">
+      <label>USCIS file<input type="file" name="file" required></label>
+      <label>Default fiscal year<input type="number" name="default_year" placeholder="Optional"></label>
+    </div>
+    <p class="muted">Expected fields include Fiscal Year, Employer (Petitioner) Name, NAICS, petitioner location, and approval/denial counts.</p>
+    <button type="submit">Import</button>
+  </form>
+  <h2>Import Jobs</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>File</th><th>Status</th><th class="right">Processed</th><th class="right">Imported</th><th class="right">Updated</th><th class="right">Skipped</th><th>Started</th></tr></thead>
+    <tbody>
+      {% for job in import_jobs %}
+        <tr><td class="sno">{{ loop.index }}</td><td><a href="/uscis/import/jobs/{{ job.id }}">{{ job.source_file }}</a><br><span class="muted">Job #{{ job.id }}</span></td><td><span class="pill {% if job.status == 'failed' %}hot{% elif job.status in ['queued', 'running'] %}warn{% endif %}">{{ job.status }}</span></td><td class="right">{{ job.processed_rows }}</td><td class="right">{{ job.imported }}</td><td class="right">{{ job.updated }}</td><td class="right">{{ job.skipped }}</td><td>{{ job.started_at or job.created_at }}</td></tr>
+      {% else %}
+        <tr><td colspan="8" class="muted">No import jobs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if result %}
+    <h2>Import Result</h2>
+    <div class="metrics">
+      <div class="metric"><strong>{{ result.imported }}</strong><span>Imported</span></div>
+      <div class="metric"><strong>{{ result.updated }}</strong><span>Updated</span></div>
+      <div class="metric"><strong>{{ result.skipped }}</strong><span>Skipped</span></div>
+      <div class="metric"><strong>Done</strong><span>Status</span></div>
+    </div>
+  {% endif %}
+  <h2>Recent Import Sources</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Source File</th><th class="right">Rows</th><th>Latest Import</th></tr></thead>
+    <tbody>
+      {% for source in import_sources %}
+        <tr><td class="sno">{{ loop.index }}</td><td>{{ source.source_file }}</td><td class="right">{{ source.rows }}</td><td>{{ source.latest_import }}</td></tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">No USCIS source files imported yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

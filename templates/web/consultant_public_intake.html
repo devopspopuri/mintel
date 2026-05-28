@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Consultant Intake | Mintel</title>
+    <style>
+      :root { --bg: #f5f7fa; --panel: #fff; --ink: #17202a; --muted: #64748b; --line: #dbe1ea; --accent: #0f766e; --danger: #b42318; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 1080px; margin: 0 auto; padding: 28px 18px 44px; }
+      h1 { font-size: 34px; line-height: 1.15; margin: 0; }
+      h2 { font-size: 19px; margin: 0 0 10px; }
+      p { color: var(--muted); line-height: 1.55; }
+      .hero, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+      .hero { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+      .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      button, .button { min-height: 38px; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 0 13px; font-weight: 800; text-decoration: none; cursor: pointer; }
+      .button.secondary, button.secondary { background: #fff; color: var(--accent); }
+      .stack { display: grid; gap: 14px; }
+      .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      label { display: grid; gap: 5px; color: var(--ink); font-size: 13px; font-weight: 850; }
+      input, select, textarea { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; background: #fff; }
+      textarea { min-height: 92px; resize: vertical; }
+      .hint { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; }
+      .notice { border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: 8px; background: #f0fdfa; padding: 12px; }
+      .error { border-left-color: var(--danger); background: #fff7f6; }
+      .submit-bar { display: flex; justify-content: flex-end; gap: 8px; }
+      @media (max-width: 760px) {
+        .hero, .grid-2, .grid-3 { display: grid; grid-template-columns: 1fr; }
+        .actions, .submit-bar { justify-content: stretch; }
+        button, .button { width: 100%; }
+      }
+      @media print {
+        body { background: #fff; }
+        main { max-width: none; padding: 0; }
+        .actions, .submit-bar, .notice.screen-only { display: none; }
+        .card, .hero { break-inside: avoid; border-color: #9ca3af; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div>
+          <h1>Mintel Consultant Intake</h1>
+          <p>Complete this questionnaire before Mintel creates or approves your consultant profile. Staff will review the submission, confirm role/domain fit, and then activate the correct onboarding path.</p>
+        </div>
+        <div class="actions">
+          <button class="secondary" type="button" onclick="window.print()">Print</button>
+        </div>
+      </section>
+
+      {% if submitted %}
+        <section class="notice">
+          <strong>Submitted.</strong>
+          <p>Your intake was received for staff review. Mintel will approve or update the profile before enabling consultant access.</p>
+        </section>
+      {% else %}
+        {% if error %}<section class="notice error"><strong>{{ error }}</strong></section>{% endif %}
+        <form class="stack" method="post" action="/public/consultant-intake">
+          <section class="card stack">
+            <h2>1. Identity And Contact</h2>
+            <div class="grid-2">
+              <label>Legal name<input name="name" required></label>
+              <label>Preferred name<input name="preferred_name"></label>
+              <label>Email<input type="email" name="email" required></label>
+              <label>Phone<input name="phone"></label>
+              <label>LinkedIn URL<input name="linkedin_url"></label>
+              <label>Current city and state<input name="current_location"></label>
+            </div>
+          </section>
+
+          <section class="card stack">
+            <h2>2. Work Authorization And Availability</h2>
+            <div class="grid-2">
+              <label>Work authorization<input name="work_authorization" placeholder="OPT, STEM OPT, H1B, GC, USC"></label>
+              <label>Visa valid until or notes<input name="visa_valid_until"></label>
+              <label>EAD valid until, if applicable<input name="ead_valid_until"></label>
+              <label>Availability to start<input name="availability" placeholder="Immediate, two weeks, date"></label>
+              <label>Relocation preference<input name="relocation_preference"></label>
+              <label>Remote, hybrid, or onsite preference<input name="onsite_preference"></label>
+              <label>Rate or salary expectation<input name="rate_expectation"></label>
+            </div>
+          </section>
+
+          <section class="card stack">
+            <h2>3. Education Timeline</h2>
+            <div class="grid-2">
+              <label>Undergraduate degree<input name="undergrad_degree"></label>
+              <label>Undergraduate university<input name="undergrad_university"></label>
+              <label>Undergraduate start date<input name="undergrad_start_date" placeholder="MM/YYYY"></label>
+              <label>Undergraduate end date<input name="undergrad_end_date" placeholder="MM/YYYY"></label>
+              <label>Master's degree<input name="masters_degree"></label>
+              <label>Master's university<input name="masters_university"></label>
+              <label>Master's start date<input name="masters_start_date" placeholder="MM/YYYY"></label>
+              <label>Master's end date<input name="masters_end_date" placeholder="MM/YYYY"></label>
+            </div>
+          </section>
+
+          <section class="card stack">
+            <h2>4. Experience And Learning</h2>
+            <div class="grid-2">
+              <label>Total professional experience<input name="years_experience" placeholder="Years and months"></label>
+              <label>Certifications completed or in progress<input name="certifications"></label>
+            </div>
+            <label>Current professional experience<textarea name="professional_experience" placeholder="Company, title, duration, responsibilities, systems, tools"></textarea></label>
+            <label>Previous experience before current role<textarea name="previous_experience" placeholder="Previous companies, roles, dates, responsibilities"></textarea></label>
+            <label>Domain exposure<textarea name="domain_experience" placeholder="Healthcare, banking, insurance, logistics, retail, telecom, manufacturing"></textarea></label>
+            <label>What did you learn in the last 6 months?<textarea name="learned_last_6_months" placeholder="Tools, courses, certifications, labs, projects, cloud services, interview preparation"></textarea></label>
+          </section>
+
+          <section class="card stack">
+            <h2>5. Target Role, Domain, And Skills</h2>
+            <div class="grid-2">
+              <label>Target marketing role<input name="target_marketing_role" placeholder="DevOps, SRE/AIOps, Cloud Platform, Data Engineer"></label>
+              <label>Target industry domain<select name="target_industry_domain"><option value="">Select if known</option>{% for domain in industry_domains %}<option value="{{ domain }}">{{ domain }}</option>{% endfor %}</select></label>
+            </div>
+            <label>Primary skills<textarea name="primary_skills" placeholder="Tools, languages, platforms, frameworks"></textarea></label>
+            <label>Strongest selling points<textarea name="profile_strengths"></textarea></label>
+            <label>Known gaps or areas to improve<textarea name="profile_gaps"></textarea></label>
+          </section>
+
+          <section class="card stack">
+            <h2>6. Project Story</h2>
+            <div class="grid-2">
+              <label>Latest project title<input name="latest_project_title"></label>
+              <label>Latest project domain<input name="latest_project_domain"></label>
+            </div>
+            <label>Latest project summary<textarea name="latest_project_summary" placeholder="Business context, systems, users, scale, responsibilities, tools, outcomes, incidents, evidence"></textarea></label>
+          </section>
+
+          <section class="card stack">
+            <h2>7. Resume And Documents</h2>
+            <label>Base resume reference or upload note<input name="base_resume_reference" placeholder="File name, Drive path, or 'will share by email'"></label>
+            <label>Current resume summary<textarea name="resume_summary"></textarea></label>
+            <label>Documents available<textarea name="documents_available" placeholder="Resume, certificates, status proof, portfolio links, GitHub, LinkedIn"></textarea></label>
+          </section>
+
+          <section class="notice screen-only">
+            <strong>What happens next</strong>
+            <p>Submitting this does not activate consultant access automatically. Mintel staff reviews the intake, creates or approves the profile, assigns a staff owner, locks role/domain, and then enables the correct training path.</p>
+          </section>
+
+          <div class="submit-bar">
+            <button type="button" class="secondary" onclick="window.print()">Print Instead</button>
+            <button type="submit">Submit For Staff Review</button>
+          </div>
+        </form>
+      {% endif %}
+    </main>
+  </body>
+</html>

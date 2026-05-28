@@ -1,0 +1,34 @@
+{% extends "web/base.html" %}
+{% block title %}My Account | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>My Account</h1>
+      <p>{{ user.email }} · {{ role_value(user).replace("_", " ").title() }}</p>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <h2>Profile</h2>
+      <table class="data-list">
+        <tbody>
+          <tr><td>Name</td><td>{{ user.name }}</td></tr>
+          <tr><td>Username</td><td>{{ user.username or "" }}</td></tr>
+          <tr><td>Email</td><td>{{ user.email }}</td></tr>
+          <tr><td>Role</td><td>{{ role_value(user).replace("_", " ").title() }}</td></tr>
+          <tr><td>Timezone</td><td>{{ user.timezone }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <form class="card stack" method="post" action="/account/password">
+      <h2>Change Password</h2>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+      <label>Current Password<input type="password" name="current_password" autocomplete="current-password" required></label>
+      <label>New Password<input type="password" name="new_password" autocomplete="new-password" minlength="10" required></label>
+      <label>Confirm New Password<input type="password" name="confirm_password" autocomplete="new-password" minlength="10" required></label>
+      <button type="submit">Update Password</button>
+    </form>
+  </section>
+{% endblock %}

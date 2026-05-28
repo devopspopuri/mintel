@@ -1,0 +1,72 @@
+{% extends "web/base.html" %}
+{% block title %}{{ company.name }} Aliases | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ company.name }}</h1>
+      <p>Company aliases, merge controls, and cleanup audit history.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/companies/{{ company.id }}/uscis">USCIS Detail</a>
+      <a class="button secondary" href="/companies/tools">Company Cleanup</a>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <h2>Find Merge Target</h2>
+      <form class="mini-form" method="get" action="/companies/{{ company.id }}/aliases">
+        <label class="wide">Target Search<input name="q" value="{{ q }}" placeholder="Search company name"></label>
+        <div><button type="submit">Search</button></div>
+      </form>
+      <form method="post" action="/companies/{{ company.id }}/merge">
+        <label>Merge Into<select name="target_company_id" required><option value="">Select target</option>{% for target in target_options %}<option value="{{ target.id }}">{{ target.name }}</option>{% endfor %}</select></label>
+        <label>Notes<textarea name="notes" placeholder="Why these records are the same company"></textarea></label>
+        <button type="submit">Merge Company</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Standards</h2>
+      <ul class="stack-list">
+        <li>Merge only when the companies represent the same legal or operational employer.</li>
+        <li>Move one alias when the normalized USCIS name was attached to the wrong company.</li>
+        <li>If both companies have pursuit workspaces, resolve the workspace first before merging.</li>
+      </ul>
+    </div>
+  </section>
+
+  <h2>Aliases</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Raw Name</th><th>Normalized</th><th>Source</th><th>Move Alias</th></tr></thead>
+    <tbody>
+      {% for alias in aliases %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td>{{ alias.raw_name }}</td>
+          <td>{{ alias.normalized_name }}</td>
+          <td>{{ alias.source }}</td>
+          <td>
+            <form class="mini-form" method="post" action="/companies/{{ company.id }}/aliases/{{ alias.id }}/move">
+              <label>Existing ID<input name="target_company_id" type="number" placeholder="Company ID"></label>
+              <div><button type="submit">Move</button></div>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No aliases found for this company.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Merge Audit</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Source</th><th>Target</th><th>Actor</th><th>Notes</th><th>Created</th></tr></thead>
+    <tbody>
+      {% for audit in merge_audits %}
+        <tr><td class="sno">{{ loop.index }}</td><td>{{ audit.source_company_name }} (#{{ audit.source_company_id }})</td><td>{{ audit.target_company_name }} (#{{ audit.target_company_id }})</td><td>{{ audit.actor }}</td><td>{{ audit.notes }}</td><td>{{ audit.created_at }}</td></tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">No merge activity for this company yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

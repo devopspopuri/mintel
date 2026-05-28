@@ -1,0 +1,44 @@
+{% extends "web/base.html" %}
+{% block title %}Consultants | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Consultants</h1>
+      <p>Consultant profiles for MAAS exchange, marketing readiness, resume tailoring, and interview operations.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/landings/consultant">Consultant Landing</a>
+      {% if can_manage(user) %}<a class="button" href="/consultants/new">Add Consultant</a>{% endif %}
+    </div>
+  </section>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form class="filters" method="get" action="/consultants">
+    <div class="wide"><label>Search</label><input type="search" name="q" value="{{ q }}" placeholder="Name, email, skills, education, certs, MAAS id"></div>
+    <div><label>Marketing Role</label><select name="marketing_role_id"><option value="">All roles</option>{% for role in marketing_roles %}<option value="{{ role.id }}" {% if marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>{% endfor %}</select></div>
+    <div><label>Status</label><select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label>Sort</label><select name="sort"><option value="name" {% if sort == "name" %}selected{% endif %}>Name</option><option value="email" {% if sort == "email" %}selected{% endif %}>Email</option><option value="role" {% if sort == "role" %}selected{% endif %}>Role</option><option value="updated" {% if sort == "updated" %}selected{% endif %}>Updated</option></select></div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+  <div class="listbar"><span>Filtered records: {{ total_rows }}</span><span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span></div>
+  <table class="data-list">
+    <thead><tr><th class="sno">ID</th><th><a class="sort-link {% if sort == 'name' %}active{% endif %}" href="{{ sort_urls.name }}">Consultant</a></th><th><a class="sort-link {% if sort == 'role' %}active{% endif %}" href="{{ sort_urls.role }}">Marketing Role</a></th><th>Owner</th><th>Experience</th><th>Readiness</th><th>MAAS</th><th>Status</th><th class="right">Actions</th></tr></thead>
+    <tbody>
+      {% for consultant in consultants %}
+        <tr>
+          <td class="sno">{{ consultant.id }}</td>
+          <td class="company-cell"><strong>{{ consultant.name }}</strong><span class="muted">{{ consultant.email }}</span><div class="compact-meta">{{ consultant.primary_skills or "Skills not captured" }}</div></td>
+          <td>{{ consultant.marketing_role.name if consultant.marketing_role else "Not set" }}<div class="compact-meta">{{ consultant.target_industry_domain or "Domain not set" }}</div></td>
+          <td>{{ consultant.staff_owner or "Unassigned" }}<div class="compact-meta">{{ consultant.recruiter_owner or "Recruiter not set" }}</div></td>
+          <td>{{ consultant.years_experience or "Not set" }}<div class="compact-meta">{{ consultant.work_authorization or "Auth not set" }}</div></td>
+          <td><span class="pill {% if consultant.marketing_readiness_percent < 60 %}warn{% elif consultant.marketing_readiness_percent >= 90 %}hot{% endif %}">{{ consultant.marketing_readiness_percent }}%</span><div class="scoreline">Resume {{ consultant.resume_readiness_score }} · Interview {{ consultant.interview_readiness_score }}</div></td>
+          <td>{{ consultant.maas_sync_status|replace("_", " ")|title }}<div class="compact-meta">{{ consultant.maas_profile_id or "No MAAS id" }}</div></td>
+          <td><span class="pill {% if not consultant.active %}warn{% endif %}">{{ consultant.marketing_status|replace("_", " ")|title if consultant.active else "Inactive" }}</span></td>
+          <td class="right"><div class="icon-actions"><a class="icon-button" href="/consultants/{{ consultant.id }}" title="View consultant" aria-label="View consultant"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>{% if can_manage(user) %}<a class="icon-button" href="/consultants/{{ consultant.id }}/edit" title="Edit consultant" aria-label="Edit consultant"><svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg></a><form class="icon-form" method="post" action="/consultants/{{ consultant.id }}/delete"><button class="icon-button danger" type="submit" title="{{ 'Deactivate' if consultant.active else 'Delete' }}" aria-label="{{ 'Deactivate' if consultant.active else 'Delete' }}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg></button></form>{% endif %}</div></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="9" class="muted">No consultants found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">{% if page > 1 %}<a class="button secondary" href="/consultants?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}{% if page < pages %}<a class="button secondary" href="/consultants?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}</div>
+{% endblock %}

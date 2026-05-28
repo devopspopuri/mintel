@@ -1,0 +1,56 @@
+{% extends "web/base.html" %}
+{% block title %}Resume Versions | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Resume Versions</h1>
+      <p>Manual resume tailoring from a base resume. Update the latest project and improve supporting projects for ATS fit.</p>
+    </div>
+  </section>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form class="filters" method="get" action="/resume-versions">
+    <div><label>Consultant</label><select name="consultant_id"><option value="">All consultants</option>{% for consultant in consultants %}<option value="{{ consultant.id }}" {% if consultant_id == consultant.id %}selected{% endif %}>{{ consultant.name or consultant.email }}</option>{% endfor %}</select></div>
+    <div><label>Status</label><select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label>Per Page</label><select name="per_page">{% for size in [10,25,50,100] %}<option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+  {% if can_manage(user) %}
+    <form class="card stack" method="post" action="/resume-versions">
+      <h2>Add Resume Version</h2>
+      <div class="grid-2">
+        <label>Consultant<select name="consultant_id" required><option value="">Select consultant</option>{% for consultant in consultants %}<option value="{{ consultant.id }}">{{ consultant.name or consultant.email }}</option>{% endfor %}</select></label>
+        <label>Version Name<input name="version_name" placeholder="AIOps banking submission resume"></label>
+        <label>Base Resume Name<input name="base_resume_name" placeholder="Krishna base resume v3"></label>
+        <label>Target Role<select name="target_role_id"><option value="">Select role</option>{% for role in marketing_roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label>
+        <label>Target Domain<select name="target_domain"><option value="">Select domain</option>{% for domain in domains %}<option value="{{ domain }}">{{ domain }}</option>{% endfor %}</select></label>
+        <label>Target Job<select name="target_job_id"><option value="">Optional promoted-company job</option>{% for job in promoted_jobs %}<option value="{{ job.id }}">{{ job.company.name }} · {{ job.title }}</option>{% endfor %}</select></label>
+        <label>ATS Score<input type="number" min="0" max="100" name="ats_score" value="0"></label>
+        <label>File Reference<input name="file_reference" placeholder="Drive path, file name, or local reference"></label>
+      </div>
+      <label>Latest Project Update<textarea name="latest_project_update" placeholder="Latest project changes added manually for the target role/JD"></textarea></label>
+      <label>Supporting Project Improvements<textarea name="supporting_project_improvements" placeholder="Older projects improved with stronger bullets, tools, metrics, and ATS terms"></textarea></label>
+      <label>Tailoring Notes<textarea name="tailoring_notes" placeholder="JD match, missing keywords, manual edits, recruiter notes"></textarea></label>
+      <label><input type="checkbox" name="active" value="true" checked> Active</label>
+      <div><button type="submit">Save Resume Version</button></div>
+    </form>
+  {% endif %}
+  <div class="listbar"><span>Filtered records: {{ total_rows }}</span><span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span></div>
+  <table class="data-list">
+    <thead><tr><th>S No</th><th>Consultant</th><th>Version</th><th>Target</th><th>ATS</th><th>Latest Project</th><th>Updated</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td><strong>{{ row.consultant.name or row.consultant.email }}</strong></td>
+          <td>{{ row.version_name }}<br><span class="muted">{{ row.base_resume_name }}</span></td>
+          <td>{{ row.target_role.name if row.target_role else "" }}<br><span class="muted">{{ row.target_domain }}</span></td>
+          <td><strong>{{ row.ats_score }}</strong></td>
+          <td>{{ row.latest_project_update[:220] }}{% if row.latest_project_update|length > 220 %}...{% endif %}</td>
+          <td class="compact-meta">{{ row.updated_at.strftime("%Y-%m-%d") if row.updated_at else "" }}</td>
+        </tr>
+      {% endfor %}
+      {% if not rows %}<tr><td colspan="7" class="muted">No resume versions found.</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <div class="pagination">{% if page > 1 %}<a class="button secondary" href="/resume-versions?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}{% if page < pages %}<a class="button secondary" href="/resume-versions?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}</div>
+{% endblock %}

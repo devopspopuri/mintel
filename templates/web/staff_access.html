@@ -1,0 +1,38 @@
+{% extends "web/base.html" %}
+{% block title %}Access Matrix | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Access Matrix</h1>
+      <p>Role-based permissions used by web pages, forms, and API endpoints.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/staff">Staff</a>
+      <a class="button secondary" href="/staff-assignments">Assignments</a>
+    </div>
+  </section>
+
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th>Permission</th>
+        {% for _value, label in role_options %}
+          <th class="right">{{ label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for permission in permissions %}
+        <tr>
+          <td>
+            <strong>{{ permission.value.replace("_", " ").title() }}</strong><br>
+            <span class="muted">{{ permission.value }}</span>
+          </td>
+          {% for value, _label in role_options %}
+            <td class="right">{% if permission in role_permissions[value] %}<span class="pill">Allowed</span>{% else %}<span class="muted">Denied</span>{% endif %}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

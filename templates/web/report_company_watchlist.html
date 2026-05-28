@@ -1,0 +1,160 @@
+{% extends "web/base.html" %}
+{% block title %}Company Watchlist | Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Company Watchlist</h1>
+      <p>Latest-year USCIS signal with promoted-company job evidence, staff capacity, and first-pass hiring-standard elimination.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      <a class="button secondary" href="/reports">Reports Home</a>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/company-watchlist">
+    <div>
+      <label>USCIS Year</label>
+      <select name="fiscal_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if fiscal_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Region</label>
+      <select name="region_id">
+        <option value="" {% if not selected_region_id %}selected{% endif %}>All regions</option>
+        {% for region in regions %}
+          <option value="{{ region.id }}" {% if selected_region_id == region.id %}selected{% endif %}>{{ region.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Source</label>
+      <select name="source">
+        {% for value, label in source_options %}
+          <option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Min Approvals</label>
+      <input name="min_approvals" type="number" min="0" value="{{ min_approvals }}">
+    </div>
+    <div>
+      <label>Min Approval Rate</label>
+      <input name="min_approval_rate" type="number" min="0" max="100" value="{{ min_approval_rate }}">
+    </div>
+    <div>
+      <label>Capacity / Staff</label>
+      <input name="capacity_per_staff" type="number" min="10" max="500" value="{{ capacity_per_staff }}">
+    </div>
+    <div>
+      <label>Hiring Standards</label>
+      <select name="standard_filter">
+        {% for value, label in standard_filter_options %}
+          <option value="{{ value }}" {% if standard_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Sort</label>
+      <select name="sort">
+        {% for value, label in sort_options %}
+          <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Run</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.candidate_count or 0 }}</strong><span>Watchlist Candidates</span></div>
+    <div class="metric"><strong>{{ summary.promoted_count or 0 }}</strong><span>Promoted</span></div>
+    <div class="metric"><strong>{{ summary.uscis_only_count or 0 }}</strong><span>USCIS Only</span></div>
+    <div class="metric"><strong>{{ summary.excluded_high_standard or 0 }}</strong><span>Eliminated High Standards</span></div>
+    <div class="metric"><strong>{{ summary.staff_count or 0 }}</strong><span>Staff With Work</span></div>
+    <div class="metric"><strong>{{ summary.total_capacity or 0 }}</strong><span>Total Capacity</span></div>
+  </section>
+
+  <section class="grid-2">
+    <article class="card stack">
+      <h2>Initial Pass Rules</h2>
+      <ul class="stack-list">
+        <li>USCIS latest year is the source of truth for company signal.</li>
+        <li>Promoted-company JSON is supporting evidence for role fit and below-8-year eligibility.</li>
+        <li>Very high standards are eliminated when seniority exclusions heavily outweigh eligible jobs.</li>
+        <li>Capacity is a planning view: approximately {{ capacity_per_staff }} companies per staff member.</li>
+      </ul>
+    </article>
+    <article class="card stack">
+      <h2>Staff Capacity</h2>
+      <table class="data-list tight">
+        <thead><tr><th>Region</th><th>Staff</th><th class="right">Assigned</th><th class="right">Remaining</th></tr></thead>
+        <tbody>
+          {% for row in staff_rows %}
+            <tr><td>{{ row.region_name }}</td><td>{{ row.staff }}</td><td class="right">{{ row.assigned }}</td><td class="right">{% if row.over_capacity %}<span class="pill warn">+{{ row.over_capacity }} over</span>{% else %}{{ row.remaining }}{% endif %}</td></tr>
+          {% else %}
+            <tr><td colspan="4" class="muted">No staff assignments found for this result set.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+  <div class="listbar">
+    <span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }} companies · Page {{ page }} of {{ pages }}</span>
+    <span>Year {{ fiscal_year }} · {{ source.replace("_", " ").title() }}</span>
+  </div>
+
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th class="sno">Rank</th>
+        <th><a class="sort-link {% if sort == 'company' %}active{% endif %}" href="{{ sort_urls.company }}">Company</a></th>
+        <th>Region / Staff</th>
+        <th class="right"><a class="sort-link {% if sort == 'watch_score' %}active{% endif %}" href="{{ sort_urls.watch_score }}">Score</a></th>
+        <th>Recommendation</th>
+        <th class="right"><a class="sort-link {% if sort == 'approvals' %}active{% endif %}" href="{{ sort_urls.approvals }}">Approvals</a></th>
+        <th class="right"><a class="sort-link {% if sort == 'approval_rate' %}active{% endif %}" href="{{ sort_urls.approval_rate }}">Rate</a></th>
+        <th>Job Evidence</th>
+        <th><a class="sort-link {% if sort == 'standard_risk' %}active{% endif %}" href="{{ sort_urls.standard_risk }}">Standards</a></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sno">{{ row.rank }}</td>
+          <td class="company-cell">
+            <a href="/companies/{{ row.company_id }}/uscis"><strong>{{ row.company_name }}</strong></a>
+            <span class="muted">{{ row.industry or "Industry unknown" }} · {{ row.states_label }}</span>
+            {% if row.promoted %}<span class="pill">Promoted</span>{% else %}<span class="pill warn">USCIS only</span>{% endif %}
+          </td>
+          <td>{{ row.region_name }}<br><span class="muted">{{ row.suggested_staff }}</span></td>
+          <td class="right"><strong>{{ row.watch_score }}</strong></td>
+          <td>{{ row.recommendation }}<br><span class="muted">{{ row.reason }}</span></td>
+          <td class="right">{{ row.approvals }}<br><span class="muted">new {{ row.new_employment }}</span></td>
+          <td class="right">{{ row.approval_rate }}%</td>
+          <td>{{ row.eligible_jobs }} eligible<br><span class="muted">{{ row.verified_jobs }} verified · {{ row.estimated_jobs }} estimated</span></td>
+          <td><span class="pill {% if row.standard_risk in ['High', 'Very high'] %}warn{% endif %}">{{ row.standard_risk }}</span><br><span class="muted">{{ row.standard_reason }}</span></td>
+          <td class="right">
+            {% if row.pursuit %}
+              <a class="button secondary" href="/pursuits/{{ row.pursuit.id }}">Workspace</a>
+            {% else %}
+              <a class="button secondary" href="/companies/{{ row.company_id }}/uscis">USCIS</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10" class="muted">No companies match this watchlist selection.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="/reports/company-watchlist?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="button secondary" href="/reports/company-watchlist?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+{% endblock %}

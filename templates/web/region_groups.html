@@ -1,0 +1,82 @@
+{% extends "web/base.html" %}
+{% block title %}Region Groups | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Region Groups</h1>
+      <p>Admin-managed groups that grant staff access to company pursuits by region.</p>
+    </div>
+    <a class="button" href="/region-groups/new">Create Group</a>
+  </section>
+
+  <form class="filters" method="get" action="/region-groups">
+    <div>
+      <label>Status</label>
+      <select name="status">
+        {% for value, label in status_options %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Per Page</label>
+      <select name="per_page">
+        {% for size in [10, 25, 50, 100] %}
+          <option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ coverage.regions_without_groups|length }}</strong><span>Regions without groups</span></div>
+    <div class="metric"><strong>{{ coverage.groups_without_members|length }}</strong><span>Groups without members</span></div>
+    <div class="metric"><strong>{{ coverage.groups_without_regions|length }}</strong><span>Groups without regions</span></div>
+  </section>
+  {% if coverage.regions_without_groups or coverage.groups_without_members or coverage.groups_without_regions %}
+    <div class="flash warn">
+      Coverage gaps:
+      {% if coverage.regions_without_groups %} Regions without groups: {{ coverage.regions_without_groups|map(attribute="name")|join(", ") }}.{% endif %}
+      {% if coverage.groups_without_members %} Groups without members: {{ coverage.groups_without_members|map(attribute="name")|join(", ") }}.{% endif %}
+      {% if coverage.groups_without_regions %} Groups without regions: {{ coverage.groups_without_regions|map(attribute="name")|join(", ") }}.{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="listbar">
+    <span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }} groups</span>
+    <span>Page {{ page }} of {{ pages }}</span>
+  </div>
+
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Group</th><th>Regions</th><th>Members</th><th>Status</th><th class="right">Actions</th></tr></thead>
+    <tbody>
+      {% for group in groups %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td class="company-cell"><a href="/region-groups/{{ group.id }}"><strong>{{ group.name }}</strong></a><span class="muted">{{ group.description }}</span></td>
+          <td><div class="tag-list">{% for assignment in group.regions if assignment.active and assignment.region and assignment.region.active %}<span class="tag">{{ assignment.region.name }}</span>{% else %}<span class="muted">No regions</span>{% endfor %}</div></td>
+          <td><div class="tag-list">{% for membership in group.members if membership.active and membership.user and membership.user.active %}<span class="tag">{{ membership.user.name or membership.user.email }}</span>{% else %}<span class="muted">No members</span>{% endfor %}</div></td>
+          <td><span class="pill {% if not group.active %}warn{% endif %}">{{ "active" if group.active else "inactive" }}</span></td>
+          <td class="right">
+            <div class="inline-actions">
+              <a class="button secondary" href="/region-groups/{{ group.id }}/edit">Edit</a>
+              {% if group.active %}
+                <form method="post" action="/region-groups/{{ group.id }}/archive"><button class="secondary" type="submit">Archive</button></form>
+              {% else %}
+                <form method="post" action="/region-groups/{{ group.id }}/restore"><button class="secondary" type="submit">Restore</button></form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">No region groups found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="/region-groups?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    {% if page < pages %}<a class="button secondary" href="/region-groups?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "web/base.html" %}
+{% block title %}Journey Checklist | {{ consultant.name or consultant.email }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Journey Checklist</h1>
+      <p>{{ consultant.name or consultant.email }} · {{ consultant.marketing_role.name if consultant.marketing_role else "Role not set" }} · {{ journey.target_domain or "Domain not set" }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/consultants/{{ consultant.id }}">Consultant</a>
+      <a class="button secondary" href="/consultants/{{ consultant.id }}/onboarding">Student View</a>
+      <a class="button secondary" href="{{ positioning_url }}">Positioning</a>
+      <a class="button secondary" href="{{ matches_url }}">Company Matches</a>
+      <a class="button secondary" href="/reports/role-journeys">Role Journeys</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ journey.readiness_score }}%</strong><span>Checklist readiness</span></div>
+    <div class="metric"><strong>{{ completed_activities }}/{{ total_activities }}</strong><span>Activities done</span></div>
+    <div class="metric"><strong>{{ blocked_activities }}</strong><span>Blocked</span></div>
+    <div class="metric"><strong>{{ journey.current_stage|replace("_", " ")|title }}</strong><span>Current stage</span></div>
+    <div class="metric"><strong>{{ journey.status|replace("_", " ")|title }}</strong><span>Status</span></div>
+  </section>
+
+  {% if can_manage_journey %}
+    <form class="card journey-summary-form" method="post" action="/consultants/{{ consultant.id }}/journey">
+      <div>
+        <label>Status</label>
+        <select name="status">
+          {% for value, label in journey_status_options %}
+            <option value="{{ value }}" {% if journey.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Stage</label>
+        <select name="current_stage">
+          {% for value, label in stage_options %}
+            <option value="{{ value }}" {% if journey.current_stage == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Target Market Date</label>
+        <input type="date" name="target_market_date" value="{{ journey.target_market_date or '' }}">
+      </div>
+      <label class="wide">Next Action<input name="next_action" value="{{ journey.next_action }}"></label>
+      <label class="wide">Positioning Summary<textarea name="positioning_summary">{{ journey.positioning_summary }}</textarea></label>
+      <label class="wide">Notes<textarea name="notes">{{ journey.notes }}</textarea></label>
+      <div><button type="submit">Save Journey</button></div>
+    </form>
+  {% else %}
+    <section class="card">
+      <h2>Next Action</h2>
+      <p>{{ journey.next_action or "No next action set." }}</p>
+      <p class="muted">Blockers: {{ journey.blocker_summary or "No blockers recorded." }}</p>
+    </section>
+  {% endif %}
+
+  <section class="card evidence-package-card">
+    <div class="evidence-package-head">
+      <div>
+        <h2>Final Evidence Package</h2>
+        <p>Proof bundle for submissions and interview prep. Every claim in the resume or interview story connects to one of these artifacts.</p>
+      </div>
+      <div class="evidence-score">
+        <strong>{{ evidence_package.completed }}/{{ evidence_package.total }}</strong>
+        <span>{{ evidence_package.percent }}% complete</span>
+      </div>
+    </div>
+    <div class="evidence-package-grid">
+      {% for item in evidence_package.items %}
+        <a class="evidence-item status-{{ item.status }}" href="#activity-{{ item.activity_id or item.key }}">
+          <strong>{{ item.title }}</strong>
+          <span>{{ item.status_label }}</span>
+          <small>{{ item.description }}</small>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="journey-stage-list">
+    {% for group in grouped_activities %}
+      <article class="card journey-stage-card">
+        <div class="stage-heading">
+          <h2>{{ group.label }}</h2>
+          <span class="muted">{{ group.activities|selectattr("status", "equalto", "completed")|list|length }}/{{ group.activities|length }} complete</span>
+        </div>
+        <div class="activity-list">
+          {% for activity in group.activities %}
+            <form id="activity-{{ activity.id }}" class="activity-row status-{{ activity.status }}" method="post" action="/consultants/{{ consultant.id }}/journey/activities/{{ activity.id }}">
+              <div class="activity-main">
+                <span class="activity-sequence">{{ activity.sequence }}</span>
+                <div>
+                  <strong>{{ activity.title }}</strong>
+                  <p>{{ activity.description }}</p>
+                  {% if activity.evidence_url %}<a href="{{ activity.evidence_url }}" target="_blank" rel="noopener noreferrer">Evidence</a>{% endif %}
+                </div>
+              </div>
+              <div>
+                <label>Status</label>
+                <select name="status" {% if not can_manage_journey %}disabled{% endif %}>
+                  {% for value, label in activity_status_options %}
+                    <option value="{{ value }}" {% if activity.status == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label>Due</label>
+                <input type="date" name="due_date" value="{{ activity.due_date or '' }}" {% if not can_manage_journey %}disabled{% endif %}>
+              </div>
+              <div>
+                <label>Evidence URL</label>
+                <input name="evidence_url" value="{{ activity.evidence_url }}" placeholder="Link or reference" {% if not can_manage_journey %}disabled{% endif %}>
+              </div>
+              <label class="activity-notes">Notes<textarea name="notes" {% if not can_manage_journey %}disabled{% endif %}>{{ activity.notes }}</textarea></label>
+              {% if can_manage_journey %}<button class="secondary" type="submit">Update</button>{% endif %}
+            </form>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <style>
+    .journey-summary-form { align-items: end; display: grid; gap: 10px; grid-template-columns: 150px 180px 170px minmax(240px, 1fr) auto; margin-bottom: 16px; }
+    .journey-summary-form .wide { grid-column: span 2; }
+    .journey-summary-form textarea { min-height: 74px; }
+    .journey-stage-list { display: grid; gap: 12px; }
+    .evidence-package-card { display: grid; gap: 12px; margin-bottom: 14px; }
+    .evidence-package-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .evidence-package-head h2, .evidence-package-head p { margin: 0; }
+    .evidence-score { border: 1px solid var(--line); border-radius: 8px; min-width: 118px; padding: 9px; text-align: center; }
+    .evidence-score strong { color: var(--accent-dark); display: block; font-size: 24px; }
+    .evidence-score span { color: var(--muted); font-size: 12px; }
+    .evidence-package-grid { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .evidence-item { border: 1px solid var(--line); border-radius: 8px; color: var(--ink); display: grid; gap: 5px; padding: 10px; text-decoration: none; }
+    .evidence-item:hover { border-color: var(--accent); background: #f0fdfa; }
+    .evidence-item strong, .evidence-item span, .evidence-item small { display: block; }
+    .evidence-item span { color: var(--muted); font-size: 12px; font-weight: 850; }
+    .evidence-item small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .evidence-item.status-completed { background: #f0fdfa; border-color: #99d9ce; }
+    .evidence-item.status-blocked { background: #fff8f6; border-color: #f1b5ad; }
+    .journey-stage-card { display: grid; gap: 10px; }
+    .stage-heading { align-items: center; display: flex; justify-content: space-between; gap: 12px; }
+    .stage-heading h2 { margin: 0; }
+    .activity-list { display: grid; gap: 8px; }
+    .activity-row { align-items: end; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 10px; grid-template-columns: minmax(280px, 1.4fr) 140px 140px minmax(180px, 0.8fr) minmax(220px, 1fr) auto; padding: 12px; }
+    .activity-row.status-completed { border-left: 5px solid var(--accent); }
+    .activity-row.status-blocked { border-left: 5px solid var(--danger); background: #fff8f6; }
+    .activity-row.status-in_progress { border-left: 5px solid #d97706; }
+    .activity-main { align-items: flex-start; display: grid; gap: 10px; grid-template-columns: 34px minmax(0, 1fr); }
+    .activity-sequence { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); display: inline-flex; font-size: 12px; font-weight: 850; height: 30px; justify-content: center; width: 30px; }
+    .activity-main strong { display: block; }
+    .activity-main p { font-size: 13px; line-height: 1.4; margin: 3px 0 0; }
+    .activity-main a { display: inline-block; font-size: 12px; font-weight: 800; margin-top: 5px; }
+    .activity-notes textarea { min-height: 58px; }
+    @media (max-width: 1100px) {
+      .journey-summary-form, .activity-row { grid-template-columns: 1fr; }
+      .evidence-package-head, .evidence-package-grid { display: grid; grid-template-columns: 1fr; }
+      .evidence-score { text-align: left; }
+      .journey-summary-form .wide { grid-column: auto; }
+    }
+  </style>
+{% endblock %}

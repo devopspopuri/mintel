@@ -1,0 +1,48 @@
+{% extends "web/base.html" %}
+{% block title %}Edit Training Program | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Edit Training Program</h1>
+      <p>{{ program.marketing_role.name }} readiness content for consultants.</p>
+    </div>
+    <a class="button secondary" href="/training-programs/{{ program.id }}">Cancel</a>
+  </section>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+  <form class="card stack" method="post" action="/training-programs/{{ program.id }}">
+    <div class="grid-2">
+      <div><label>Title</label><input name="title" required value="{{ program.title }}"></div>
+      <div><label>Duration Weeks</label><input name="duration_weeks" type="number" min="1" max="52" value="{{ program.duration_weeks }}"></div>
+    </div>
+    <div><label>Target Audience</label><textarea name="target_audience">{{ program.target_audience }}</textarea></div>
+    <div><label>Outcome</label><textarea name="outcome">{{ program.outcome }}</textarea></div>
+    <div><label>Vocabulary Plan</label><textarea name="vocabulary_plan">{{ program.vocabulary_plan }}</textarea></div>
+    <div><label>Concepts Plan</label><textarea name="concepts_plan">{{ program.concepts_plan }}</textarea></div>
+    <div><label>Use Cases Plan</label><textarea name="usecases_plan">{{ program.usecases_plan }}</textarea></div>
+    <div><label>Interview Questions Plan</label><textarea name="interview_plan">{{ program.interview_plan }}</textarea></div>
+    <div><label>Resume Positioning Plan</label><textarea name="resume_plan">{{ program.resume_plan }}</textarea></div>
+    <div><label>Labs Plan</label><textarea name="labs_plan">{{ program.labs_plan }}</textarea></div>
+    <div><label>Readiness Checklist</label><textarea name="readiness_checklist">{{ program.readiness_checklist }}</textarea></div>
+    <div><label>Other Areas / Gaps</label><textarea name="missing_areas">{{ program.missing_areas }}</textarea></div>
+    <label style="display:flex;gap:8px;align-items:center;">
+      <input style="width:auto;min-height:0;" type="checkbox" name="active" value="true" {% if program.active %}checked{% endif %}>
+      Active
+    </label>
+    <div class="inline-actions">
+      <a class="button secondary" href="/training-programs/{{ program.id }}">Cancel</a>
+      <button type="submit">Save Program</button>
+    </div>
+  </form>
+
+  <h2>7 Job Description Patterns</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Pattern</th><th>Title</th><th>Domain</th><th>Difficulty</th></tr></thead>
+    <tbody>
+      {% for jd in job_descriptions %}
+        <tr><td class="sno">{{ loop.index }}</td><td>{{ jd.pattern_type }}</td><td>{{ jd.title }}</td><td>{{ jd.domain }}</td><td>{{ jd.difficulty }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

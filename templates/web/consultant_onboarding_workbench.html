@@ -1,0 +1,189 @@
+{% extends "web/base.html" %}
+{% block title %}Consultant Onboarding Workbench | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Consultant Onboarding Workbench</h1>
+      <p>Operational queue for staff ownership, training assignment, evidence completion, mock readiness, and marketing handoff.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/consultant-onboarding-questionnaire">Printable Questionnaire</a>
+      <a class="button secondary" href="/consultants">Consultants</a>
+      <a class="button secondary" href="/reports/role-journeys">Role Journeys</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.consultants }}</strong><span>Visible consultants</span></div>
+    <div class="metric"><strong>{{ summary.blocked }}</strong><span>Blocked</span></div>
+    <div class="metric"><strong>{{ summary.overdue }}</strong><span>Overdue</span></div>
+    <div class="metric"><strong>{{ summary.missing_training }}</strong><span>Missing training</span></div>
+    <div class="metric"><strong>{{ summary.market_ready }}</strong><span>Marketing ready</span></div>
+    <div class="metric"><strong>{{ summary.placed }}</strong><span>Placed/support</span></div>
+  </section>
+
+  <section class="card stack placement-pipeline">
+    <div class="pipeline-head">
+      <div>
+        <h2>{{ pipeline.goal }}</h2>
+        <p>{{ pipeline.summary }}</p>
+      </div>
+      {% if pipeline.first_bottleneck %}
+        <div class="owner-badge warn">
+          <span>First bottleneck</span>
+          <strong>{{ pipeline.first_bottleneck.label }}</strong>
+        </div>
+      {% endif %}
+    </div>
+    <div class="pipeline-grid">
+      {% for card in pipeline.cards %}
+        <article class="pipeline-card {% if card.blocked_count %}needs-work{% else %}ready{% endif %}">
+          <div class="pipeline-card-top">
+            <strong>{{ card.label }}</strong>
+            <span>{{ card.percent }}%</span>
+          </div>
+          <div class="progress-track"><span style="width: {{ card.percent }}%"></span></div>
+          <p>{{ card.goal }}</p>
+          <small>{{ card.ready_count }} ready · {{ card.blocked_count }} need work</small>
+          {% if card.blocked_count %}<em>{{ card.route }}</em>{% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/consultant-onboarding-workbench">
+    <div class="wide">
+      <label>Search</label>
+      <input name="q" value="{{ q }}" placeholder="Name, email, domain, skills">
+    </div>
+    <div>
+      <label>Stage</label>
+      <select name="stage">
+        {% for value, label in stage_options %}
+          <option value="{{ value }}" {% if stage == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Owner</label>
+      <select name="owner">
+        <option value="">All owners</option>
+        {% for item in owner_options %}
+          <option value="{{ item }}" {% if owner == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Minimum Readiness</label>
+      <input type="number" name="min_readiness" min="0" max="100" value="{{ min_readiness }}">
+    </div>
+    <div class="inline-actions">
+      <button type="submit">Apply</button>
+      <a class="button secondary" href="/consultant-onboarding-workbench">Reset</a>
+    </div>
+  </form>
+
+  <section class="card onboarding-stage-strip">
+    {% for item in stage_rows %}
+      <a href="/consultant-onboarding-workbench?stage={{ item.stage }}" class="stage-chip {% if stage == item.stage %}active{% endif %}">
+        <strong>{{ item.count }}</strong>
+        <span>{{ item.label }}</span>
+      </a>
+    {% endfor %}
+  </section>
+
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th class="sno">S No</th>
+        <th>Consultant</th>
+        <th>Assignment</th>
+        <th>Stage / Next Action</th>
+        <th>Progress</th>
+        <th>Evidence</th>
+        <th>Mock</th>
+        <th class="right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        {% set consultant = row.consultant %}
+        {% set journey = row.journey %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td class="company-cell">
+            <strong>{{ consultant.name or consultant.email }}</strong>
+            <span class="muted">{{ consultant.email }}</span>
+            <div class="compact-meta">{{ consultant.current_location or "Location not set" }} · {{ consultant.work_authorization or "Auth not set" }}</div>
+          </td>
+          <td>
+            {{ consultant.marketing_role.name if consultant.marketing_role else "Role not set" }}
+            <div class="compact-meta">{{ consultant.target_industry_domain or "Domain not set" }}</div>
+            <div class="compact-meta">Owner: {{ consultant.staff_owner or "Unassigned" }}</div>
+          </td>
+          <td>
+            <span class="pill {% if row.blocked_count %}hot{% elif row.overdue_count %}warn{% endif %}">{{ row.stage_label }}</span>
+            <div class="scoreline">{{ journey.next_action or (row.next_activity.title if row.next_activity else "No next action") }}</div>
+            {% if row.blocked_count or row.overdue_count %}
+              <div class="compact-meta">{{ row.blocked_count }} blocked · {{ row.overdue_count }} overdue</div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="pill {% if journey.readiness_score < 60 %}warn{% elif journey.readiness_score >= 90 %}hot{% endif %}">{{ journey.readiness_score }}%</span>
+            <div class="scoreline">{{ row.completed_count }}/{{ row.activity_count }} checklist items</div>
+          </td>
+          <td>
+            {{ row.evidence_package.completed }}/{{ row.evidence_package.total }}
+            <div class="compact-meta">{{ row.evidence_package.percent }}% final package</div>
+          </td>
+          <td>
+            {% if row.latest_mock %}
+              {{ row.latest_mock.status.replace("_", " ").title() }}
+              <div class="compact-meta">Score {{ row.latest_mock.score }}</div>
+            {% else %}
+              Not scheduled
+            {% endif %}
+          </td>
+          <td class="right">
+            <div class="icon-actions">
+              <a class="icon-button" href="/consultants/{{ consultant.id }}/journey" title="Open journey checklist" aria-label="Open journey checklist"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></a>
+              <a class="icon-button" href="/consultants/{{ consultant.id }}/onboarding" title="Open onboarding view" aria-label="Open onboarding view"><svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></a>
+              {% if row.training_program %}<a class="icon-button" href="/training-programs/{{ row.training_program.id }}" title="Open assigned training" aria-label="Open assigned training"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path></svg></a>{% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="muted">No consultants match this onboarding view.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <style>
+    .placement-pipeline { margin-bottom: 14px; }
+    .pipeline-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .pipeline-head h2, .pipeline-head p { margin: 0; }
+    .pipeline-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .pipeline-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; gap: 8px; }
+    .pipeline-card.ready { border-color: #99d9ce; background: #ecfdf5; }
+    .pipeline-card.needs-work { border-color: #f4c76f; background: #fffbeb; }
+    .pipeline-card-top { display: flex; justify-content: space-between; gap: 8px; }
+    .pipeline-card-top span { color: var(--accent-dark); font-weight: 900; }
+    .pipeline-card p { color: var(--ink); line-height: 1.45; margin: 0; }
+    .pipeline-card small, .pipeline-card em { color: var(--muted); display: block; font-size: 12px; line-height: 1.35; }
+    .pipeline-card em { font-style: normal; }
+    .owner-badge { background: #ecfdf5; border: 1px solid #99d9ce; border-radius: 8px; min-width: 220px; padding: 12px; }
+    .owner-badge.warn { background: #fff8f6; border-color: #f1b5ad; }
+    .owner-badge span { color: var(--muted); display: block; font-size: 12px; font-weight: 850; text-transform: uppercase; }
+    .owner-badge strong { color: var(--ink); display: block; margin-top: 4px; }
+    .onboarding-stage-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .stage-chip { align-items: center; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); display: inline-flex; gap: 7px; padding: 6px 10px; text-decoration: none; }
+    .stage-chip:hover, .stage-chip.active { background: #f0fdfa; border-color: var(--accent); color: var(--accent-dark); }
+    .stage-chip strong { font-size: 16px; }
+    .stage-chip span { color: var(--muted); font-size: 12px; font-weight: 800; }
+    @media (max-width: 900px) {
+      .pipeline-head { display: grid; }
+      .pipeline-grid { grid-template-columns: 1fr; }
+      .owner-badge { min-width: 0; }
+    }
+  </style>
+{% endblock %}

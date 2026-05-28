@@ -1,0 +1,188 @@
+{% extends "web/base.html" %}
+{% block title %}Promoted Companies | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Promoted Companies</h1>
+      <p>Company pursuit queue for ownership, research status, and follow-up decisions.</p>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/pursuits">
+    <label class="wide">Search<input type="search" name="q" value="{{ q }}" placeholder="Company, owner, or region"></label>
+    <label>Region<select name="region_id"><option value="">All regions</option>{% for region in regions %}<option value="{{ region.id }}" {% if selected_region_id == region.id %}selected{% endif %}>{{ region.name }}</option>{% endfor %}</select></label>
+    <label>Status<select name="status"><option value="all">All statuses</option>{% for item in statuses %}<option value="{{ item.value }}" {% if status == item.value %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+    <label>Owner<select name="owner"><option value="all">All owners</option><option value="unassigned" {% if owner == "unassigned" %}selected{% endif %}>Unassigned</option>{% for email in owner_options %}<option value="{{ email }}" {% if owner == email %}selected{% endif %}>{{ email }}</option>{% endfor %}</select></label>
+    <label>Queue<select name="queue">{% for value, label in queue_options %}<option value="{{ value }}" {% if queue == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="per_page" value="{{ per_page }}">
+    <div class="inline-actions"><a class="button secondary" href="/pursuits">Reset</a><button type="submit">Apply</button></div>
+  </form>
+
+  <div class="queue-tabs">
+    <a class="{% if queue == '' %}active{% endif %}" href="/pursuits?status={{ status }}&region_id={{ selected_region_id or '' }}&owner={{ owner }}&sort={{ sort }}&per_page={{ per_page }}">All</a>
+    <a class="{% if queue == 'needs_owner' %}active{% endif %}" href="/pursuits?queue=needs_owner&status={{ status }}&region_id={{ selected_region_id or '' }}&owner={{ owner }}&sort={{ sort }}&per_page={{ per_page }}">Needs Owner</a>
+    <a class="{% if queue == 'needs_research' %}active{% endif %}" href="/pursuits?queue=needs_research&status={{ status }}&region_id={{ selected_region_id or '' }}&owner={{ owner }}&sort={{ sort }}&per_page={{ per_page }}">Needs Research</a>
+    <a class="{% if queue == 'overdue' %}active{% endif %}" href="/pursuits?queue=overdue&status={{ status }}&region_id={{ selected_region_id or '' }}&owner={{ owner }}&sort={{ sort }}&per_page={{ per_page }}">Overdue</a>
+  </div>
+
+  <div class="listbar">
+    <span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }} promoted companies</span>
+    <span>Page {{ page }} of {{ pages }} · {{ per_page }} per page</span>
+  </div>
+
+  <style>
+    .queue-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 6px; }
+    .queue-tabs a { border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); padding: 7px 11px; text-decoration: none; font-weight: 800; font-size: 13px; }
+    .queue-tabs a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .pursuit-queue th, .pursuit-queue td { vertical-align: middle; }
+    .pursuit-queue .company-cell { min-width: 280px; }
+    .pursuit-queue .company-cell strong { max-width: 360px; }
+    .company-subline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .signal-grid { display: grid; grid-template-columns: repeat(2, minmax(88px, 1fr)); gap: 6px; min-width: 210px; }
+    .signal-box { border: 1px solid var(--line); border-radius: 7px; background: #fbfcfd; padding: 7px 8px; }
+    .signal-box strong { display: block; font-size: 15px; line-height: 1.1; color: var(--ink); }
+    .signal-box span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .owner-box { display: grid; gap: 4px; min-width: 210px; }
+    .owner-box strong { font-size: 14px; }
+    .owner-box span { color: var(--muted); font-size: 12px; }
+    .status-box { display: grid; gap: 6px; min-width: 150px; }
+    .status-box .pill { width: fit-content; }
+    .follow-box { display: grid; gap: 4px; max-width: 280px; }
+    .follow-box strong { font-size: 13px; }
+    .follow-box span { color: var(--muted); font-size: 12px; }
+    .action-cluster { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; min-width: 158px; }
+    .action-cluster .button, .action-cluster button { min-height: 32px; padding: 0 9px; font-size: 12px; }
+    .quick-form { display: inline; margin: 0; }
+    .assignment-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 74px; gap: 6px; align-items: center; margin-top: 8px; }
+    .assignment-row select, .assignment-row input { min-height: 34px; font-size: 13px; }
+    .assignment-row button { min-height: 34px; }
+    .desktop-muted { color: var(--muted); font-size: 12px; }
+    @media (max-width: 980px) {
+      .pursuit-queue, .pursuit-queue thead, .pursuit-queue tbody, .pursuit-queue tr, .pursuit-queue th, .pursuit-queue td { display: block; width: 100%; }
+      .pursuit-queue thead { display: none; }
+      .pursuit-queue tr { border: 1px solid var(--line); border-radius: 8px; background: #fff; margin-bottom: 10px; overflow: hidden; }
+      .pursuit-queue td { border-bottom: 1px solid var(--line); }
+      .pursuit-queue td:last-child { border-bottom: 0; }
+      .sno { text-align: left; width: auto; }
+      .action-cluster { justify-content: flex-start; }
+      .assignment-row { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <script>
+    window.mintelPursuitStaff = {{ staff_options_json|safe }};
+    function updatePursuitOwnerOptions(regionSelect, ownerSelectId) {
+      const ownerSelect = document.getElementById(ownerSelectId);
+      if (!ownerSelect || !window.mintelPursuitStaff) return;
+      const current = ownerSelect.value;
+      const options = window.mintelPursuitStaff.byRegion[regionSelect.value] || window.mintelPursuitStaff.all || [];
+      ownerSelect.innerHTML = '<option value="">Unassigned</option>' + options.map((item) => `<option value="${item.id}">${item.label}</option>`).join('');
+      if ([...ownerSelect.options].some((option) => option.value === current)) ownerSelect.value = current;
+    }
+  </script>
+
+  <table class="pursuit-queue data-list">
+    <thead><tr>
+      <th class="sno">S No</th>
+      <th><a class="sort-link {% if sort == 'company' %}active{% endif %}" href="{{ sort_urls.company }}">Company</a></th>
+      <th>USCIS / Profile</th>
+      <th><a class="sort-link {% if sort == 'staff' %}active{% endif %}" href="{{ sort_urls.staff }}">Owner</a></th>
+      <th><a class="sort-link {% if sort == 'status' %}active{% endif %}" href="{{ sort_urls.status }}">Status</a></th>
+      <th>Next</th>
+      <th class="right">Actions</th>
+    </tr></thead>
+    <tbody>
+      {% for pursuit in pursuits %}
+        {% set assign_form_id = "assign-pursuit-" ~ pursuit.id %}
+        {% set owner_options_for_row = staff_by_region.get(pursuit.region_id, all_staff) if pursuit.region_id else all_staff %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td class="company-cell">
+            <a href="/pursuits/{{ pursuit.id }}?tab=intelligence"><strong>{{ pursuit.company.name }}</strong></a>
+            <div class="company-subline">
+              <span class="tag">{{ pursuit.region.name if pursuit.region else "No region" }}</span>
+              <span class="tag">{{ pursuit.company.industry or "Industry missing" }}</span>
+              <span class="tag">{{ pursuit.company.location or "Location missing" }}</span>
+            </div>
+            {% if can_manage(user) %}
+              <div class="assignment-row">
+                <select form="{{ assign_form_id }}" name="region_id" aria-label="Region" onchange="updatePursuitOwnerOptions(this, 'owner-select-{{ pursuit.id }}')"><option value="">Region</option>{% for region in regions %}<option value="{{ region.id }}" {% if pursuit.region_id == region.id %}selected{% endif %}>{{ region.name }}</option>{% endfor %}</select>
+                <select id="owner-select-{{ pursuit.id }}" form="{{ assign_form_id }}" name="owner_user_id" aria-label="Owner">
+                  <option value="">Owner</option>
+                  {% for staff_member in owner_options_for_row %}
+                    <option value="{{ staff_member.id }}" {% if staff_member.email == pursuit.assigned_staff_email %}selected{% endif %}>{{ staff_member.name or staff_member.email }}</option>
+                  {% endfor %}
+                </select>
+                <button class="secondary" type="submit" form="{{ assign_form_id }}">Assign</button>
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="signal-grid">
+              <div class="signal-box"><strong>{{ pursuit.company.h1b_filings_recent }}</strong><span>Latest H1B</span></div>
+              <div class="signal-box"><strong>{{ pursuit.company.opt_recent_hires }}</strong><span>Latest OPT</span></div>
+              <div class="signal-box"><strong>{{ pursuit.company.h1b_approval_count }}</strong><span>Approvals</span></div>
+              <div class="signal-box"><strong>{{ pursuit.company.opt_friendliness_score }}</strong><span>Approval %</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="owner-box">
+              <strong>{{ pursuit.assigned_staff_name or "Unassigned" }}</strong>
+              <span>{{ pursuit.assigned_staff_email or "No owner email" }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-box">
+              <span class="pill {% if pursuit.status in ['paused', 'closed'] %}warn{% endif %}">{{ pursuit.status.replace("_", " ") }}</span>
+              <span class="desktop-muted">Priority {{ pursuit.priority }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="follow-box">
+              <strong>{{ pursuit.next_follow_up_date or "No follow-up date" }}</strong>
+              <span>{{ pursuit.next_action[:110] if pursuit.next_action else "No next action set" }}{% if pursuit.next_action and pursuit.next_action|length > 110 %}...{% endif %}</span>
+            </div>
+          </td>
+          <td class="right">
+            <div class="action-cluster">
+              <a class="button secondary" href="/pursuits/{{ pursuit.id }}?tab=intelligence">View</a>
+              <a class="button secondary" href="/pursuits/{{ pursuit.id }}?tab=profile">Edit</a>
+              <a class="button secondary" href="/companies/{{ pursuit.company.id }}/uscis">USCIS</a>
+              {% if can_manage(user) %}
+                <form class="quick-form" id="{{ assign_form_id }}" method="post" action="/pursuits/{{ pursuit.id }}/assign">
+                  <input type="hidden" name="assigned_staff_name" value="">
+                  <input type="hidden" name="assigned_staff_email" value="">
+                  <input type="hidden" name="status" value="{{ pursuit.status }}">
+                  <input type="hidden" name="priority" value="{{ pursuit.priority }}">
+                  <input type="hidden" name="next_action" value="{{ pursuit.next_action }}">
+                </form>
+                {% if pursuit.status != "paused" and pursuit.status != "closed" %}
+                  <form class="quick-form" method="post" action="/pursuits/{{ pursuit.id }}/quick-status">
+                    <input type="hidden" name="status" value="paused">
+                    <input type="hidden" name="next" value="{{ return_url }}">
+                    <button class="secondary" type="submit">Deactivate</button>
+                  </form>
+                {% else %}
+                  <form class="quick-form" method="post" action="/pursuits/{{ pursuit.id }}/quick-status">
+                    <input type="hidden" name="status" value="in_progress">
+                    <input type="hidden" name="next" value="{{ return_url }}">
+                    <button class="secondary" type="submit">Reactivate</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="muted">No companies promoted yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="button secondary" href="?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+{% endblock %}

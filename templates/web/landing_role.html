@@ -1,0 +1,109 @@
+{% extends "web/base.html" %}
+{% block title %}{{ role.name }} Team Landing | Mintel{% endblock %}
+{% block content %}
+  <section class="breadcrumbs">
+    <a href="/landings">Landing Pages</a><span class="crumb-separator">/</span><span class="crumb-current">{{ role.name }}</span>
+  </section>
+  <section class="page-head">
+    <div>
+      <h1>{{ role.name }} Team</h1>
+      <p>{{ role.description or "Marketing role operating homepage for readiness, demand, training, and submissions." }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ links.journeys }}">Role Journeys</a>
+      <a class="button" href="{{ links.matches }}">Candidate Matches</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <a class="metric" href="{{ links.consultants }}"><strong>{{ summary.consultants }}</strong><span>Consultants</span></a>
+    <a class="metric" href="{{ links.journeys }}"><strong>{{ summary.marketing_ready }}</strong><span>Marketing Ready</span></a>
+    <a class="metric" href="{{ links.journeys }}"><strong>{{ summary.blocked }}</strong><span>Blocked</span></a>
+    <a class="metric" href="{{ links.matches }}"><strong>{{ summary.current_jobs }}</strong><span>Current job signals</span></a>
+    <a class="metric" href="/submissions?marketing_role_id={{ role.id }}"><strong>{{ summary.active_submissions }}</strong><span>Active submissions</span></a>
+  </section>
+
+  <section class="grid-3">
+    <a class="card workflow-link-card" href="/staff-assignments?marketing_role_id={{ role.id }}">
+      <h2>Role Team</h2>
+      <div class="tag-list">
+        {% for member in team %}
+          <span class="tag">{{ member.name or member.email }}</span>
+        {% else %}
+          <span class="pill warn">No role-team members assigned</span>
+        {% endfor %}
+      </div>
+      <span class="tile-open-indicator">Open Assignments</span>
+    </a>
+    <a class="card workflow-link-card" href="{{ links.journeys }}">
+      <h2>Readiness Blockers</h2>
+      <div class="tag-list">
+        {% for blocker in blockers[:6] %}
+          <span class="tag">{{ blocker.label }} · {{ blocker.count }}</span>
+        {% else %}
+          <span class="pill">No blockers</span>
+        {% endfor %}
+      </div>
+      <span class="tile-open-indicator">Open Role Journeys</span>
+    </a>
+    <a class="card workflow-link-card" href="{{ links.matches }}">
+      <h2>Demand Technologies</h2>
+      <div class="tag-list">
+        {% for item in top_tech[:10] %}
+          <span class="tag">{{ item.name }} · {{ item.count }}</span>
+        {% else %}
+          <span class="muted">Import job JSON to populate role demand.</span>
+        {% endfor %}
+      </div>
+      <span class="tile-open-indicator">Open Candidate Matches</span>
+    </a>
+  </section>
+
+  <h2>Consultant Queue</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Consultant</th><th>Status</th><th>Readiness</th><th>Owner</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for consultant in consultants %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td><a href="/consultants/{{ consultant.id }}"><strong>{{ consultant.name or consultant.email }}</strong></a><div class="compact-meta">{{ consultant.target_industry_domain or "Domain not set" }}</div></td>
+          <td><span class="pill {% if consultant.marketing_status not in ['marketing_ready', 'actively_marketing'] %}warn{% endif %}">{{ consultant.marketing_status|replace("_", " ") }}</span></td>
+          <td>{{ consultant.marketing_readiness_percent }}%<div class="compact-meta">Mock {{ "yes" if consultant.mock_interview_passed else "no" }} · Evidence {{ "yes" if consultant.marketing_brief_ready else "no" }}</div></td>
+          <td>{{ consultant.staff_owner or "Unassigned" }}</td>
+          <td><a class="button secondary" href="/consultants/{{ consultant.id }}/journey">Journey</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">No consultants assigned to this role.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <section class="grid-2">
+    <div>
+      <h2>Current Role Demand</h2>
+      <table class="data-list">
+        <thead><tr><th>Posting</th><th>Location</th><th>Company Evidence</th></tr></thead>
+        <tbody>
+          {% for job in jobs[:8] %}
+            <tr><td>{% if job.official_job_url %}<a href="{{ job.official_job_url }}" target="_blank" rel="noreferrer noopener">{{ job.job_title }}</a>{% else %}{{ job.job_title }}{% endif %}<div class="compact-meta">{{ job.published_date or "Date unknown" }}</div></td><td>{{ job.location }}</td><td>{{ job.confidence_score }}% · {{ job.match_strength or "match" }}</td></tr>
+          {% else %}
+            <tr><td colspan="3" class="muted">No current postings imported for this role.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h2>Training Programs</h2>
+      <table class="data-list">
+        <thead><tr><th>Program</th><th>Domain</th><th></th></tr></thead>
+        <tbody>
+          {% for program in programs %}
+            <tr><td>{{ program.title or program.marketing_role.name }}</td><td>{{ program.industry_domain }}</td><td class="right"><a class="button secondary" href="/training-programs/{{ program.id }}">Open</a></td></tr>
+          {% else %}
+            <tr><td colspan="3" class="muted">No active training programs for this role.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

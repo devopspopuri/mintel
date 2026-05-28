@@ -1,0 +1,135 @@
+{% extends "web/base.html" %}
+{% block title %}Marketing Roles | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Marketing Roles</h1>
+      <p>Manage the role taxonomy used for requirement classification and profile positioning.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/landings">Role Landing Pages</a>
+      <a class="button secondary" href="/marketing-roles/glossary">Consultant Glossary</a>
+      {% if can_manage %}
+        <a class="button" href="/marketing-roles/new">Add Role</a>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form class="filters" method="get" action="/marketing-roles">
+    <div>
+      <label>Status</label>
+      <select name="status">
+        {% for value, label in status_options %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Sort</label>
+      <select name="sort">
+        <option value="name" {% if sort == "name" %}selected{% endif %}>Name</option>
+        <option value="code" {% if sort == "code" %}selected{% endif %}>Code</option>
+        <option value="owner" {% if sort == "owner" %}selected{% endif %}>Owner</option>
+        <option value="status" {% if sort == "status" %}selected{% endif %}>Status</option>
+        <option value="updated" {% if sort == "updated" %}selected{% endif %}>Updated</option>
+      </select>
+    </div>
+    <div>
+      <label>Per Page</label>
+      <select name="per_page">
+        {% for size in [10, 25, 50, 100] %}
+          <option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+
+  <div class="listbar">
+    <span>Filtered records: {{ total_rows }}</span>
+    <span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span>
+  </div>
+
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th class="sno">S No</th>
+        <th><a class="sort-link {% if sort == 'name' %}active{% endif %}" href="{{ sort_urls.name }}">Role</a></th>
+        <th><a class="sort-link {% if sort == 'code' %}active{% endif %}" href="{{ sort_urls.code }}">Code</a></th>
+        <th><a class="sort-link {% if sort == 'owner' %}active{% endif %}" href="{{ sort_urls.owner }}">Owner</a></th>
+        <th><a class="sort-link {% if sort == 'status' %}active{% endif %}" href="{{ sort_urls.status }}">Status</a></th>
+        <th><a class="sort-link {% if sort == 'updated' %}active{% endif %}" href="{{ sort_urls.updated }}">Updated</a></th>
+        {% if can_manage %}<th class="right">Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for role in roles %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td class="company-cell">
+            <strong>{{ role.name }}</strong>
+            <span class="muted">{{ role.description }}</span>
+          </td>
+          <td class="nowrap">{{ role.code }}</td>
+          <td>{{ role.owner.name if role.owner else "Unassigned" }}</td>
+          <td><span class="pill {% if not role.active %}warn{% endif %}">{{ "active" if role.active else "inactive" }}</span></td>
+          <td class="compact-meta">{{ role.updated_at.strftime("%Y-%m-%d") if role.updated_at else "" }}</td>
+          {% if can_manage %}
+            <td class="right">
+              <div class="icon-actions">
+                <a class="icon-button" href="/landings/roles/{{ role.id }}" title="Open role landing" aria-label="Open role landing">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8"></path><path d="M5 10v10h14V10"></path><path d="M9 20v-6h6v6"></path></svg>
+                  <span class="visually-hidden">Landing</span>
+                </a>
+                <a class="icon-button" href="/marketing-roles/{{ role.id }}" title="View role" aria-label="View role">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span class="visually-hidden">View</span>
+                </a>
+                <a class="icon-button" href="/marketing-roles/{{ role.id }}/edit" title="Edit role" aria-label="Edit role">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>
+                  <span class="visually-hidden">Edit</span>
+                </a>
+                {% if training_by_role.get(role.id) %}
+                  <a class="icon-button" href="/training-programs/{{ training_by_role.get(role.id).id }}" title="View training program" aria-label="View training program">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>
+                    <span class="visually-hidden">Training</span>
+                  </a>
+                {% endif %}
+                <a class="icon-button" href="/marketing-roles/glossary?marketing_role={{ role.name | urlencode }}" title="View glossary terms" aria-label="View glossary terms">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path></svg>
+                  <span class="visually-hidden">Glossary</span>
+                </a>
+                <form class="icon-form" method="post" action="/marketing-roles/{{ role.id }}/delete">
+                  <button class="icon-button danger" type="submit" title="{{ 'Deactivate role' if role.active else 'Delete role' }}" aria-label="{{ 'Deactivate role' if role.active else 'Delete role' }}">
+                    {% if role.active %}
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg>
+                    {% else %}
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                    {% endif %}
+                    <span class="visually-hidden">{{ "Deactivate" if role.active else "Delete" }}</span>
+                  </button>
+                </form>
+              </div>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+      {% if not roles %}
+        <tr><td colspan="{% if can_manage %}7{% else %}6{% endif %}" class="muted">No marketing roles found.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page > 1 %}
+      <a class="button secondary" href="/marketing-roles?page={{ page - 1 }}&{{ page_params }}">Previous</a>
+    {% endif %}
+    {% if page < pages %}
+      <a class="button secondary" href="/marketing-roles?page={{ page + 1 }}&{{ page_params }}">Next</a>
+    {% endif %}
+  </div>
+{% endblock %}

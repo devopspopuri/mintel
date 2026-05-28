@@ -1,0 +1,227 @@
+{% extends "web/base.html" %}
+{% block title %}{{ system.name }} | {{ program.marketing_role.name }} | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-programs">Training Programs</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-programs/{{ program.id }}">{{ program.marketing_role.name }} · {{ program.industry_domain }}</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-programs/{{ program.id }}?section=architecture">Architecture</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">{{ system.name }}</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <h1>{{ system.name }}</h1>
+      <p>{{ program.industry_domain }} · {{ program.marketing_role.name }} · {{ system.summary }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/training-programs/{{ program.id }}?section=architecture">Back To Architecture</a>
+      <a class="button secondary" href="/training-programs/{{ program.id }}">Program Overview</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ system.capabilities|length }}</strong><span>Capabilities</span></div>
+    <div class="metric"><strong>{{ system.systems|length }}</strong><span>Connected Systems</span></div>
+    <div class="metric"><strong>{{ system.risks|length }}</strong><span>Risk Areas</span></div>
+    <div class="metric"><strong>{{ system.operational_signals|length }}</strong><span>Signals</span></div>
+    <div class="metric"><strong>{{ program.marketing_role.name }}</strong><span>Role Lens</span></div>
+  </section>
+
+  <div class="learning-hero">
+    <section class="answer-card">
+      <h2>Interview Answer</h2>
+      <ul class="stack-list">{% for item in system.interview_answer %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+    <section class="compact-card">
+      <h2>Product System Navigation</h2>
+      <div class="tag-cloud">
+        {% for item in product_system_cards %}
+          <a class="tag system-tag" href="/training-programs/{{ program.id }}/systems/{{ item.slug }}">{{ item.label }} · Open</a>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <h2>Workflow To Remember</h2>
+  <section class="flow-grid">
+    {% for item in system.workflow_steps %}
+      <article class="flow-card">
+        <h2>{{ item.title }}</h2>
+        <p>{{ item.body }}</p>
+      </article>
+    {% endfor %}
+  </section>
+
+  <h2>Visual Workflows</h2>
+  <section class="workflow-visual-grid">
+    {% for visual in system.visual_workflows %}
+      <article class="workflow-visual">
+        <h2>{{ visual.title }}</h2>
+        {% if visual.type == "swimlane" %}
+          <div class="swimlane">
+            {% for lane in visual.lanes %}
+              <section class="swimlane-lane">
+                <strong>{{ lane.owner }}</strong>
+                <ul class="stack-list">{% for item in lane["items"] %}<li>{{ item }}</li>{% endfor %}</ul>
+              </section>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="visual-{{ visual.type }}">
+            {% for node in visual.nodes %}
+              <span class="visual-node {% if node == 'Exception' %}exception{% endif %}">{{ node }}</span>
+              {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+        <p class="workflow-note">{{ visual.note }}</p>
+      </article>
+    {% endfor %}
+  </section>
+
+  <h2>Ownership Boundary</h2>
+  <section class="ownership-grid">
+    {% for card in system.ownership_cards %}
+      <article class="compact-card">
+        <h2>{{ card.title }}</h2>
+        <ul class="stack-list">{% for item in card["items"] %}<li>{{ item }}</li>{% endfor %}</ul>
+      </article>
+    {% endfor %}
+  </section>
+
+  <h2>Selected Item Details</h2>
+  <section class="reference-grid">
+    <article class="reference-panel">
+      <h2>Capabilities</h2>
+      {% for item in system.capability_details %}
+        <details class="reference-card" {% if loop.index <= 2 %}open{% endif %}>
+          <summary>{{ item.title }}</summary>
+          <dl>
+            <dt>Meaning</dt><dd>{{ item.meaning }}</dd>
+            <dt>Flow</dt><dd>{{ item.flow }}</dd>
+            <dt>Role Lens</dt><dd>{{ item.ownership }}</dd>
+            <dt>Interview Line</dt><dd>{{ item.interview }}</dd>
+          </dl>
+        </details>
+      {% endfor %}
+    </article>
+    <article class="reference-panel">
+      <h2>Connected Systems</h2>
+      {% for item in system.integration_details %}
+        <details class="reference-card" {% if loop.index <= 2 %}open{% endif %}>
+          <summary>{{ item.title }}</summary>
+          <dl>
+            <dt>Purpose</dt><dd>{{ item.purpose }}</dd>
+            <dt>Handoff</dt><dd>{{ item.handoff }}</dd>
+            <dt>Watch</dt><dd>{{ item.watch }}</dd>
+            <dt>Interview Line</dt><dd>{{ item.interview }}</dd>
+          </dl>
+        </details>
+      {% endfor %}
+    </article>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Primary Users</h2>
+      <ul class="stack-list">{% for item in system.users %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+    <section class="card">
+      <h2>Core Capabilities</h2>
+      <ul class="stack-list">{% for item in system.capabilities %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+    <section class="card">
+      <h2>Connected Systems</h2>
+      <ul class="stack-list">{% for item in system.systems %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+    <section class="card">
+      <h2>Operational Signals</h2>
+      <ul class="stack-list">{% for item in system.operational_signals %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+  </div>
+
+  <h2>Common Production Issues</h2>
+  <section class="issue-grid">
+    {% for item in system.issue_cards %}
+      <article class="issue-card">
+        <strong>{{ item.issue }}</strong>
+        <ul class="stack-list">
+          <li><strong>Signal:</strong> {{ item.signal }}</li>
+          <li><strong>Response:</strong> {{ item.response }}</li>
+        </ul>
+      </article>
+    {% endfor %}
+  </section>
+
+  <h2>Deep Dive</h2>
+  <section class="detail-accordion">
+    {% for section in system.sections %}
+      <details {% if loop.index <= 2 %}open{% endif %}>
+        <summary>{{ loop.index }}. {{ section.title }}</summary>
+        {% for paragraph in section.paragraphs %}
+          <p>{{ paragraph }}</p>
+        {% endfor %}
+      </details>
+    {% endfor %}
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Critical Data</h2>
+      <ul class="stack-list">{% for item in system.data %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+      <section class="card">
+        <h2>Risk Areas</h2>
+        <ul class="stack-list">{% for item in system.risks %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+  </div>
+
+  <h2>Data, Signals, And Risk Details</h2>
+  <section class="reference-grid three">
+    <article class="reference-panel">
+      <h2>Critical Data</h2>
+      {% for item in system.data_details %}
+        <details class="reference-card" {% if loop.index <= 2 %}open{% endif %}>
+          <summary>{{ item.title }}</summary>
+          <dl>
+            <dt>Meaning</dt><dd>{{ item.meaning }}</dd>
+            <dt>Used By</dt><dd>{{ item.used_by }}</dd>
+            <dt>Quality Standard</dt><dd>{{ item.quality }}</dd>
+            <dt>Interview Line</dt><dd>{{ item.interview }}</dd>
+          </dl>
+        </details>
+      {% endfor %}
+    </article>
+    <article class="reference-panel">
+      <h2>Operational Signals</h2>
+      {% for item in system.signal_details %}
+        <details class="reference-card" {% if loop.index <= 2 %}open{% endif %}>
+          <summary>{{ item.title }}</summary>
+          <dl>
+            <dt>Meaning</dt><dd>{{ item.meaning }}</dd>
+            <dt>Source</dt><dd>{{ item.source }}</dd>
+            <dt>Action</dt><dd>{{ item.action }}</dd>
+            <dt>Interview Line</dt><dd>{{ item.interview }}</dd>
+          </dl>
+        </details>
+      {% endfor %}
+    </article>
+    <article class="reference-panel">
+      <h2>Risk Areas</h2>
+      {% for item in system.risk_details %}
+        <details class="reference-card" {% if loop.index <= 2 %}open{% endif %}>
+          <summary>{{ item.title }}</summary>
+          <dl>
+            <dt>Impact</dt><dd>{{ item.impact }}</dd>
+            <dt>Detect</dt><dd>{{ item.detect }}</dd>
+            <dt>Response</dt><dd>{{ item.response }}</dd>
+            <dt>Interview Line</dt><dd>{{ item.interview }}</dd>
+          </dl>
+        </details>
+      {% endfor %}
+    </article>
+  </section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "web/base.html" %}
+{% block title %}Company Cleanup | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Company Management</h1>
+      <p>Manage USCIS-created companies, promoted profiles, and alias cleanup. Companies are created from imports, not manually.</p>
+    </div>
+  </section>
+  <form class="filters" method="get" action="/companies/tools">
+    <div class="wide"><label>Search company or alias</label><input type="search" name="q" value="{{ q }}" placeholder="Microsoft, Amazon, Cognizant"></div>
+    <div><button type="submit">Search</button></div>
+  </form>
+  <h2>Potential Duplicate Alias Groups</h2>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Normalized Alias</th><th class="right">Companies</th></tr></thead>
+    <tbody>
+      {% for item in duplicate_aliases %}
+        <tr><td class="sno">{{ loop.index }}</td><td>{{ item.normalized_name }}</td><td class="right">{{ item.companies }}</td></tr>
+      {% else %}
+        <tr><td colspan="3" class="muted">No cross-company alias duplicates found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Companies</h2>
+  <div class="listbar"><span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }}</span><span>Page {{ page }} of {{ pages }}</span></div>
+  <table class="data-list">
+    <thead><tr><th class="sno">S No</th><th>Company</th><th class="right">Aliases</th><th class="right">Approvals</th><th class="right">Score</th><th></th></tr></thead>
+    <tbody>
+      {% for company in companies %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td class="company-cell"><strong>{{ company.name }}</strong><span class="muted">Company ID {{ company.id }}</span></td>
+          <td class="right">{{ alias_counts.get(company.id, 0) }}</td>
+          <td class="right">{{ company.h1b_approval_count }}</td>
+          <td class="right">{{ company.opt_friendliness_score }}</td>
+          <td class="right"><div class="inline-actions"><a class="button secondary" href="/companies/{{ company.id }}/uscis">USCIS</a>{% if company.pursuit %}<a class="button secondary" href="/pursuits/{{ company.pursuit.id }}?tab=profile">Profile</a>{% endif %}<a class="button secondary" href="/companies/{{ company.id }}/aliases">Aliases</a></div></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">No companies found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="/companies/tools?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    {% if page < pages %}<a class="button secondary" href="/companies/tools?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+{% endblock %}

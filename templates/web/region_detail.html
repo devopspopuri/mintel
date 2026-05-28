@@ -1,0 +1,57 @@
+{% extends "web/base.html" %}
+{% block title %}{{ region.name }} | Region | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ region.name }}</h1>
+      <p>{{ meta.description if meta else region.description }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/regions">Regions</a>
+      <a class="button secondary" href="/reports/companies-by-region/{{ region.code }}">USCIS Companies</a>
+      {% if can_manage(user) %}<a class="button" href="/regions/{{ region.id }}/edit">Edit Region</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ meta.tier if meta else "N/A" }}</strong><span>Market Zone</span></div>
+    <div class="metric"><strong>{{ (meta.states|length) if meta else 0 }}</strong><span>States</span></div>
+    <div class="metric"><strong>{{ group_members|length }}</strong><span>Group Members</span></div>
+    <div class="metric"><strong>{{ "Active" if region.active else "Inactive" }}</strong><span>Status</span></div>
+  </section>
+
+  <section class="detail-grid">
+    <article class="card">
+      <h2>Region Coverage</h2>
+      <table>
+        <tbody>
+          <tr><th>Code</th><td>{{ region.code }}</td></tr>
+          <tr><th>States</th><td>{% if meta %}{{ meta.states|join(", ") }}{% else %}<span class="muted">Not mapped</span>{% endif %}</td></tr>
+          <tr><th>Description</th><td>{{ meta.description if meta else region.description }}</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card">
+      <h2>Ownership</h2>
+      <table>
+        <tbody>
+          <tr><th>Direct Owner</th><td>{{ region.staff_owner_name or "Unassigned" }}</td></tr>
+          <tr><th>Email</th><td>{{ region.staff_owner_email or "Not set" }}</td></tr>
+          <tr>
+            <th>Group Members</th>
+            <td>
+              <div class="tag-list">
+                {% for staff_member in group_members %}
+                  <span class="tag">{{ staff_member.name or staff_member.email }}</span>
+                {% else %}
+                  <span class="muted">No assigned group members.</span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+  </section>
+{% endblock %}

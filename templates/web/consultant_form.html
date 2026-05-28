@@ -1,0 +1,266 @@
+{% extends "web/base.html" %}
+{% block title %}{{ "Edit Consultant" if consultant else "Add Consultant" }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ "Edit Consultant" if consultant else "Add Consultant" }}</h1>
+      <p>Capture the consultant profile Mintel and MAAS need for marketing, resume tailoring, mock interviews, and submissions.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ '/consultants/' ~ consultant.id ~ '/onboarding-questionnaire' if consultant else '/consultant-onboarding-questionnaire' }}">Printable Questionnaire</a>
+      <a class="button secondary" href="{{ '/consultants/' ~ consultant.id if consultant else '/consultants' }}">Cancel</a>
+    </div>
+  </section>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form class="stack" method="post" action="{{ '/consultants/' ~ consultant.id if consultant else '/consultants' }}">
+    <article class="card stack">
+      <h2>Identity And Contact</h2>
+      <div class="grid-2">
+        <div><label>Legal Name</label><input name="name" required value="{{ consultant.name if consultant else '' }}"></div>
+        <div><label>Preferred Name</label><input name="preferred_name" value="{{ consultant.preferred_name if consultant else '' }}"></div>
+        <div><label>Email</label><input type="email" name="email" required value="{{ consultant.email if consultant else '' }}"></div>
+        <div><label>Phone</label><input name="phone" value="{{ consultant.phone if consultant else '' }}"></div>
+        <div><label>LinkedIn URL</label><input name="linkedin_url" value="{{ consultant.linkedin_url if consultant else '' }}"></div>
+        <div><label>Current Location</label><input name="current_location" value="{{ consultant.current_location if consultant else '' }}"></div>
+        <div>
+          <label>Relocation Preference</label>
+          {% set current_relocation = consultant.relocation_preference if consultant else '' %}
+          <select name="relocation_preference">
+            {% if current_relocation and current_relocation not in relocation_options|map(attribute=0)|list %}
+              <option value="{{ current_relocation }}" selected>{{ current_relocation }} (current)</option>
+            {% endif %}
+            {% for value, label in relocation_options %}
+              <option value="{{ value }}" {% if current_relocation == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Onsite Preference</label>
+          {% set current_onsite = consultant.onsite_preference if consultant else '' %}
+          <select name="onsite_preference">
+            {% if current_onsite and current_onsite not in onsite_options|map(attribute=0)|list %}
+              <option value="{{ current_onsite }}" selected>{{ current_onsite }} (current)</option>
+            {% endif %}
+            {% for value, label in onsite_options %}
+              <option value="{{ value }}" {% if current_onsite == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </article>
+
+    <article class="card stack">
+      <h2>Visa, Experience, Education</h2>
+      <div class="grid-2">
+        <div>
+          <label>Work Authorization</label>
+          {% set current_work_authorization = consultant.work_authorization if consultant else '' %}
+          <select name="work_authorization">
+            {% if current_work_authorization and current_work_authorization not in work_authorization_options|map(attribute=0)|list %}
+              <option value="{{ current_work_authorization }}" selected>{{ current_work_authorization }} (current)</option>
+            {% endif %}
+            {% for value, label in work_authorization_options %}
+              <option value="{{ value }}" {% if current_work_authorization == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Years Experience</label>
+          {% set current_years_experience = consultant.years_experience if consultant else '' %}
+          <select name="years_experience">
+            {% if current_years_experience and current_years_experience not in years_experience_options|map(attribute=0)|list %}
+              <option value="{{ current_years_experience }}" selected>{{ current_years_experience }} (current)</option>
+            {% endif %}
+            {% for value, label in years_experience_options %}
+              <option value="{{ value }}" {% if current_years_experience == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div><label>Visa Valid Until</label><input name="visa_valid_until" placeholder="YYYY-MM-DD or notes" value="{{ consultant.visa_valid_until if consultant else '' }}"></div>
+        <div><label>EAD Valid Until</label><input name="ead_valid_until" placeholder="YYYY-MM-DD or notes" value="{{ consultant.ead_valid_until if consultant else '' }}"></div>
+      </div>
+      <div><label>Professional Experience</label><textarea name="professional_experience" placeholder="Companies, roles, duration, production systems supported, team size, responsibilities">{{ consultant.professional_experience if consultant else '' }}</textarea></div>
+      <div><label>Domain Experience</label><textarea name="domain_experience" placeholder="Banking, healthcare, retail, insurance, logistics, platform/product exposure">{{ consultant.domain_experience if consultant else '' }}</textarea></div>
+      <h3>India Company Registration</h3>
+      <div class="grid-2">
+        <div><label>Company Name</label><input name="india_company_name" value="{{ consultant.india_company_name if consultant else '' }}"></div>
+        <div><label>Name As Per Aadhaar</label><input name="india_name_as_per_aadhaar" value="{{ consultant.india_name_as_per_aadhaar if consultant else '' }}"></div>
+        <div><label>Father Name</label><input name="india_father_name" value="{{ consultant.india_father_name if consultant else '' }}"></div>
+        <div><label>DOB</label><input name="india_dob" placeholder="YYYY-MM-DD" value="{{ consultant.india_dob if consultant else '' }}"></div>
+        <div><label>PAN No</label><input name="india_pan_no" value="{{ consultant.india_pan_no if consultant else '' }}"></div>
+        <div><label>Aadhaar No</label><input name="india_aadhaar_no" value="{{ consultant.india_aadhaar_no if consultant else '' }}"></div>
+        <div><label>Technology</label><input name="india_technology" value="{{ consultant.india_technology if consultant else '' }}"></div>
+        <div><label>Offer Designation</label><input name="india_offer_designation" value="{{ consultant.india_offer_designation if consultant else '' }}"></div>
+        <div><label>Current Designation</label><input name="india_current_designation" value="{{ consultant.india_current_designation if consultant else '' }}"></div>
+        <div><label>Offer Package</label><input name="india_offer_package" value="{{ consultant.india_offer_package if consultant else '' }}"></div>
+        <div><label>Current Package</label><input name="india_current_package" value="{{ consultant.india_current_package if consultant else '' }}"></div>
+        <div><label>Offer Date</label><input name="india_offer_date" placeholder="YYYY-MM-DD" value="{{ consultant.india_offer_date if consultant else '' }}"></div>
+        <div><label>Joining Date</label><input name="india_joining_date" placeholder="YYYY-MM-DD" value="{{ consultant.india_joining_date if consultant else '' }}"></div>
+        <div><label>Mail ID</label><input type="email" name="india_mail_id" value="{{ consultant.india_mail_id if consultant else '' }}"></div>
+        <div><label>Mobile Num</label><input name="india_mobile_num" value="{{ consultant.india_mobile_num if consultant else '' }}"></div>
+        <div><label>Resignation Date</label><input name="india_resignation_date" placeholder="YYYY-MM-DD" value="{{ consultant.india_resignation_date if consultant else '' }}"></div>
+        <div><label>Relieving Date</label><input name="india_relieving_date" placeholder="YYYY-MM-DD" value="{{ consultant.india_relieving_date if consultant else '' }}"></div>
+        <div><label>Bank Name</label><input name="india_bank_name" value="{{ consultant.india_bank_name if consultant else '' }}"></div>
+        <div><label>Bank Account Num</label><input name="india_bank_account_num" value="{{ consultant.india_bank_account_num if consultant else '' }}"></div>
+      </div>
+      <div><label>Address Native Address</label><textarea name="india_native_address">{{ consultant.india_native_address if consultant else '' }}</textarea></div>
+      <div><label>PF And UAN Notes</label><textarea name="india_pf_uan_notes" placeholder="If required, capture PF/UAN details or attachment status">{{ consultant.india_pf_uan_notes if consultant else '' }}</textarea></div>
+      <div><label>Mandatory Document Notes</label><textarea name="india_document_notes" placeholder="Resume, Aadhaar, and PAN card attachment status">{{ consultant.india_document_notes if consultant else '' }}</textarea></div>
+      <div><label>Education</label><textarea name="education_summary" placeholder="Degree, university, graduation year, relevant coursework">{{ consultant.education_summary if consultant else '' }}</textarea></div>
+      <div><label>Certifications</label><textarea name="certifications" placeholder="AWS, Azure, Kubernetes, Terraform, database, data, security certifications">{{ consultant.certifications if consultant else '' }}</textarea></div>
+    </article>
+
+    <article class="card stack">
+      <h2>Marketing Assignment</h2>
+      {% if marketing_ready_gate %}
+        <div class="flash {% if marketing_ready_gate.ready %}success{% else %}warn{% endif %}">
+          Marketing Ready gate: {% if marketing_ready_gate.ready %}complete{% else %}missing {{ marketing_ready_gate.missing_labels|join(", ") }}{% endif %}.
+          Only the assigned staff owner or admin can mark Marketing Ready.
+        </div>
+      {% else %}
+        <div class="flash warn">Active consultants need a staff owner. Marketing Ready requires resume ready, project proof, mock passed, and final evidence package.</div>
+      {% endif %}
+      <label class="check-row">
+        <input type="checkbox" name="active" value="true" {% if consultant and consultant.active %}checked{% endif %}>
+        <span>
+          <strong>Active</strong>
+          <span>Shows this consultant in active marketing operations. Requires staff owner, marketing role, and target industry domain.</span>
+        </span>
+      </label>
+      <div class="grid-2">
+        <div><label>Marketing Role</label><select name="marketing_role_id"><option value="">Select role</option>{% for role in marketing_roles %}<option value="{{ role.id }}" {% if consultant and consultant.marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>{% endfor %}</select></div>
+        <div><label>Target Industry Domain</label><select name="target_industry_domain"><option value="">Select domain</option>{% for domain in industry_domains %}<option value="{{ domain }}" {% if consultant and consultant.target_industry_domain == domain %}selected{% endif %}>{{ domain }}</option>{% endfor %}</select></div>
+        <div><label>Marketing Status</label><select name="marketing_status">{% set current_status = consultant.marketing_status if consultant else 'profile_intake' %}{% for value, label in marketing_status_options %}<option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div>
+          <label>Availability</label>
+          {% set current_availability = consultant.availability if consultant else '' %}
+          <select name="availability">
+            {% if current_availability and current_availability not in availability_options|map(attribute=0)|list %}
+              <option value="{{ current_availability }}" selected>{{ current_availability }} (current)</option>
+            {% endif %}
+            {% for value, label in availability_options %}
+              <option value="{{ value }}" {% if current_availability == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div><label>Rate Expectation</label><input name="rate_expectation" value="{{ consultant.rate_expectation if consultant else '' }}"></div>
+        <div>
+          <label>Staff Owner</label>
+          {% set current_staff_owner = consultant.staff_owner if consultant else '' %}
+          <select name="staff_owner">
+            <option value="">Select staff owner</option>
+            {% if current_staff_owner and current_staff_owner not in owner_options|map(attribute='email')|list %}
+              <option value="{{ current_staff_owner }}" selected>{{ current_staff_owner }} (current)</option>
+            {% endif %}
+            {% for staff_member in owner_options %}
+              <option value="{{ staff_member.email }}" {% if current_staff_owner == staff_member.email %}selected{% endif %}>{{ staff_member.name or staff_member.email }}{% if staff_member.name %} · {{ staff_member.email }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Recruiter Owner</label>
+          {% set current_recruiter_owner = consultant.recruiter_owner if consultant else '' %}
+          <select name="recruiter_owner">
+            <option value="">Select recruiter owner</option>
+            {% if current_recruiter_owner and current_recruiter_owner not in owner_options|map(attribute='email')|list %}
+              <option value="{{ current_recruiter_owner }}" selected>{{ current_recruiter_owner }} (current)</option>
+            {% endif %}
+            {% for staff_member in owner_options %}
+              <option value="{{ staff_member.email }}" {% if current_recruiter_owner == staff_member.email %}selected{% endif %}>{{ staff_member.name or staff_member.email }}{% if staff_member.name %} · {{ staff_member.email }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div><label>Primary Skills</label><textarea name="primary_skills">{{ consultant.primary_skills if consultant else '' }}</textarea></div>
+    </article>
+
+    <article class="card stack">
+      <h2>Portal Access</h2>
+      {% if access_user %}
+        <div class="flash success">Consultant login exists for {{ access_user.email }}. Role: {{ access_user.role|replace("_", " ")|title }}. Status: {{ "Active" if access_user.active else "Inactive" }}.</div>
+      {% else %}
+        <div class="flash warn">No consultant login exists for this email yet.</div>
+      {% endif %}
+      <label class="check-row">
+        <input type="checkbox" name="enable_consultant_access" value="true" {% if access_user %}checked{% endif %}>
+        <span>
+          <strong>Give this consultant portal access</strong>
+          <span>Access starts with Basics Preparation. The matching role/domain training program unlocks after Basics is completed.</span>
+        </span>
+      </label>
+      <div>
+        <label>{{ "Reset Temporary Password" if access_user else "Temporary Password" }}</label>
+        <input type="password" name="consultant_access_password" placeholder="{{ 'Leave blank to keep current password' if access_user else 'Required for new consultant login' }}">
+      </div>
+    </article>
+
+    <article class="card stack">
+      <h2>Resume And Project Story</h2>
+      <div class="grid-2">
+        <div><label>Base Resume Reference</label><input name="base_resume_reference" placeholder="File name, MAAS id, Drive path, or manual reference" value="{{ consultant.base_resume_reference if consultant else '' }}"></div>
+        <div><label>Latest Project Title</label><input name="latest_project_title" value="{{ consultant.latest_project_title if consultant else '' }}"></div>
+        <div><label>Latest Project Domain</label><input name="latest_project_domain" value="{{ consultant.latest_project_domain if consultant else '' }}"></div>
+      </div>
+      <div><label>Resume Summary</label><textarea name="resume_summary">{{ consultant.resume_summary if consultant else '' }}</textarea></div>
+      <div><label>Latest Project Summary</label><textarea name="latest_project_summary" placeholder="Latest project updates used to tailor the resume and interview story">{{ consultant.latest_project_summary if consultant else '' }}</textarea></div>
+      <div class="grid-2">
+        <div><label>Profile Strengths</label><textarea name="profile_strengths">{{ consultant.profile_strengths if consultant else '' }}</textarea></div>
+        <div><label>Profile Gaps</label><textarea name="profile_gaps">{{ consultant.profile_gaps if consultant else '' }}</textarea></div>
+      </div>
+    </article>
+
+    <article class="card stack">
+      <h2>Readiness Scores</h2>
+      <div class="grid-2">
+        <div><label>Resume Readiness</label><input type="number" min="0" max="100" name="resume_readiness_score" value="{{ consultant.resume_readiness_score if consultant else 0 }}"></div>
+        <div><label>Technical Readiness</label><input type="number" min="0" max="100" name="technical_readiness_score" value="{{ consultant.technical_readiness_score if consultant else 0 }}"></div>
+        <div><label>Interview Readiness</label><input type="number" min="0" max="100" name="interview_readiness_score" value="{{ consultant.interview_readiness_score if consultant else 0 }}"></div>
+        <div><label>Communication</label><input type="number" min="0" max="100" name="communication_score" value="{{ consultant.communication_score if consultant else 0 }}"></div>
+      </div>
+    </article>
+
+    <article class="card stack">
+      <h2>Before Marketing Checklist</h2>
+      <div class="checkbox-grid">
+        <label class="check-row"><input type="checkbox" name="profile_intake_complete" value="true" {% if consultant and consultant.profile_intake_complete %}checked{% endif %}><span><strong>Profile intake completed</strong><span>Contact, visa, location, and target role captured.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="education_verified" value="true" {% if consultant and consultant.education_verified %}checked{% endif %}><span><strong>Education verified</strong><span>Degree and university information reviewed.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="certifications_verified" value="true" {% if consultant and consultant.certifications_verified %}checked{% endif %}><span><strong>Certifications verified</strong><span>Certifications captured with proof or status.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="experience_verified" value="true" {% if consultant and consultant.experience_verified %}checked{% endif %}><span><strong>Experience verified</strong><span>Project years, role, domain, and responsibilities checked.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="base_resume_received" value="true" {% if consultant and consultant.base_resume_received %}checked{% endif %}><span><strong>Base resume received</strong><span>Manual source resume available for tailoring.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="resume_tailoring_complete" value="true" {% if consultant and consultant.resume_tailoring_complete %}checked{% endif %}><span><strong>Resume tailoring complete</strong><span>Latest project and ATS improvements completed.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="latest_project_updated" value="true" {% if consultant and consultant.latest_project_updated %}checked{% endif %}><span><strong>Latest project updated</strong><span>Current project narrative is role/domain aligned.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="project_story_validated" value="true" {% if consultant and consultant.project_story_validated %}checked{% endif %}><span><strong>Project story validated</strong><span>Use cases, boundaries, tools, and outcomes reviewed.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="basics_prep_complete" value="true" {% if consultant and consultant.basics_prep_complete %}checked{% endif %}><span><strong>Basics prep completed</strong><span>Foundation topics accepted; role/domain training can be assigned.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="training_plan_assigned" value="true" {% if consultant and consultant.training_plan_assigned %}checked{% endif %}><span><strong>Training plan assigned</strong><span>Role/domain training program connected.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="glossary_review_complete" value="true" {% if consultant and consultant.glossary_review_complete %}checked{% endif %}><span><strong>Glossary reviewed</strong><span>Product and role vocabulary practiced.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="mock_interview_passed" value="true" {% if consultant and consultant.mock_interview_passed %}checked{% endif %}><span><strong>Mock interview passed</strong><span>Consultant can explain work clearly.</span></span></label>
+        <label class="check-row"><input type="checkbox" name="marketing_brief_ready" value="true" {% if consultant and consultant.marketing_brief_ready %}checked{% endif %}><span><strong>Final evidence package ready</strong><span>Architecture, workflow, runbook, screenshots/outputs, stories, and resume bullets are ready.</span></span></label>
+      </div>
+      <div><label>Checklist Notes</label><textarea name="checklist_notes">{{ consultant.checklist_notes if consultant else '' }}</textarea></div>
+    </article>
+
+    <article class="card stack">
+      <h2>MAAS Exchange</h2>
+      <div class="grid-2">
+        <div><label>MAAS Profile ID</label><input name="maas_profile_id" value="{{ consultant.maas_profile_id if consultant else '' }}"></div>
+        <div><label>MAAS Sync Status</label><select name="maas_sync_status">{% set sync_status = consultant.maas_sync_status if consultant else 'not_synced' %}<option value="not_synced" {% if sync_status == 'not_synced' %}selected{% endif %}>Not synced</option><option value="ready_to_sync" {% if sync_status == 'ready_to_sync' %}selected{% endif %}>Ready to sync</option><option value="synced" {% if sync_status == 'synced' %}selected{% endif %}>Synced</option><option value="needs_review" {% if sync_status == 'needs_review' %}selected{% endif %}>Needs review</option></select></div>
+        <div><label>Last Synced At</label><input name="maas_last_synced_at" placeholder="YYYY-MM-DD HH:MM" value="{{ consultant.maas_last_synced_at if consultant else '' }}"></div>
+      </div>
+      <div><label>MAAS Payload Notes</label><textarea name="maas_payload_notes">{{ consultant.maas_payload_notes if consultant else '' }}</textarea></div>
+      <div><label>Marketing Notes</label><textarea name="marketing_notes">{{ consultant.marketing_notes if consultant else '' }}</textarea></div>
+      <div><label>Internal Notes</label><textarea name="notes">{{ consultant.notes if consultant else '' }}</textarea></div>
+    </article>
+
+    <article class="card stack">
+      <h2>Placement And Post-Placement</h2>
+      <div class="grid-2">
+        <div><label>Placement Company</label><input name="placement_company" value="{{ consultant.placement_company if consultant else '' }}"></div>
+        <div><label>Placement Role</label><input name="placement_role" value="{{ consultant.placement_role if consultant else '' }}"></div>
+        <div><label>Start Date</label><input type="date" name="placement_start_date" value="{{ consultant.placement_start_date if consultant and consultant.placement_start_date else '' }}"></div>
+      </div>
+      <div><label>Placement Notes</label><textarea name="placement_notes" placeholder="Offer details, joining plan, client onboarding notes, first-week support, and feedback loop">{{ consultant.placement_notes if consultant else '' }}</textarea></div>
+    </article>
+
+    <div class="inline-actions"><a class="button secondary" href="{{ '/consultants/' ~ consultant.id if consultant else '/consultants' }}">Cancel</a><button type="submit">{{ "Save Consultant" if consultant else "Create Consultant" }}</button></div>
+  </form>
+{% endblock %}

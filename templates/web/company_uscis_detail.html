@@ -1,0 +1,84 @@
+{% extends "web/base.html" %}
+{% block title %}{{ company.name }} | USCIS Detail | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ company.name }}</h1>
+      <p>USCIS sponsorship breakdown for profile marketing decisions.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ back_url or '/uscis/analysis' }}">Back to Analysis</a>
+      {% if company.pursuit %}<a class="button secondary" href="/pursuits/{{ company.pursuit.id }}?tab=profile">Company Profile</a>{% endif %}
+      {% if can_manage(user) %}<form method="post" action="/companies/{{ company.id }}/promote">
+        <input type="hidden" name="reason" value="Promoted from USCIS company drill-down">
+        <input type="hidden" name="next" value="/pursuits">
+        <button type="submit">Promote</button>
+      </form>{% endif %}
+    </div>
+  </section>
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ totals.approvals }}</strong><span>Total approvals</span></div>
+    <div class="metric"><strong>{{ totals.denials }}</strong><span>Total denials</span></div>
+    <div class="metric"><strong>{{ totals.approval_rate }}%</strong><span>Approval rate</span></div>
+    <div class="metric"><strong>{{ totals.new_employment }}</strong><span>New employment</span></div>
+    <div class="metric"><strong>{{ totals.change_employer }}</strong><span>Change employer</span></div>
+  </section>
+  <section class="grid-2">
+    <div class="card">
+      <h2>Best Region</h2>
+      {% if region_signal.region %}
+        <p><strong>{{ region_signal.region.name }}</strong></p>
+        <p>{{ region_signal.states|join(", ") }}</p>
+      {% else %}
+        <p class="muted">No mapped USCIS state signal.</p>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h2>Profile Read</h2>
+      <div class="subgrid">
+        <div><span class="pill">OPT</span><p>Use new employment volume as the strongest signal.</p></div>
+        <div><span class="pill">H1B</span><p>Use change employer plus continuation volume for active sponsorship demand.</p></div>
+        <div><span class="pill">Market</span><p>Prioritize regions and cities with repeated approvals.</p></div>
+      </div>
+    </div>
+  </section>
+  <h2>Yearly Decision Trend</h2>
+  <div class="listbar"><span>Showing {{ yearly|length }} yearly rows</span><span>Sorted by year ↓</span></div>
+  <table>
+    <thead><tr><th class="sno">S No</th><th>Year ↓</th><th class="right">Approvals</th><th class="right">Denials</th><th class="right">Rate</th><th class="right">New</th><th class="right">Transfer</th><th class="right">Continue</th><th class="right">Amended</th></tr></thead>
+    <tbody>
+      {% for row in yearly %}
+        {% set total = (row.approvals or 0) + (row.denials or 0) %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td>{{ row.fiscal_year }}</td>
+          <td class="right">{{ row.approvals }}</td>
+          <td class="right">{{ row.denials }}</td>
+          <td class="right">{% if total %}{{ ((row.approvals or 0) / total * 100)|round(1) }}%{% else %}0%{% endif %}</td>
+          <td class="right">{{ row.new_employment }}</td>
+          <td class="right">{{ row.change_employer }}</td>
+          <td class="right">{{ row.continuation }}</td>
+          <td class="right">{{ row.amended }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Top Filing Locations</h2>
+  <div class="listbar"><span>Showing {{ locations|length }} locations</span><span>Sorted by approvals ↓</span></div>
+  <table>
+    <thead><tr><th class="sno">S No</th><th>City</th><th>State</th><th class="right">Approvals ↓</th><th class="right">Denials</th><th class="right">Rate</th></tr></thead>
+    <tbody>
+      {% for row in locations %}
+        {% set total = (row.approvals or 0) + (row.denials or 0) %}
+        <tr>
+          <td class="sno">{{ loop.index }}</td>
+          <td>{{ row.petitioner_city or "Unknown" }}</td>
+          <td>{{ row.petitioner_state or "Unknown" }}</td>
+          <td class="right">{{ row.approvals }}</td>
+          <td class="right">{{ row.denials }}</td>
+          <td class="right">{% if total %}{{ ((row.approvals or 0) / total * 100)|round(1) }}%{% else %}0%{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,1254 @@
+{% extends "web/base.html" %}
+{% block title %}{{ program.title }} | Training Programs | Mintel{% endblock %}
+{% block content %}
+  {% macro provider_architecture_board(diagram) %}
+    {% set external_node = diagram.nodes[0] %}
+    {% set evidence_node = diagram.nodes[-1] %}
+    <div class="provider-architecture-board layout-{{ diagram.layout or 'standard' }}" data-provider="{{ diagram.provider }}">
+      <div class="provider-board-label entry">{{ diagram.entryLabel or "Entry / request" }}</div>
+      <div class="provider-board-label cloud">{{ diagram.boundaryLabel or "Provider cloud boundary" }}</div>
+      <div class="provider-board-label proof">{{ diagram.proofLabel or "Operational proof" }}</div>
+      <section class="provider-board-zone provider-board-entry">
+        <span class="provider-board-step">1</span>
+        <strong>{{ external_node.label }}</strong>
+        <ul>{% for point in external_node["items"][:3] %}<li>{{ point }}</li>{% endfor %}</ul>
+      </section>
+      <div class="provider-board-line provider-board-line-entry"></div>
+      <section class="provider-board-cloud">
+        <span class="provider-board-provider">{{ diagram.provider }}</span>
+        <div class="provider-board-services">
+          {% for node in diagram.nodes[1:-1] %}
+            <section class="provider-board-service {{ node.kind or '' }}">
+              <span class="provider-board-step">{{ loop.index + 1 }}</span>
+              <strong>{{ node.label }}</strong>
+              <ul>{% for point in node["items"][:3] %}<li>{{ point }}</li>{% endfor %}</ul>
+            </section>
+          {% endfor %}
+        </div>
+      </section>
+      <div class="provider-board-line provider-board-line-proof"></div>
+      <section class="provider-board-zone provider-board-proof">
+        <span class="provider-board-step">{{ diagram.nodes|length }}</span>
+        <strong>{{ evidence_node.label }}</strong>
+        <ul>{% for point in evidence_node["items"][:3] %}<li>{{ point }}</li>{% endfor %}</ul>
+      </section>
+      <div class="provider-board-caption">
+        <span><strong>{{ diagram.entryCaptionTitle or "Entry" }}:</strong> {{ diagram.entryCaption or "user, business, data, or event trigger." }}</span>
+        <span><strong>{{ diagram.boundaryCaptionTitle or "Cloud boundary" }}:</strong> {{ diagram.boundaryCaption or "provider services that define the implementation boundary." }}</span>
+        <span><strong>{{ diagram.proofCaptionTitle or "Proof" }}:</strong> {{ diagram.proofCaption or "logs, dashboards, policies, runbooks, or validation outputs that confirm the outcome." }}</span>
+      </div>
+    </div>
+    <details class="provider-detail-map">
+      <summary>View service details as text</summary>
+      <div class="provider-arch-map">
+        <section class="provider-zone external">
+          <span class="provider-icon">1</span>
+          <strong>{{ external_node.label }}</strong>
+          <ul>{% for point in external_node["items"] %}<li>{{ point }}</li>{% endfor %}</ul>
+        </section>
+        <div class="provider-connector">→</div>
+        <section class="provider-cloud" data-provider="{{ diagram.provider }}">
+          <div class="provider-cloud-grid">
+            {% for node in diagram.nodes[1:-1] %}
+              <section class="provider-service {{ node.kind or '' }}">
+                <span class="provider-icon">{{ loop.index + 1 }}</span>
+                <strong>{{ node.label }}</strong>
+                <ul>{% for point in node["items"] %}<li>{{ point }}</li>{% endfor %}</ul>
+              </section>
+            {% endfor %}
+          </div>
+        </section>
+        <div class="provider-connector">→</div>
+        <section class="provider-zone ops">
+          <span class="provider-icon">{{ diagram.nodes|length }}</span>
+          <strong>{{ evidence_node.label }}</strong>
+          <ul>{% for point in evidence_node["items"] %}<li>{{ point }}</li>{% endfor %}</ul>
+        </section>
+      </div>
+    </details>
+  {% endmacro %}
+  {% macro datadog_inline_card(item) %}
+    <article class="datadog-inline-card">
+      <div class="datadog-inline-copy">
+        <span class="source-pill">{{ item.sourceName }}</span>
+        <h2>{{ item.title }}</h2>
+        <ul class="stack-list">
+          <li><strong>Where it fits:</strong> {{ item.whereItFits }}</li>
+          <li><strong>Beginner explanation:</strong> {{ item.beginnerExplanation }}</li>
+          <li><strong>What to say:</strong> {{ item.whatToSay }}</li>
+        </ul>
+        <strong>Evidence to collect</strong>
+        <div class="tag-cloud">{% for evidence in item.evidenceToCollect %}<span class="tag">{{ evidence }}</span>{% endfor %}</div>
+        <div class="inline-actions">
+          <a class="button secondary" href="{{ item.sourceUrl }}" target="_blank" rel="noopener">Open Datadog source</a>
+        </div>
+      </div>
+      <a class="datadog-inline-image" href="{{ item.sourceUrl }}" target="_blank" rel="noopener">
+        <img src="{{ item.imageUrl }}" alt="{{ item.title }} official Datadog architecture diagram" loading="lazy">
+      </a>
+    </article>
+  {% endmacro %}
+  {% set ns = namespace(section_label="Overview") %}
+  {% for item in sections %}
+    {% if item.key == section %}
+      {% set ns.section_label = item.label %}
+    {% endif %}
+  {% endfor %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-programs">Training Programs</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">{{ program.marketing_role.name }} · {{ program.industry_domain }}</span>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">{{ ns.section_label }}</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <h1>{{ program.marketing_role.name }}</h1>
+      <p>{{ program.industry_domain }} · {{ program.short_description }}</p>
+    </div>
+    <div class="page-actions" aria-label="Training program actions">
+      <a class="action-button" href="/training-programs" title="Back to training programs" aria-label="Back to training programs">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      </a>
+      <a class="action-button" href="/marketing-roles/{{ program.marketing_role.id }}" title="View marketing role" aria-label="View marketing role">
+        <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+      <a class="action-button" href="/training-programs/{{ program.id }}/export.pdf" title="Download full reference PDF" aria-label="Download full reference PDF">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+      </a>
+      {% if can_manage %}
+        <a class="action-button primary" href="/training-programs/{{ program.id }}/edit" title="Edit program" aria-label="Edit program">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ program.application_landscape|length }}</strong><span>Applications</span></div>
+    <div class="metric"><strong>{{ program.cloud_architecture.cloudProviderOptions|length }}</strong><span>Cloud options</span></div>
+    <div class="metric"><strong>{{ program.project_responsibilities|length }}</strong><span>Responsibilities</span></div>
+    <div class="metric"><strong>{{ program.key_deliverables|length }}</strong><span>Deliverables</span></div>
+    <div class="metric"><strong>{{ "Active" if program.active else "Inactive" }}</strong><span>Status</span></div>
+  </section>
+
+  <details class="card material-options">
+    <summary><strong>Material Export Options</strong></summary>
+    <form class="material-options-form" method="get" action="/training-programs/{{ program.id }}/export.pdf">
+      <label class="check-row">
+        <input type="checkbox" name="include_diagrams" value="true" checked>
+        <span>
+          <strong>Include diagrams in the reference material</strong>
+          <small>Adds visual system flows, provider patterns, and evidence paths to the PDF.</small>
+        </span>
+      </label>
+      <div class="grid-3">
+        {% for item in diagram_export_options %}
+          <section class="subtle-panel">
+            <strong>{{ item.label }}</strong>
+            <p>{{ item.description }}</p>
+          </section>
+        {% endfor %}
+      </div>
+      <div class="inline-actions">
+        <button type="submit">Download Material PDF</button>
+        <a class="button secondary" href="/training-programs/{{ program.id }}/export.pdf?include_diagrams=false">Download Text Only</a>
+      </div>
+    </form>
+  </details>
+
+  <nav class="tabs">
+    {% for item in sections %}
+      <a class="tab {% if section == item.key %}active{% endif %}" href="/training-programs/{{ program.id }}?section={{ item.key }}">{{ item.label }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if section == "assessment" %}
+    <section class="card stack assessment-head">
+      <div>
+        <span class="pill">Certification-style onboarding</span>
+        <h2>{{ onboarding_assessment.title }}</h2>
+        <p>{{ onboarding_assessment.subtitle }}</p>
+      </div>
+      <div class="assessment-scorebox">
+        <strong>{{ onboarding_assessment.totalQuestions }}</strong>
+        <span>questions</span>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <article class="card stack">
+        <h2>Test Rules</h2>
+        <ul class="stack-list">
+          <li><strong>Source rule:</strong> {{ onboarding_assessment.sourceRule }}</li>
+          <li><strong>Time limit:</strong> {{ onboarding_assessment.timeLimitMinutes }} minutes</li>
+          <li><strong>Passing score:</strong> {{ onboarding_assessment.passingScore }}%</li>
+          {% for rule in onboarding_assessment.scoringRules %}<li>{{ rule }}</li>{% endfor %}
+        </ul>
+      </article>
+      <article class="card stack">
+        <h2>Sections</h2>
+        <div class="assessment-section-list">
+          {% for item in onboarding_assessment.sections %}
+            <div>
+              <strong>{{ item.name }}</strong>
+              <span>{{ item.questionCount }} questions · {{ item.source }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="card stack assessment-panel">
+      <div class="assessment-toolbar">
+        <div>
+          <h2>Assessment</h2>
+          <p class="muted">Use the Score Test button after all answers are selected. Multi-select questions require an exact match.</p>
+        </div>
+        <button type="button" id="score-assessment">Score Test</button>
+      </div>
+      <div id="assessment-result" class="assessment-result" hidden></div>
+      <form id="onboarding-assessment-form">
+        {% for question in onboarding_assessment.questions %}
+          <article class="assessment-question" data-question-id="{{ question.id }}" data-correct="{{ question.correctAnswers|join(',') }}">
+            <div class="assessment-question-head">
+              <span>{{ question.id }}</span>
+              <span>{{ question.typeLabel }}</span>
+              <span>{{ question.section }}</span>
+            </div>
+            <h3>{{ question.prompt }}</h3>
+            <div class="assessment-options">
+              {% for option in question.options %}
+                <label>
+                  <input type="{{ 'checkbox' if question.type == 'multi_select' else 'radio' }}" name="{{ question.id }}" value="{{ option.key }}">
+                  <span><strong>{{ option.key }}.</strong> {{ option.text }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <details>
+              <summary>Source and answer key</summary>
+              <ul class="stack-list">
+                <li><strong>Source:</strong> {{ question.sourceTitle }} · {{ question.sourceSection }}</li>
+                <li><strong>Topic:</strong> {{ question.topic }} · {{ question.difficulty }}</li>
+                <li><strong>Correct answer:</strong> {{ question.correctAnswers|join(', ') }}</li>
+                <li><strong>Explanation:</strong> {{ question.explanation }}</li>
+              </ul>
+            </details>
+          </article>
+        {% endfor %}
+      </form>
+    </section>
+
+    <section class="card stack">
+      <h2>Result Bands</h2>
+      <div class="assessment-band-grid">
+        {% for band in onboarding_assessment.resultBands %}
+          <article>
+            <strong>{{ band.range }} · {{ band.label }}</strong>
+            <p>{{ band.action }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <script>
+      (() => {
+        const button = document.getElementById("score-assessment");
+        const result = document.getElementById("assessment-result");
+        const questions = Array.from(document.querySelectorAll(".assessment-question"));
+        if (!button || !result || !questions.length) return;
+        button.addEventListener("click", () => {
+          let correctCount = 0;
+          questions.forEach((question) => {
+            const expected = (question.dataset.correct || "").split(",").filter(Boolean).sort().join(",");
+            const selected = Array.from(question.querySelectorAll("input:checked")).map((input) => input.value).sort().join(",");
+            const isCorrect = selected === expected;
+            question.classList.toggle("correct", isCorrect);
+            question.classList.toggle("incorrect", !isCorrect);
+            if (isCorrect) correctCount += 1;
+          });
+          const percent = Math.round((correctCount / questions.length) * 100);
+          const band = percent >= 85 ? "Ready" : percent >= 75 ? "Ready with review" : percent >= 60 ? "Conditional" : "Not ready";
+          result.hidden = false;
+          result.textContent = `${correctCount}/${questions.length} correct (${percent}%) · ${band}`;
+          result.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      })();
+    </script>
+
+    <style>
+      .assessment-head { align-items: center; display: flex; justify-content: space-between; }
+      .assessment-head h2, .assessment-head p { margin: 0; }
+      .assessment-head h2 { margin-top: 8px; }
+      .assessment-scorebox { align-items: center; background: #f0fdfa; border: 1px solid #99d9ce; border-radius: 8px; color: var(--accent-dark); display: flex; flex-direction: column; justify-content: center; min-height: 96px; min-width: 120px; }
+      .assessment-scorebox strong { font-size: 34px; line-height: 1; }
+      .assessment-scorebox span { font-size: 12px; font-weight: 850; text-transform: uppercase; }
+      .assessment-section-list { display: grid; gap: 10px; }
+      .assessment-section-list div, .assessment-band-grid article { background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+      .assessment-section-list strong, .assessment-section-list span { display: block; }
+      .assessment-section-list span { color: var(--muted); font-size: 13px; margin-top: 4px; }
+      .assessment-toolbar { align-items: center; display: flex; gap: 16px; justify-content: space-between; }
+      .assessment-toolbar h2, .assessment-toolbar p { margin: 0; }
+      .assessment-result { background: #fff7d6; border: 1px solid #f0c66a; border-radius: 8px; color: #8a5a00; font-size: 18px; font-weight: 850; padding: 14px; }
+      .assessment-question { border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 12px; margin-top: 12px; padding: 14px; }
+      .assessment-question.correct { border-color: #64b9a8; box-shadow: inset 4px 0 0 #64b9a8; }
+      .assessment-question.incorrect { border-color: #df8a7d; box-shadow: inset 4px 0 0 #df8a7d; }
+      .assessment-question-head { display: flex; flex-wrap: wrap; gap: 8px; }
+      .assessment-question-head span { background: #f8fafc; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 850; padding: 5px 9px; }
+      .assessment-question h3 { font-size: 17px; line-height: 1.4; margin: 0; }
+      .assessment-options { display: grid; gap: 8px; }
+      .assessment-options label { align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; display: flex; gap: 10px; padding: 10px; }
+      .assessment-options input { margin-top: 3px; }
+      .assessment-band-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .assessment-band-grid p { margin: 6px 0 0; }
+      @media (max-width: 900px) {
+        .assessment-head, .assessment-toolbar { align-items: stretch; display: grid; }
+        .assessment-scorebox { min-width: 0; }
+        .assessment-band-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+
+  {% elif section == "start" %}
+    {% if cicd_security_pipeline_reference %}
+      <section class="card stack">
+        <h2>{{ cicd_security_pipeline_reference.title }}</h2>
+        <div class="datadog-inline-image">
+          <img src="{{ cicd_security_pipeline_reference.imageUrl }}" alt="DevOps CI/CD security pipeline showing GitHub, Jenkins, OWASP, SonarQube, Trivy, Docker, Argo CD, Kubernetes, Prometheus, Grafana, and email notification" loading="lazy">
+        </div>
+        <p>{{ cicd_security_pipeline_reference.whereItFits }}</p>
+        <div class="grid-2">
+          <div class="subtle-panel">
+            <strong>Flow to explain</strong>
+            <ul class="stack-list">{% for item in cicd_security_pipeline_reference.flow %}<li>{{ item }}</li>{% endfor %}</ul>
+          </div>
+          <div class="subtle-panel">
+            <strong>Interview notes</strong>
+            <ul class="stack-list">{% for item in cicd_security_pipeline_reference.interviewNotes %}<li>{{ item }}</li>{% endfor %}</ul>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+    <section class="card stack">
+      <h2>Program Context</h2>
+      <ul class="stack-list">
+        <li>This program explains how {{ program.industry_domain }} business functions are supported by product systems, cloud architecture, operational controls, and delivery evidence.</li>
+        <li>Basics Prep covers shared fundamentals; this role/domain program explains how those fundamentals appear inside {{ program.marketing_role.name }} work.</li>
+        <li>Each concept is connected to a domain workflow, system behavior, implemented use case, artifact, or validation signal.</li>
+        <li>The focus is functionality: what the system does, which teams own each part, what changed, what can fail, and what evidence confirms the outcome.</li>
+      </ul>
+    </section>
+    <h2>Concept Coverage Map</h2>
+    <section class="stack">
+      {% for item in concept_coverage_map %}
+        <article class="card stack">
+          <h2>{{ item.area }}</h2>
+          <ul class="stack-list">
+            <li><strong>Where it appears:</strong> {{ item.where }}</li>
+            <li><strong>Functional meaning:</strong> {{ item.practice }}</li>
+            <li><strong>Evidence visible:</strong> {{ item.proof }}</li>
+          </ul>
+          <div class="tag-cloud">
+            {% for concept in item.concepts[:40] %}
+              <span class="tag">{{ concept }}</span>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+    <h2>2 + 4 Week Training Structure</h2>
+    <table class="data-list">
+      <thead><tr><th>Stage</th><th>Theme</th><th>Goal</th></tr></thead>
+      <tbody>
+        {% for item in weekly_plan %}
+          <tr>
+            <td><strong>{{ item.week }}</strong></td>
+            <td>{{ item.theme }}</td>
+            <td>{{ item.goal }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <section class="workflow-visual-grid">
+      {% for item in beginner_cards %}
+        <a class="workflow-visual workflow-link-card" href="{{ item.href }}">
+          <h2>{{ item.step }}. {{ item.title }}</h2>
+          <p class="muted">{{ item.subtitle }}</p>
+          <ul class="stack-list">{% for point in item.bullets %}<li>{{ point }}</li>{% endfor %}</ul>
+          <div class="subtle-panel"><strong>Functional example:</strong> {{ item.try_this }}</div>
+          <span class="tile-open-indicator">Open section</span>
+        </a>
+      {% endfor %}
+    </section>
+    <h2>The Story To Keep In Mind</h2>
+    <section class="card">
+      <div class="visual-flow">
+        {% for item in beginner_story_steps %}
+          <span class="visual-node">{{ item.label }}</span>
+          {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="grid-2">
+        {% for item in beginner_story_steps %}
+          <section class="subtle-panel">
+            <strong>{{ item.label }}</strong>
+            <p>{{ item.text }}</p>
+          </section>
+        {% endfor %}
+      </div>
+    </section>
+    <h2>Core Architecture And Training Diagrams</h2>
+    <section class="stack">
+      {% for diagram in architecture_diagrams %}
+        <article class="architecture-diagram">
+          <h2>{{ diagram.title }}</h2>
+          <p class="muted">{{ diagram.purpose }}</p>
+          <div class="arch-canvas">
+            {% for node in diagram.nodes %}
+              <section class="arch-node {{ node.kind or '' }}">
+                <strong>{{ node.label }}</strong>
+                <ul>{% for point in node["items"] %}<li>{{ point }}</li>{% endfor %}</ul>
+              </section>
+              {% if not loop.last %}<div class="arch-arrow">→</div>{% endif %}
+            {% endfor %}
+          </div>
+          <div class="arch-layers">
+            {% for layer in diagram.layers %}
+              <section class="arch-layer"><strong>{{ layer.label }}</strong>{{ layer.text }}</section>
+            {% endfor %}
+          </div>
+          <div class="arch-evidence">
+            {% for item in diagram.evidence %}
+              <span>{{ item }}</span>
+            {% endfor %}
+          </div>
+          <p class="workflow-note"><strong>Interview use:</strong> {{ diagram.interview }}</p>
+        </article>
+      {% endfor %}
+      {% for item in program.cloud_architecture.datadogInlineDiagrams %}
+        {{ datadog_inline_card(item) }}
+      {% endfor %}
+    </section>
+    <h2>Provider Architecture Diagrams For This Role</h2>
+    <section class="stack">
+      {% for diagram in provider_diagrams %}
+        <article class="architecture-diagram">
+          <h2>{{ diagram.title }}</h2>
+          <p class="muted">{{ diagram.source }}</p>
+          {{ provider_architecture_board(diagram) }}
+          <div class="arch-layers">
+            {% for layer in diagram.layers %}
+              <section class="arch-layer"><strong>{{ layer.label }}</strong>{{ layer.text }}</section>
+            {% endfor %}
+          </div>
+          <div class="arch-evidence">
+            {% for item in diagram.evidence %}
+              <span>{{ item }}</span>
+            {% endfor %}
+          </div>
+          <p class="workflow-note"><strong>Interview use:</strong> {{ diagram.interview }}</p>
+        </article>
+      {% endfor %}
+    </section>
+    <h2>Provider-Document Use Case Source Pack</h2>
+    <section class="grid-2">
+      {% for item in provider_usecase_sources %}
+        <article class="card stack">
+          <h2>{{ item.source }}</h2>
+          <ul class="stack-list">
+            <li>{{ item.pattern }}</li>
+          </ul>
+          <strong>Use cases to prioritize</strong>
+          <ul class="stack-list">{% for use_case in item.use_cases %}<li>{{ use_case }}</li>{% endfor %}</ul>
+          <strong>Evidence visible in the scenario</strong>
+          <div class="tag-cloud">{% for evidence in item.evidence %}<span class="tag">{{ evidence }}</span>{% endfor %}</div>
+        </article>
+      {% endfor %}
+    </section>
+    <h2>Quick Check</h2>
+    <div class="grid-2">
+      {% for item in beginner_quiz %}
+        <details class="card">
+          <summary><strong>{{ item.question }}</strong></summary>
+          <p>{{ item.answer }}</p>
+        </details>
+      {% endfor %}
+    </div>
+    <h2>Interview Delivery Rule</h2>
+    <section class="card stack">
+      <ul class="stack-list">
+        <li>Marketing readiness is strongest when at least two role-specific use cases include diagram, operation flow, troubleshooting path, explanation, and evidence.</li>
+        <li>The strongest preparation turns a real situation into a clear interview answer with system context, role boundary, action, evidence, and validated result.</li>
+      </ul>
+    </section>
+  {% elif section == "overview" %}
+    <section class="card stack">
+      <h2>Enterprise Project Context</h2>
+      {% if program.cloud_architecture.consultantProjectContextBrief %}
+        {% set context_brief = program.cloud_architecture.consultantProjectContextBrief %}
+        <section class="subtle-panel stack">
+          <strong>{{ context_brief.headline }}</strong>
+          <p>{{ context_brief.summary }}</p>
+        </section>
+        <div class="grid-2">
+          <section class="subtle-panel">
+            <strong>Enterprise scale</strong>
+            <ul class="stack-list">{% for item in context_brief.scale %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+          <section class="subtle-panel">
+            <strong>Business product flow</strong>
+            <ul class="stack-list">{% for item in context_brief.businessFlow %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+          <section class="subtle-panel">
+            <strong>Role boundary</strong>
+            <ul class="stack-list">{% for item in context_brief.roleBoundary %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+          <section class="subtle-panel">
+            <strong>Delivery model</strong>
+            <ul class="stack-list">{% for item in context_brief.deliveryModel %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+          <section class="subtle-panel">
+            <strong>Architecture view</strong>
+            <ul class="stack-list">{% for item in context_brief.architectureView %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+          <section class="subtle-panel">
+            <strong>Evidence and interview frame</strong>
+            <ul class="stack-list">
+              {% for item in context_brief.evidenceModel %}<li>{{ item }}</li>{% endfor %}
+              {% for item in context_brief.interviewFrame %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </section>
+        </div>
+        <details class="subtle-panel">
+          <summary><strong>Read full project narrative</strong></summary>
+          <p>{{ program.cloud_architecture.consultantProjectContext }}</p>
+        </details>
+      {% else %}
+        <p>{{ program.cloud_architecture.consultantProjectContext }}</p>
+      {% endif %}
+      {% if program.cloud_architecture.enterpriseOperatingModel %}
+        <h2>Enterprise Operating Model</h2>
+        <ul class="stack-list"><li>{{ program.cloud_architecture.enterpriseOperatingModel.consultantPlacement }}</li></ul>
+        <div class="grid-2">
+          <section>
+            <strong>Scale</strong>
+            <ul class="stack-list">{% for item in program.cloud_architecture.enterpriseOperatingModel.scale %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+          <section>
+            <strong>Technology Teams</strong>
+            <ul class="stack-list">{% for item in program.cloud_architecture.enterpriseOperatingModel.technologyTeams %}<li>{{ item }}</li>{% endfor %}</ul>
+          </section>
+        </div>
+      {% endif %}
+      <h2>Product Point Of View</h2>
+      <ul class="stack-list"><li>{{ program.cloud_architecture.roleProductExplanation }}</li></ul>
+    </section>
+    <div class="grid-2">
+      <section class="card">
+        <h2>Enterprise Context</h2>
+        <ul class="stack-list"><li>{{ program.enterprise_context }}</li></ul>
+      </section>
+      {% if program.cloud_architecture.linesOfBusiness %}
+      <section class="card">
+        <h2>Lines Of Business</h2>
+        <div class="stack">
+          {% for lob in program.cloud_architecture.linesOfBusiness %}
+            <section class="subtle-panel">
+              <strong>{{ lob.name }}</strong>
+              <ul class="stack-list">
+                <li>{{ lob.description }}</li>
+                <li><strong>Systems:</strong> {{ lob.systems|join(", ") }}</li>
+                <li><strong>Job signals:</strong> {{ lob.jobSignals|join(", ") }}</li>
+              </ul>
+            </section>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      <section class="card">
+        <h2>Application Landscape</h2>
+        <div class="tag-cloud">
+          {% for item in program.application_landscape %}
+            {% set slug = product_system_slugs.get(item|lower|trim) %}
+            {% if slug %}
+              <a class="tag system-tag" href="/training-programs/{{ program.id }}/systems/{{ slug }}">{{ item }} · Open</a>
+            {% else %}
+              <span class="tag">{{ item }}</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+    <section class="card stack">
+      <h2>Diagram Workbook</h2>
+      <ul class="stack-list">
+        <li>Readiness target: master 10-12 project use cases for this role and domain.</li>
+        <li>This program includes {{ document_diagrams|length }} role-specific diagrams in the architecture section and full PDF export.</li>
+        <li>SRE/AIOps programs include healthcare observability, Azure Monitor, Datadog, incident, RCA, DR, and evidence-package diagrams.</li>
+        {% if microsoft_healthcare_references %}
+          <li>This Healthcare program also includes {{ microsoft_healthcare_references|length }} role-relevant Microsoft Azure healthcare reference diagrams.</li>
+        {% endif %}
+      </ul>
+      <div class="inline-actions">
+        <a class="button" href="/training-programs/{{ program.id }}?section=architecture">Open Diagrams</a>
+        <a class="button secondary" href="/training-programs/{{ program.id }}/export.pdf">Download PDF With Diagrams</a>
+      </div>
+    </section>
+    <h2>Tools And Technologies</h2>
+    <section class="card"><div class="tag-cloud">{% for item in program.tools_and_technologies %}<span class="tag">{{ item }}</span>{% endfor %}</div></section>
+  {% elif section == "architecture" %}
+    <h2>25 Diagram Workbook</h2>
+    <section class="stack">
+      {% for diagram in document_diagrams %}
+        <article class="architecture-diagram">
+          <h2>{{ diagram.title }}</h2>
+          <p class="muted">{{ diagram.purpose }}</p>
+          {{ provider_architecture_board(diagram) }}
+          <div class="visual-flow">
+            {% for step in diagram.steps %}
+              <span class="visual-node">{{ step }}</span>
+              {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+            {% endfor %}
+          </div>
+          <div class="arch-evidence">
+            {% for item in diagram.evidence %}
+              <span>{{ item }}</span>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+    {% if microsoft_healthcare_references %}
+      <h2>Role-Relevant Microsoft Healthcare Azure Reference Diagrams</h2>
+      <section class="stack">
+        {% for reference in microsoft_healthcare_references %}
+          <article class="architecture-diagram">
+            <h2>{{ reference.customer }}: {{ reference.title }}</h2>
+            <p class="muted">{{ reference.businessProblem }}</p>
+            <div class="inline-actions">
+              <a class="button secondary" href="{{ reference.sourceUrl }}" target="_blank" rel="noopener">Open Microsoft source</a>
+            </div>
+            {{ provider_architecture_board(reference.diagram) }}
+            <div class="grid-2">
+              <section class="subtle-panel">
+                <strong>Microsoft services</strong>
+                <ul class="stack-list">{% for item in reference.microsoftServices %}<li>{{ item }}</li>{% endfor %}</ul>
+              </section>
+              <section class="subtle-panel">
+                <strong>Published outcomes</strong>
+                <ul class="stack-list">{% for item in reference.outcomes %}<li>{{ item }}</li>{% endfor %}</ul>
+              </section>
+            </div>
+            <p class="workflow-note"><strong>Role-specific use:</strong> {{ reference.roleUse }}</p>
+          </article>
+        {% endfor %}
+      </section>
+    {% endif %}
+    <h2>Role Architecture Diagrams</h2>
+    <section class="stack">
+      {% for diagram in architecture_diagrams %}
+        <article class="architecture-diagram">
+          <h2>{{ diagram.title }}</h2>
+          <p class="muted">{{ diagram.purpose }}</p>
+          <div class="arch-canvas">
+            {% for node in diagram.nodes %}
+              <section class="arch-node {{ node.kind or '' }}">
+                <strong>{{ node.label }}</strong>
+                <ul>{% for point in node["items"] %}<li>{{ point }}</li>{% endfor %}</ul>
+              </section>
+              {% if not loop.last %}<div class="arch-arrow">→</div>{% endif %}
+            {% endfor %}
+          </div>
+          <div class="arch-layers">
+            {% for layer in diagram.layers %}
+              <section class="arch-layer"><strong>{{ layer.label }}</strong>{{ layer.text }}</section>
+            {% endfor %}
+          </div>
+          <div class="arch-evidence">
+            {% for item in diagram.evidence %}
+              <span>{{ item }}</span>
+            {% endfor %}
+          </div>
+          <p class="workflow-note"><strong>Interview use:</strong> {{ diagram.interview }}</p>
+        </article>
+      {% endfor %}
+      {% for item in program.cloud_architecture.datadogInlineDiagrams %}
+        {{ datadog_inline_card(item) }}
+      {% endfor %}
+    </section>
+    <h2>Provider Architecture Diagrams</h2>
+    <section class="stack">
+      {% for diagram in provider_diagrams %}
+        <article class="architecture-diagram">
+          <h2>{{ diagram.title }}</h2>
+          <p class="muted">{{ diagram.source }}</p>
+          {{ provider_architecture_board(diagram) }}
+          <div class="arch-layers">
+            {% for layer in diagram.layers %}
+              <section class="arch-layer"><strong>{{ layer.label }}</strong>{{ layer.text }}</section>
+            {% endfor %}
+          </div>
+          <div class="arch-evidence">
+            {% for item in diagram.evidence %}
+              <span>{{ item }}</span>
+            {% endfor %}
+          </div>
+          <p class="workflow-note"><strong>Interview use:</strong> {{ diagram.interview }}</p>
+        </article>
+      {% endfor %}
+    </section>
+    <section class="card stack">
+      <h2>Architecture Mindmap</h2>
+      <div class="mindmap">
+        <div class="mindmap-root">{{ program.cloud_architecture.architectureMindmap.root }}</div>
+        <div class="mindmap-branches">
+          {% for branch in program.cloud_architecture.architectureMindmap.branches %}
+            <section class="mindmap-branch">
+              <strong>{{ branch.title }}</strong>
+              <ul>
+                {% for item in branch["items"] %}
+                  <li>
+                    {% set slug = product_system_slugs.get(item|lower|trim) %}
+                    {% if slug %}
+                      <a class="mindmap-link" href="/training-programs/{{ program.id }}/systems/{{ slug }}">{{ item }}</a>
+                    {% else %}
+                      {{ item }}
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% if product_system_cards %}
+      <section class="card stack">
+        <h2>Product System Pages</h2>
+        <div class="system-link-grid">
+          {% for item in product_system_cards %}
+            <a class="system-link-card" href="/training-programs/{{ program.id }}/systems/{{ item.slug }}">
+              <strong>{{ item.label }}</strong>
+              <span>Open detailed {{ program.industry_domain }} system explanation for {{ program.marketing_role.name }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+    <section class="card stack">
+      <h2>Architecture Summary</h2>
+      <ul class="stack-list"><li>{{ program.cloud_architecture.architectureSummary }}</li></ul>
+      <strong>Interview Answer Points</strong>
+      <ul class="stack-list">{% for item in program.cloud_architecture.architectureInterviewExplanation %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+    <h2>Architecture Layers</h2>
+    <div class="stack">
+      {% for layer in program.cloud_architecture.architectureLayers %}
+        <section class="card">
+          <h2>{{ loop.index }}. {{ layer.layer }}</h2>
+          <ul class="stack-list">
+            <li><strong>Purpose:</strong> {{ layer.purpose }}</li>
+            <li><strong>{{ program.marketing_role.name }} view:</strong> {{ layer.roleView }}</li>
+          </ul>
+          <div class="tag-cloud">{% for item in layer.components %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+        </section>
+      {% endfor %}
+    </div>
+    <h2>End-To-End Flows</h2>
+    <section class="workflow-visual-grid">
+      {% for flow in program.cloud_architecture.architectureFlows %}
+        <article class="workflow-visual">
+          <h2>{{ flow.name }}</h2>
+          <div class="visual-flow">
+            {% for node in flow.diagram.split("->") %}
+              <span class="visual-node">{{ node.strip() }}</span>
+              {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+            {% endfor %}
+          </div>
+          <ul class="stack-list">
+            <li>{{ flow.explanation }}</li>
+            <li><strong>Answer point:</strong> {{ flow.whatToSay }}</li>
+          </ul>
+        </article>
+      {% endfor %}
+    </section>
+    <h2>Role Ownership In Architecture</h2>
+    <table class="data-list">
+      <thead><tr><th>Area</th><th>Ownership</th><th>Boundary</th></tr></thead>
+      <tbody>{% for item in program.cloud_architecture.roleArchitectureOwnership %}<tr><td><strong>{{ item.area }}</strong></td><td>{{ item.ownership }}</td><td>{{ item.boundary }}</td></tr>{% endfor %}</tbody>
+    </table>
+    <h2>Component Responsibilities</h2>
+    <table class="data-list">
+      <thead><tr><th>Component</th><th>Purpose</th><th>{{ program.marketing_role.name }} Responsibility</th></tr></thead>
+      <tbody>{% for item in program.cloud_architecture.componentResponsibilities %}<tr><td><strong>{{ item.component }}</strong></td><td>{{ item.purpose }}</td><td>{{ item.roleResponsibility }}</td></tr>{% endfor %}</tbody>
+    </table>
+    <h2>Cloud Provider Options And Core Components</h2>
+    <section class="card">
+      <strong>Cloud Provider Options</strong>
+      <div class="tag-cloud">{% for item in program.cloud_architecture.cloudProviderOptions %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+      <strong>Core Components</strong>
+      <div class="tag-cloud">{% for item in program.cloud_architecture.coreComponents %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+    </section>
+  {% elif section == "usecases" %}
+    <section class="card stack">
+      <h2>Delivered Project Use Cases</h2>
+      <ul class="stack-list">
+        <li>Each use case explains a functional business or platform outcome, the systems involved, and the role-owned implementation behavior.</li>
+        <li>The implementation sequence shows how the flow moved from current state to target state, how it was validated, and how failures were recovered.</li>
+        <li>Each linked use case includes project scenario, system behavior, validation conditions, evidence package, Jira stories, and interview context.</li>
+      </ul>
+    </section>
+    <section class="grid-2">
+      {% for item in provider_usecase_sources %}
+        <article class="card stack">
+          <h2>{{ item.source }}</h2>
+          <ul class="stack-list"><li>{{ item.pattern }}</li></ul>
+          <strong>Priority use cases</strong>
+          <ul class="stack-list">{% for use_case in item.use_cases %}<li>{{ use_case }}</li>{% endfor %}</ul>
+          <strong>Evidence to collect</strong>
+          <div class="tag-cloud">{% for evidence in item.evidence %}<span class="tag">{{ evidence }}</span>{% endfor %}</div>
+        </article>
+      {% endfor %}
+    </section>
+    <div class="stack">
+      {% for item in program.cloud_architecture.deliveredUseCases %}
+        <section class="card">
+          <h2>{{ loop.index }}. <a href="/training-programs/{{ program.id }}/usecases/{{ loop.index }}">{{ item.title }}</a></h2>
+          <ul class="stack-list">
+            <li><strong>Business problem:</strong> {{ item.businessProblem }}</li>
+            {% if item.businessAnalystLens %}
+              <li><strong>Business capability:</strong> {{ item.businessAnalystLens.businessCapability }}</li>
+            {% endif %}
+            {% if item.projectManagerLens %}
+              <li><strong>PM delivery view:</strong> {{ item.projectManagerLens.projectObjective }}</li>
+            {% endif %}
+            {% if item.qaTestLens %}
+              <li><strong>QA view:</strong> {{ item.qaTestLens.testStrategy }}</li>
+            {% endif %}
+            {% if item.productionSupportLens %}
+              <li><strong>Operations view:</strong> {{ item.productionSupportLens.supportModel }}</li>
+            {% endif %}
+            <li><strong>Project scenario:</strong> {{ item.projectScenario }}</li>
+            <li><strong>Role boundary:</strong> {{ item.roleBoundary }}</li>
+            {% if item.architectLens %}
+              <li><strong>Architect view:</strong> {{ item.architectLens.seniorExplanation }}</li>
+            {% endif %}
+            <li><strong>Interview story:</strong> {{ item.interviewStory }}</li>
+          </ul>
+          <div class="grid-2">
+            <section>
+              <strong>Implemented behavior</strong>
+              <ol class="stack-list">
+                {% for activity in item.implementationActivities[:4] %}
+                  <li><strong>{{ activity.phase }}:</strong> {{ activity.activity }}</li>
+                {% endfor %}
+              </ol>
+            </section>
+            <section>
+              {% if item.businessAnalystLens %}
+                <strong>BA/domain signals</strong>
+                <ul class="stack-list">
+                  <li><strong>Actors:</strong> {{ item.businessAnalystLens.businessActors[:5]|join(", ") }}</li>
+                  <li><strong>KPIs:</strong> {{ item.businessAnalystLens.kpisAndReports[:4]|join(", ") }}</li>
+                  <li><strong>Systems:</strong> {{ item.businessAnalystLens.systemTouchpoints[:5]|join(", ") }}</li>
+                </ul>
+              {% endif %}
+              {% if item.projectManagerLens %}
+                <strong>PM delivery signals</strong>
+                <ul class="stack-list">
+                  <li><strong>Stakeholders:</strong> {{ item.projectManagerLens.stakeholders[:5]|join(", ") }}</li>
+                  <li><strong>Dependencies:</strong> {{ item.projectManagerLens.dependencies[:4]|join(", ") }}</li>
+                  <li><strong>Evidence:</strong> {{ item.projectManagerLens.deliveryEvidence[:4]|join(", ") }}</li>
+                </ul>
+              {% endif %}
+              {% if item.qaTestLens or item.productionSupportLens or item.securityComplianceLens or item.dataReportingLens or item.productOwnerLens %}
+                <strong>Cross-functional readiness signals</strong>
+                <ul class="stack-list">
+                  {% if item.qaTestLens %}<li><strong>QA:</strong> {{ item.qaTestLens.releaseGates[:3]|join(", ") }}</li>{% endif %}
+                  {% if item.productionSupportLens %}<li><strong>Ops:</strong> {{ item.productionSupportLens.opsHandoff[:3]|join(", ") }}</li>{% endif %}
+                  {% if item.securityComplianceLens %}<li><strong>Security:</strong> {{ item.securityComplianceLens.complianceEvidence[:3]|join(", ") }}</li>{% endif %}
+                  {% if item.dataReportingLens %}<li><strong>Data:</strong> {{ item.dataReportingLens.reportingSignals[:3]|join(", ") }}</li>{% endif %}
+                  {% if item.productOwnerLens %}<li><strong>Product:</strong> {{ item.productOwnerLens.adoptionSignals[:3]|join(", ") }}</li>{% endif %}
+                </ul>
+              {% endif %}
+              <strong>Systems touched</strong>
+              <div class="tag-cloud">
+                {% for system in item.systemsTouched %}
+                  {% set slug = product_system_slugs.get(system|lower|trim) %}
+                  {% if slug %}
+                    <a class="tag system-tag" href="/training-programs/{{ program.id }}/systems/{{ slug }}">{{ system }} · Open</a>
+                  {% else %}
+                    <span class="tag">{{ system }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <strong>Evidence package</strong>
+              <ul class="stack-list">{% for evidence in item.scenarioArtifactPack[:6] %}<li>{{ evidence }}</li>{% endfor %}</ul>
+              {% if item.architectLens %}
+                <strong>Architecture controls</strong>
+                <ul class="stack-list">{% for control in item.architectLens.nfrsAndControls[:3] %}<li>{{ control }}</li>{% endfor %}</ul>
+              {% endif %}
+            </section>
+          </div>
+          <div class="inline-actions"><a class="button secondary" href="/training-programs/{{ program.id }}/usecases/{{ loop.index }}">Read Full Use Case</a></div>
+        </section>
+      {% endfor %}
+    </div>
+    <h2>Use Case Boundaries</h2>
+    <div class="stack">
+      {% for item in program.cloud_architecture.useCaseBoundaries %}
+        <section class="card">
+          <h2>{{ loop.index }}. {{ item.name }}</h2>
+          <ul class="stack-list"><li><strong>Business goal:</strong> {{ item.businessGoal }}</li></ul>
+          <div class="grid-2">
+            <div>
+              <strong>In scope</strong>
+              <ul class="stack-list"><li>{{ item.inScope }}</li></ul>
+            </div>
+            <div>
+              <strong>Out of scope</strong>
+              <ul class="stack-list"><li>{{ item.outOfScope }}</li></ul>
+            </div>
+          </div>
+          <ul class="stack-list">
+            <li><strong>Ownership:</strong> {{ item.consultantOwnership }}</li>
+            <li><strong>Implementation evidence:</strong> {{ item.implementationEvidence }}</li>
+            <li><strong>Answer point:</strong> {{ item.interviewPositioning }}</li>
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% elif section == "responsibilities" %}
+    <div class="grid-2">
+      <section class="card">
+        <h2>Project Responsibilities</h2>
+        <ul class="stack-list">{% for item in program.project_responsibilities %}<li>{{ item }}</li>{% endfor %}</ul>
+      </section>
+      <section class="card">
+        <h2>Key Deliverables</h2>
+        <ul class="stack-list">{% for item in program.key_deliverables %}<li>{{ item }}</li>{% endfor %}</ul>
+      </section>
+    </div>
+  {% elif section == "glossary" %}
+    <section class="card stack">
+      <h2>Product Glossary For Interviews</h2>
+      <ul class="stack-list">
+        <li>{{ program.cloud_architecture.productGlossary|length }} consultant glossary terms from {{ program.marketing_role.name }} are connected to {{ program.industry_domain }} product outcomes.</li>
+        <li>Each term includes product meaning, direct interview points, and ownership boundary.</li>
+      </ul>
+    </section>
+    <form class="filters" method="get" action="/training-programs/{{ program.id }}">
+      <input type="hidden" name="section" value="glossary">
+      <div class="wide">
+        <label>Search</label>
+        <input type="search" name="glossary_q" value="{{ glossary_q }}" placeholder="Term, category, product meaning, answer, or boundary">
+      </div>
+      <div>
+        <label>Category</label>
+        <select name="glossary_category">
+          {% for value, label in glossary_category_options %}
+            <option value="{{ value }}" {% if glossary_category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Sort</label>
+        <select name="glossary_sort">
+          <option value="term" {% if glossary_sort == "term" %}selected{% endif %}>Term</option>
+          <option value="category" {% if glossary_sort == "category" %}selected{% endif %}>Category</option>
+        </select>
+      </div>
+      <div>
+        <label>Per Page</label>
+        <select name="glossary_per_page">
+          {% for size in [10, 25, 50, 100] %}
+            <option value="{{ size }}" {% if glossary_per_page == size %}selected{% endif %}>{{ size }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div><button type="submit">Apply</button></div>
+      <div><a class="button secondary" href="/training-programs/{{ program.id }}?section=glossary">Reset</a></div>
+    </form>
+    <div class="listbar">
+      <span>Filtered terms: {{ glossary_total_rows }}</span>
+      <span>Showing {{ glossary_row_start }}-{{ glossary_row_end }} · Page {{ glossary_current_page }} of {{ glossary_pages }}</span>
+    </div>
+    <table class="data-list">
+      <thead>
+        <tr>
+          <th class="sno">S No</th>
+          <th><a class="sort-link {% if glossary_sort == 'term' %}active{% endif %}" href="{{ glossary_sort_urls.term }}">Term</a></th>
+          <th><a class="sort-link {% if glossary_sort == 'category' %}active{% endif %}" href="{{ glossary_sort_urls.category }}">Category</a></th>
+          <th>Product Meaning</th>
+          <th>Interview Answer</th>
+          <th>Boundary</th>
+          <th class="right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in glossary_terms %}
+          <tr>
+            <td class="sno">{{ glossary_row_start + loop.index0 }}</td>
+            <td><strong>{{ item.term }}</strong></td>
+            <td><span class="tag">{{ item.category }}</span></td>
+            <td>{{ item.productMeaning }}</td>
+            <td>
+              <ul class="stack-list">
+                {% for point in item.consultantTalkTrackBullets or [item.consultantTalkTrack] %}
+                  <li>{{ point }}</li>
+                {% endfor %}
+              </ul>
+            </td>
+            <td>
+              <ul class="stack-list">
+                {% for point in item.boundaryBullets or [item.boundary] %}
+                  <li>{{ point }}</li>
+                {% endfor %}
+              </ul>
+            </td>
+            <td class="right">
+              <div class="icon-actions">
+                {% if item.sourceId %}
+                  <a class="icon-button" href="/marketing-roles/glossary/{{ item.sourceId }}" title="View glossary detail" aria-label="View glossary detail">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span class="visually-hidden">View</span>
+                  </a>
+                {% endif %}
+                {% if can_manage %}
+                  <a class="icon-button" href="/marketing-roles/{{ program.marketing_role.id }}/edit" title="Edit role" aria-label="Edit role">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>
+                    <span class="visually-hidden">Edit</span>
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not glossary_terms %}
+          <tr><td colspan="7" class="muted">No glossary terms found.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+    <div class="pagination">
+      {% if glossary_current_page > 1 %}
+        <a class="button secondary" href="/training-programs/{{ program.id }}?glossary_page={{ glossary_current_page - 1 }}&{{ glossary_page_params }}">Previous</a>
+      {% endif %}
+      {% if glossary_current_page < glossary_pages %}
+        <a class="button secondary" href="/training-programs/{{ program.id }}?glossary_page={{ glossary_current_page + 1 }}&{{ glossary_page_params }}">Next</a>
+      {% endif %}
+    </div>
+  {% elif section == "workflows" %}
+    <section class="workflow-visual-grid">
+      {% for item in program.cloud_architecture.workflowDiagrams %}
+        <article class="workflow-visual">
+          <h2>{{ item.name }}</h2>
+          <ul class="stack-list"><li>{{ item.purpose }}</li></ul>
+          <div class="visual-flow">
+            {% for node in item.diagram.split("->") %}
+              <span class="visual-node">{{ node.strip() }}</span>
+              {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+            {% endfor %}
+          </div>
+          <ol class="stack-list">{% for step in item.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+          <ul class="stack-list"><li><strong>Answer point:</strong> {{ item.interviewCue }}</li></ul>
+        </article>
+      {% endfor %}
+    </section>
+  {% elif section == "plan" %}
+    <section class="card stack">
+      <h2>Single Project Delivery Plan</h2>
+      <ul class="stack-list"><li>{{ program.cloud_architecture.projectDeliveryPlan.enterpriseContext }}</li></ul>
+    </section>
+    <table class="data-list">
+      <thead><tr><th>Phase</th><th>Focus</th></tr></thead>
+      <tbody>
+        {% for item in program.cloud_architecture.projectDeliveryPlan.phases %}
+          <tr><td><strong>{{ item.phase }}</strong></td><td>{{ item.focus }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <h2>Final Evidence Package</h2>
+    <section class="card"><ul class="stack-list">{% for item in program.cloud_architecture.projectDeliveryPlan.finalEvidence %}<li>{{ item }}</li>{% endfor %}</ul></section>
+  {% elif section == "timeline" %}
+    <section class="card stack">
+      <h2>Single Project Workstreams</h2>
+      <ul class="stack-list">
+        {% for item in program.cloud_architecture.sprintDeliveryModel.summary %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <h2>Project Tracks</h2>
+    <table class="data-list">
+      <thead><tr><th>Track</th><th>Systems</th><th>Sprint Output</th></tr></thead>
+      <tbody>
+        {% for item in program.cloud_architecture.sprintDeliveryModel.projectTracks %}
+          <tr>
+            <td><strong>{{ item.track }}</strong></td>
+            <td><div class="tag-cloud">{% for system in item.systems %}<span class="tag">{{ system }}</span>{% endfor %}</div></td>
+            <td>{{ item.output }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <table class="data-list">
+      <thead><tr><th>Project Area</th><th>Interview Explanation</th></tr></thead>
+      <tbody>
+        {% for area, items in program.three_year_delivery_timeline.items() %}
+          <tr>
+            <td><strong>{{ area }}</strong></td>
+            <td><ul class="stack-list">{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% elif section == "interview" %}
+    <section class="card stack">
+      <div class="inline-actions"><button class="button secondary" type="button" x-data @click="navigator.clipboard && navigator.clipboard.writeText($el.dataset.copy)" data-copy="{{ program.interview_story|e }}">Copy Interview Story</button></div>
+      <h2>Interview Story</h2>
+      <ul class="stack-list"><li>{{ program.interview_story }}</li></ul>
+    </section>
+    {% set market_pack = program.cloud_architecture.marketJobDescriptionPack %}
+    {% if market_pack %}
+      <section class="card stack">
+        <h2>MAAS Active JD Alignment</h2>
+        <ul class="stack-list">
+          <li><strong>Source:</strong> {{ market_pack.source }}</li>
+          <li><strong>Status:</strong> {{ market_pack.status }}</li>
+          <li><strong>Loaded:</strong> {{ market_pack.loadedCount|default(0) }} / {{ market_pack.requiredCount }}</li>
+          {% if market_pack.sourceUrl %}<li><strong>Prod view:</strong> {{ market_pack.sourceUrl }}</li>{% endif %}
+          {% if market_pack.note %}<li>{{ market_pack.note }}</li>{% endif %}
+        </ul>
+        {% if market_pack['items'] %}
+          <table class="data-list">
+            <thead><tr><th>JD</th><th>Company</th><th>Use-Case Behavior</th><th>Diagram Focus</th></tr></thead>
+            <tbody>
+              {% for item in market_pack['items'] %}
+                <tr>
+                  <td><strong>{{ item.title }}</strong><br><span class="muted">{{ item.location }}</span></td>
+                  <td>{{ item.company }}</td>
+                  <td>
+                    <span class="tag">{{ item.domainMatchStatus }}</span>
+                    <span class="tag">{{ item.domainValidationScore }}%</span>
+                    <span class="tag">JD {{ item.jdFetchStatus }}</span>
+                    <span class="tag">Training {{ item.trainingCoverageScore }}%</span>
+                    {% if item.programUpdateRequired %}<span class="tag">Update required</span>{% else %}<span class="tag">Ignore</span>{% endif %}
+                    <ul class="stack-list">{% for usecase in item.useCasesToPractice %}<li>{{ usecase }}</li>{% endfor %}</ul>
+                    {% if item.programUpdateRequired %}
+                      <strong>Gaps</strong>
+                      <ul class="stack-list">{% for gap in item.programGapActions %}<li>{{ gap }}</li>{% endfor %}</ul>
+                    {% endif %}
+                  </td>
+                  <td><ul class="stack-list">{% for diagram in item.diagramFocus %}<li>{{ diagram }}</li>{% endfor %}</ul></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </section>
+    {% endif %}
+    <section class="card stack">
+      <h2>MAAS Interview Benchmark</h2>
+      <ul class="stack-list">
+        <li><strong>Source:</strong> {{ program.cloud_architecture.maasInterviewBenchmark.source }}</li>
+        <li><strong>Role family:</strong> {{ program.cloud_architecture.maasInterviewBenchmark.roleFamily }}</li>
+        <li><strong>Opening:</strong> {{ program.cloud_architecture.maasInterviewBenchmark.opening }}</li>
+        <li><strong>Domain anchor:</strong> {{ program.cloud_architecture.maasInterviewBenchmark.domainApplicationPrompt }}</li>
+      </ul>
+      <div class="grid-2">
+        <section>
+          <strong>Round flow</strong>
+          <ul class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.roundFlow %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+        <section>
+          <strong>Market signals</strong>
+          <ul class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.marketSignals %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+      </div>
+      <div class="grid-2">
+        <section>
+          <strong>Evaluation focus</strong>
+          <ul class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.evaluationFocus %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+        <section>
+          <strong>Rejection signals</strong>
+          <ul class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.rejectionSignals %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+      </div>
+    </section>
+    <div class="grid-2">
+      <section class="card">
+        <h2>MAAS Core Questions</h2>
+        <ol class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.coreQuestions %}<li>{{ item }}</li>{% endfor %}</ol>
+      </section>
+      <section class="card">
+        <h2>MAAS Follow-Up Probes</h2>
+        <ol class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.followUpProbes %}<li>{{ item }}</li>{% endfor %}</ol>
+      </section>
+    </div>
+    <section class="card">
+      <h2>MAAS Pressure Checks</h2>
+      <ol class="stack-list">{% for item in program.cloud_architecture.maasInterviewBenchmark.pressureChecks %}<li>{{ item }}</li>{% endfor %}</ol>
+    </section>
+    <h2>Single Project Interview Readiness Matrix</h2>
+    <table class="data-list">
+      <thead><tr><th>Area</th><th>Interview Standard</th><th>Program Evidence</th><th>Mock Check</th></tr></thead>
+      <tbody>
+        {% for item in program.cloud_architecture.maasInterviewBenchmark.readinessMatrix %}
+          <tr>
+            <td><strong>{{ item.area }}</strong></td>
+            <td>{{ item.mustKnow }}</td>
+            <td><ul class="stack-list">{% for evidence in item.programEvidence %}<li>{{ evidence }}</li>{% endfor %}</ul></td>
+            <td>{{ item.mockCheck }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <h2>MAAS Question Bank With Answer Bullets</h2>
+    <div class="stack">
+      {% for item in program.cloud_architecture.maasInterviewBenchmark.questionBank %}
+        <section class="card stack">
+          <h2>{{ loop.index }}. {{ item.question }}</h2>
+          <div class="tag-cloud"><span class="tag">{{ item.category }}</span></div>
+          <strong>Interview response</strong>
+          {% if item.answerResponse %}
+            <p>{{ item.answerResponse }}</p>
+          {% else %}
+            <ul class="stack-list">{% for point in item.answerBullets %}<li>{{ point }}</li>{% endfor %}</ul>
+          {% endif %}
+          <strong>Evidence to mention</strong>
+          <ul class="stack-list">{% for evidence in item.evidenceToMention %}<li>{{ evidence }}</li>{% endfor %}</ul>
+        </section>
+      {% endfor %}
+    </div>
+    <h2>Interview Answers</h2>
+    <div class="stack">
+      {% for item in program.cloud_architecture.interviewTalkTracks %}
+        <section class="card">
+          <h2>{{ item.prompt }}</h2>
+          <ul class="stack-list"><li>{{ item.answer }}</li></ul>
+        </section>
+      {% endfor %}
+    </div>
+    <div class="grid-2">
+      <section class="card">
+        <h2>Production Support Scenarios</h2>
+        <ul class="stack-list">{% for item in program.production_support_scenarios %}<li>{{ item }}</li>{% endfor %}</ul>
+      </section>
+      <section class="card">
+        <h2>Interview Questions</h2>
+        <ol class="stack-list">{% for item in program.interview_questions %}<li>{{ item }}</li>{% endfor %}</ol>
+      </section>
+    </div>
+  {% elif section == "resume" %}
+    <section class="card stack">
+      <div class="inline-actions"><button class="button secondary" type="button" x-data @click="navigator.clipboard && navigator.clipboard.writeText($el.dataset.copy)" data-copy="{{ program.resume_project_summary|e }}">Copy Resume Summary</button></div>
+      <h2>Resume Project Summary</h2>
+      <ul class="stack-list"><li>{{ program.resume_project_summary }}</li></ul>
+    </section>
+    <h2>Resume Bullet Starters</h2>
+    <table class="data-list">
+      <tbody>{% for item in program.key_deliverables[:8] %}<tr><td class="sno">{{ loop.index }}</td><td>Delivered {{ item|lower }} for {{ program.industry_domain }} {{ program.marketing_role.name }} project work.</td></tr>{% endfor %}</tbody>
+    </table>
+  {% endif %}
+{% endblock %}

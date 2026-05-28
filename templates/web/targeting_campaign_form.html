@@ -1,0 +1,42 @@
+{% extends "web/base.html" %}
+{% block title %}Edit {{ campaign.name }} | Targeting Campaigns | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Edit Targeting Campaign</h1>
+      <p>{{ campaign.consultant.name or campaign.consultant.email }} · {{ campaign.target_role or "Target role not set" }}</p>
+    </div>
+    <a class="button secondary" href="/targeting-campaigns/{{ campaign.id }}">Cancel</a>
+  </section>
+
+  <form class="stack" method="post" action="/targeting-campaigns/{{ campaign.id }}">
+    <section class="card">
+      <h2>Campaign</h2>
+      <div class="grid-2">
+        <label>Name<input name="name" value="{{ campaign.name }}" required></label>
+        <label>Status<select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if campaign.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Owner<select name="owner_id"><option value="">Unassigned</option>{% for owner in owner_options %}<option value="{{ owner.id }}" {% if campaign.owner_id == owner.id %}selected{% endif %}>{{ owner.name or owner.email }}</option>{% endfor %}</select></label>
+        <label>Due Date<input type="date" name="due_date" value="{{ campaign.due_date or '' }}"></label>
+      </div>
+      <label>Notes<textarea name="notes" placeholder="Campaign scope, handoff notes, or candidate-specific targeting guidance">{{ campaign.notes }}</textarea></label>
+    </section>
+
+    <section class="card">
+      <h2>Reference</h2>
+      <table>
+        <tbody>
+          <tr><th>Candidate</th><td>{{ campaign.consultant.name or campaign.consultant.email }}</td></tr>
+          <tr><th>Email</th><td>{{ campaign.consultant.email }}</td></tr>
+          <tr><th>Target Role</th><td>{{ campaign.target_role or "Not set" }}</td></tr>
+          <tr><th>Goal Count</th><td>{{ campaign.goal_count }}</td></tr>
+          <tr><th>Minimum Match Score</th><td>{{ campaign.min_match_score }}</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="inline-actions">
+      <a class="button secondary" href="/targeting-campaigns/{{ campaign.id }}">Cancel</a>
+      <button type="submit">Update Campaign</button>
+    </div>
+  </form>
+{% endblock %}

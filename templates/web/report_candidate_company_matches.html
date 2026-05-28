@@ -1,0 +1,190 @@
+{% extends "web/base.html" %}
+{% block title %}Candidate Company Matches | Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Candidate Company Matches</h1>
+      <p>Start from OPT/H1B candidates and find the best USCIS-backed companies to target first.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      {% if role_value(user) != 'consultant' %}
+        <a class="button secondary" href="/reports/company-targeting">Company Targeting</a>
+        <a class="button secondary" href="/reports">Reports Home</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/candidate-company-matches">
+    <div>
+      <label>USCIS Year</label>
+      <select name="fiscal_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if fiscal_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if role_value(user) != 'consultant' %}
+      <div>
+        <label>Candidate</label>
+        <select name="consultant_id">
+          <option value="" {% if not selected_consultant_id %}selected{% endif %}>All active candidates</option>
+          {% for consultant in consultants %}
+            <option value="{{ consultant.id }}" {% if selected_consultant_id == consultant.id %}selected{% endif %}>{{ consultant.name or consultant.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Marketing Role</label>
+        <select name="marketing_role_id">
+          <option value="" {% if not selected_marketing_role_id %}selected{% endif %}>All roles</option>
+          {% for role in marketing_roles %}
+            <option value="{{ role.id }}" {% if selected_marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+    <div>
+      <label>Region</label>
+      <select name="region_id">
+        <option value="" {% if not selected_region_id %}selected{% endif %}>All regions</option>
+        {% for region in regions %}
+          <option value="{{ region.id }}" {% if selected_region_id == region.id %}selected{% endif %}>{{ region.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Source</label>
+      <select name="source">
+        {% for value, label in source_options %}
+          <option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Min Match</label>
+      <input name="min_match_score" type="number" min="0" max="100" value="{{ min_match_score }}">
+    </div>
+    <div>
+      <label>Min Approvals</label>
+      <input name="min_approvals" type="number" min="0" value="{{ min_approvals }}">
+    </div>
+    <div>
+      <label>Min Approval Rate</label>
+      <input name="min_approval_rate" type="number" min="0" max="100" value="{{ min_approval_rate }}">
+    </div>
+    <div><button type="submit">Find Matches</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.match_count or 0 }}</strong><span>Total Matches</span></div>
+    <div class="metric"><strong>{{ summary.strong_match_count or 0 }}</strong><span>Strong Matches</span></div>
+    <div class="metric"><strong>{{ summary.candidate_count or 0 }}</strong><span>Candidates</span></div>
+    <div class="metric"><strong>{{ summary.company_count or 0 }}</strong><span>Companies</span></div>
+    <div class="metric"><strong>{{ summary.needs_resume_work_count or 0 }}</strong><span>Needs Resume Work</span></div>
+    <div class="metric"><strong>{{ summary.latest_year or "" }}</strong><span>USCIS Year</span></div>
+  </section>
+
+  {% if can_manage(user) and selected_consultant_id %}
+    <form class="card campaign-create" method="post" action="/targeting-campaigns/from-matches">
+      <div>
+        <h2>Create Targeting Campaign</h2>
+        <p class="muted">Create a working campaign from the top matches currently filtered for this candidate.</p>
+      </div>
+      <input type="hidden" name="consultant_id" value="{{ selected_consultant_id }}">
+      <input type="hidden" name="fiscal_year" value="{{ fiscal_year or '' }}">
+      <input type="hidden" name="region_id" value="{{ selected_region_id or '' }}">
+      <input type="hidden" name="source" value="{{ source }}">
+      <input type="hidden" name="min_approvals" value="{{ min_approvals }}">
+      <input type="hidden" name="min_approval_rate" value="{{ min_approval_rate }}">
+      <input type="hidden" name="min_match_score" value="{{ min_match_score }}">
+      <label>Target Count<input name="goal_count" type="number" min="1" max="100" value="25"></label>
+      <label>Due Date<input type="date" name="due_date"></label>
+      <label class="wide">Notes<input name="notes" placeholder="Campaign notes, weekly goal, resume strategy"></label>
+      <button type="submit">Create Campaign</button>
+    </form>
+  {% endif %}
+
+  <div class="listbar">
+    <span>Showing {{ row_start }}-{{ row_end }} of {{ total_rows }} matches · Page {{ page }} of {{ pages }}</span>
+    <span>Minimum match {{ min_match_score }}%</span>
+  </div>
+
+  <section class="match-report-list">
+    {% for row in rows %}
+      <article class="card match-report-card">
+        <div class="match-head">
+          <div>
+            <div class="compact-meta">#{{ row.rank }} · {{ row.region_name }} · {{ row.company_stage }}</div>
+            <h2>{% if role_value(user) == 'consultant' %}{{ row.consultant_name }} → {{ row.company_name }}{% else %}<a href="/consultants/{{ row.consultant_id }}">{{ row.consultant_name }}</a> → {% if row.pursuit_id %}<a href="/pursuits/{{ row.pursuit_id }}?tab=intelligence">{{ row.company_name }}</a>{% else %}<a href="/companies/{{ row.company_id }}/uscis">{{ row.company_name }}</a>{% endif %}{% endif %}</h2>
+            <div class="company-subline">
+              <span class="pill {% if row.match_score >= 70 %}hot{% endif %}">{{ row.match_score }} match</span>
+              <span class="tag">Company score {{ row.watch_score }}</span>
+              <span class="tag">{{ row.approvals }} approvals</span>
+              <span class="tag">{{ row.eligible_jobs }} eligible jobs</span>
+            </div>
+          </div>
+          <div class="match-actions">
+            {% if role_value(user) != 'consultant' %}
+              <a class="button secondary" href="/consultants/{{ row.consultant_id }}">Candidate</a>
+              {% if row.pursuit_id %}
+                <a class="button secondary" href="/pursuits/{{ row.pursuit_id }}?tab=job-postings">Jobs</a>
+              {% else %}
+                <a class="button secondary" href="/companies/{{ row.company_id }}/uscis">USCIS</a>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+        <div class="match-grid">
+          <div>
+            <h3>Why Match</h3>
+            <p>{{ row.match_reason }}</p>
+            <ul class="stack-list compact">
+              <li><strong>Candidate role:</strong> {{ row.consultant_role }}</li>
+              <li><strong>Company roles:</strong> {{ row.best_roles_label }}</li>
+              <li><strong>Auth:</strong> {{ row.work_authorization }}</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Stack Overlap</h3>
+            <p>{{ row.skill_hits_label }}</p>
+            <p class="muted">Company stack: {{ row.tech_stack_label }}</p>
+          </div>
+          <div>
+            <h3>Next Action</h3>
+            <p>{{ row.next_action }}</p>
+            <p class="muted">Gaps: {{ row.candidate_gaps_label }}</p>
+          </div>
+        </div>
+      </article>
+    {% else %}
+      <section class="card"><p class="muted">No candidate-company matches found for this selection.</p></section>
+    {% endfor %}
+  </section>
+
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="/reports/candidate-company-matches?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="button secondary" href="/reports/candidate-company-matches?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+
+  <style>
+    .match-report-list { display: grid; gap: 12px; }
+    .campaign-create { align-items: end; display: grid; gap: 12px; grid-template-columns: 1.4fr 130px 160px 1fr auto; margin-bottom: 16px; }
+    .campaign-create h2, .campaign-create p { margin: 0; }
+    .match-report-card { display: grid; gap: 14px; }
+    .match-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .match-head h2 { margin: 4px 0 8px; }
+    .match-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .match-grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr 1fr; }
+    .match-grid h3 { margin: 0 0 6px; }
+    .match-grid p { margin: 0; }
+    .stack-list.compact { margin: 8px 0 0; }
+    .stack-list.compact li { margin-bottom: 5px; }
+    @media (max-width: 980px) {
+      .campaign-create { grid-template-columns: 1fr; }
+      .match-head, .match-grid { display: grid; grid-template-columns: 1fr; }
+      .match-actions { justify-content: flex-start; }
+    }
+  </style>
+{% endblock %}

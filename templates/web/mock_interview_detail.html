@@ -1,0 +1,85 @@
+{% extends "web/base.html" %}
+{% block title %}Mock Interview #{{ row.id }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Mock Interview #{{ row.id }}</h1>
+      <p>{{ row.consultant.name or row.consultant.email }} · {{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else "Role not set") }}{% if row.domain_snapshot %} · {{ row.domain_snapshot }}{% endif %}</p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="/mock-interviews">Back</a>
+      <a class="button secondary" href="/mock-interviews/calendar">Calendar</a>
+      {% if can_manage_mock_interviews %}<a class="button" href="/mock-interviews/{{ row.id }}/edit">Edit Mock Interview</a>{% endif %}
+    </div>
+  </section>
+
+  {% if conflicts %}
+    <div class="flash warn"><strong>Scheduling conflict:</strong> {{ conflicts|join(" ") }}</div>
+  {% endif %}
+
+  <div class="metrics">
+    <div class="metric"><strong>{{ row.status.replace("_", " ").title() }}</strong><span>Status</span></div>
+    <div class="metric"><strong>{{ row.scheduled_on or "Not set" }}</strong><span>Date</span></div>
+    <div class="metric"><strong>{{ row.scheduled_time or "Not set" }}</strong><span>Time</span></div>
+    <div class="metric"><strong>{{ row.assigned_staff.name if row.assigned_staff else row.interviewer_name or "Unassigned" }}</strong><span>Interviewer</span></div>
+  </div>
+
+  <div class="grid-2">
+    <section class="card stack">
+      <h2>Session</h2>
+      <ul class="clean-list">
+        <li><strong>Consultant:</strong> {{ row.consultant.name or row.consultant.email }}</li>
+        <li><strong>Role:</strong> {{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else "") }}</li>
+        <li><strong>Domain:</strong> {{ row.domain_snapshot or (row.training_program.industry_domain if row.training_program else "") }}</li>
+        <li><strong>Round:</strong> {{ row.round_type.replace("_", " ").title() if row.round_type else "Mock" }}</li>
+        <li><strong>Duration:</strong> {{ row.duration_minutes }} minutes</li>
+        <li><strong>Timezone:</strong> {{ row.timezone }}</li>
+        {% if row.meeting_link %}<li><strong>Meeting:</strong> <a href="{{ row.meeting_link }}" target="_blank" rel="noopener">Open meeting link</a></li>{% endif %}
+        {% if row.submission %}<li><strong>Submission:</strong> {{ row.submission.job.company.name }} · {{ row.submission.job.title }}</li>{% endif %}
+      </ul>
+    </section>
+
+    <section class="card stack">
+      <h2>Consultant Acknowledgement</h2>
+      <p class="muted">Status: {{ row.consultant_ack_status.replace("_", " ").title() }}</p>
+      {% if row.consultant_acknowledged_at %}<p class="muted">Acknowledged at {{ row.consultant_acknowledged_at }}</p>{% endif %}
+      {% if row.consultant_ack_note %}<p>{{ row.consultant_ack_note }}</p>{% endif %}
+      {% if row.consultant_ack_status == "pending" %}
+        <form method="post" action="/mock-interviews/{{ row.id }}/acknowledge" class="stack">
+          <label>Note<textarea name="note" placeholder="Confirmed, or add any timing note."></textarea></label>
+          <button type="submit">Acknowledge</button>
+        </form>
+      {% endif %}
+      <form method="post" action="/mock-interviews/{{ row.id }}/request" class="stack">
+        <label>Request Note<textarea name="note" placeholder="Explain reschedule or cancellation reason.">{{ row.request_note or "" }}</textarea></label>
+        <div class="actions">
+          <button type="submit" name="request_type" value="reschedule">Request Reschedule</button>
+          <button type="submit" name="request_type" value="cancel">Request Cancellation</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <section class="card stack">
+    <h2>Interview Notes</h2>
+    <div class="grid-2">
+      <div><h3>Strengths</h3><p>{{ row.strengths or "Not captured yet." }}</p></div>
+      <div><h3>Gaps</h3><p>{{ row.gaps or "Not captured yet." }}</p></div>
+      <div><h3>Action Items</h3><p>{{ row.action_items or "Not captured yet." }}</p></div>
+      <div><h3>Questions Asked</h3><p>{{ row.questions_asked or "Not captured yet." }}</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Status History</h2>
+    <table class="data-list">
+      <thead><tr><th>S No</th><th>Event</th><th>Status</th><th>Actor</th><th>Note</th><th>When</th></tr></thead>
+      <tbody>
+        {% for event in events %}
+          <tr><td class="sno">{{ loop.index }}</td><td>{{ event.event_type.replace("_", " ").title() }}</td><td>{{ event.to_status.replace("_", " ").title() }}</td><td>{{ event.actor.name if event.actor else "System" }}</td><td>{{ event.note }}</td><td>{{ event.created_at }}</td></tr>
+        {% endfor %}
+        {% if not events %}<tr><td colspan="6" class="muted">No history yet.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

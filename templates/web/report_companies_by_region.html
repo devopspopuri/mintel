@@ -1,0 +1,120 @@
+{% extends "web/base.html" %}
+{% block title %}Companies by Region | Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Companies by Region</h1>
+      <p>USCIS companies grouped into Mintel regions for selected years and decision type.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      <a class="button secondary" href="/reports">Reports Home</a>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/companies-by-region">
+    <div>
+      <label>Start Year</label>
+      <select name="start_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if start_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>End Year</label>
+      <select name="end_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if end_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="wide">
+      <label>Decision Type</label>
+      <select name="decision_type">
+        {% for option in decision_options %}
+          <option value="{{ option.value }}" {% if decision_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Sort Companies</label>
+      <select name="sort">
+        <option value="approvals" {% if sort == "approvals" %}selected{% endif %}>Approvals</option>
+        <option value="decisions" {% if sort == "decisions" %}selected{% endif %}>Decisions</option>
+        <option value="approval_rate" {% if sort == "approval_rate" %}selected{% endif %}>Approval Rate</option>
+        <option value="region" {% if sort == "region" %}selected{% endif %}>Region</option>
+        <option value="company" {% if sort == "company" %}selected{% endif %}>Company</option>
+      </select>
+    </div>
+    <div>
+      <label>Sort Region Summary</label>
+      <select name="summary_sort">
+        <option value="decisions" {% if summary_sort == "decisions" %}selected{% endif %}>Decisions</option>
+        <option value="approvals" {% if summary_sort == "approvals" %}selected{% endif %}>Approvals</option>
+        <option value="approval_rate" {% if summary_sort == "approval_rate" %}selected{% endif %}>Approval Rate</option>
+        <option value="companies" {% if summary_sort == "companies" %}selected{% endif %}>Companies</option>
+        <option value="denials" {% if summary_sort == "denials" %}selected{% endif %}>Denials</option>
+        <option value="region" {% if summary_sort == "region" %}selected{% endif %}>Region</option>
+        <option value="tier" {% if summary_sort == "tier" %}selected{% endif %}>Tier</option>
+      </select>
+    </div>
+    <div><button type="submit">Run</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ totals.company_count }}</strong><span>Unique Companies</span></div>
+    <div class="metric"><strong>{{ totals.company_region_count }}</strong><span>Company-Region Rows</span></div>
+    <div class="metric"><strong>{{ totals.approvals }}</strong><span>Approvals</span></div>
+    <div class="metric"><strong>{{ totals.denials }}</strong><span>Denials</span></div>
+  </section>
+
+  <h2>Region Summary</h2>
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th class="sno">S No</th>
+        <th><a class="sort-link {% if summary_sort == 'region' %}active{% endif %}" href="{{ summary_sort_urls.region }}">Region{% if summary_sort == 'region' %} ↑{% endif %}</a></th>
+        <th><a class="sort-link {% if summary_sort == 'tier' %}active{% endif %}" href="{{ summary_sort_urls.tier }}">Tier{% if summary_sort == 'tier' %} ↑{% endif %}</a></th>
+        <th class="right"><a class="sort-link {% if summary_sort == 'companies' %}active{% endif %}" href="{{ summary_sort_urls.companies }}">Companies{% if summary_sort == 'companies' %} ↓{% endif %}</a></th>
+        <th class="right"><a class="sort-link {% if summary_sort == 'approvals' %}active{% endif %}" href="{{ summary_sort_urls.approvals }}">Approvals{% if summary_sort == 'approvals' %} ↓{% endif %}</a></th>
+        <th class="right"><a class="sort-link {% if summary_sort == 'denials' %}active{% endif %}" href="{{ summary_sort_urls.denials }}">Denials{% if summary_sort == 'denials' %} ↓{% endif %}</a></th>
+        <th class="right"><a class="sort-link {% if summary_sort == 'decisions' %}active{% endif %}" href="{{ summary_sort_urls.decisions }}">Decisions{% if summary_sort == 'decisions' %} ↓{% endif %}</a></th>
+        <th class="right"><a class="sort-link {% if summary_sort == 'approval_rate' %}active{% endif %}" href="{{ summary_sort_urls.approval_rate }}">Approval Rate{% if summary_sort == 'approval_rate' %} ↓{% endif %}</a></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in summary_rows %}
+        <tr><td class="sno">{{ loop.index }}</td><td><a href="{{ row.drilldown_url }}"><strong>{{ row.region_name }}</strong></a></td><td><span class="tag">{{ row.tier }}</span></td><td class="right"><a href="{{ row.drilldown_url }}">{{ row.company_count }}</a></td><td class="right">{{ row.approvals }}</td><td class="right">{{ row.denials }}</td><td class="right">{{ row.decisions }}</td><td class="right">{{ row.approval_rate }}%</td><td><a class="button secondary" href="{{ row.drilldown_url }}">View Companies</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="listbar">
+    <span>Company-region rows: {{ total_rows }}</span>
+    <span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span>
+  </div>
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th class="sno">S No</th>
+        <th><a class="sort-link {% if sort == 'company' %}active{% endif %}" href="{{ sort_urls.company }}">Company</a></th>
+        <th><a class="sort-link {% if sort == 'region' %}active{% endif %}" href="{{ sort_urls.region }}">Region</a></th>
+        <th>States</th>
+        <th class="right"><a class="sort-link {% if sort == 'approvals' %}active{% endif %}" href="{{ sort_urls.approvals }}">Approvals</a></th>
+        <th class="right"><a class="sort-link {% if sort == 'denials' %}active{% endif %}" href="{{ sort_urls.denials }}">Denials</a></th>
+        <th class="right"><a class="sort-link {% if sort == 'decisions' %}active{% endif %}" href="{{ sort_urls.decisions }}">Decisions</a></th>
+        <th class="right"><a class="sort-link {% if sort == 'approval_rate' %}active{% endif %}" href="{{ sort_urls.approval_rate }}">Approval Rate</a></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in company_rows %}
+        <tr><td class="sno">{{ row_start + loop.index0 }}</td><td class="company-cell"><a href="/companies/{{ row.company_id }}/uscis"><strong>{{ row.company_name }}</strong></a><span class="muted">Company ID {{ row.company_id }}</span></td><td>{{ row.region_name }}</td><td>{{ row.states }}</td><td class="right">{{ row.approvals }}</td><td class="right">{{ row.denials }}</td><td class="right">{{ row.decisions }}</td><td class="right">{{ row.approval_rate }}%</td></tr>
+      {% else %}
+        <tr><td colspan="8" class="muted">No companies found for this selection.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">{% if page > 1 %}<a class="button secondary" href="/reports/companies-by-region?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}{% if page < pages %}<a class="button secondary" href="/reports/companies-by-region?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}</div>
+{% endblock %}

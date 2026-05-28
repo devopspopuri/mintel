@@ -1,0 +1,45 @@
+{% extends "web/base.html" %}
+{% block title %}Consultant Availability | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div><h1>Consultant Availability</h1><p>Block busy windows so mock interviews are not scheduled during unavailable times.</p></div>
+    <div class="actions"><a class="button secondary" href="/mock-interviews">List</a><a class="button" href="/mock-interviews/new">Add Mock Interview</a></div>
+  </section>
+  <form class="filters" method="get" action="/mock-interviews/consultant-availability">
+    <div><label>Consultant</label><select name="consultant_id">{% for consultant in consultants %}<option value="{{ consultant.id }}" {% if selected_consultant_id == consultant.id %}selected{% endif %}>{{ consultant.name or consultant.email }}</option>{% endfor %}</select></div>
+    <div><button type="submit">Open</button></div>
+  </form>
+  {% if selected_consultant_id and can_manage_mock_interviews %}
+    <form class="card stack" method="post" action="/mock-interviews/consultant-availability">
+      <h2>Add Availability Block</h2>
+      <input type="hidden" name="consultant_id" value="{{ selected_consultant_id }}">
+      <div class="grid-2">
+        <label>Start<input type="datetime-local" name="start_at" required></label>
+        <label>End<input type="datetime-local" name="end_at" required></label>
+        <label>Timezone<select name="timezone_name">{% for value, label in timezone_options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+        <label>Reason<input name="reason" placeholder="Class, office work, personal block, unavailable"></label>
+      </div>
+      <label>Notes<textarea name="notes" placeholder="Any useful scheduling context."></textarea></label>
+      <button type="submit">Save Block</button>
+    </form>
+  {% endif %}
+  <section class="card">
+    <h2>Availability Blocks</h2>
+    <table class="data-list">
+      <thead><tr><th>S No</th><th>Start</th><th>End</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for row in blocks %}
+          <tr>
+            <td class="sno">{{ loop.index }}</td>
+            <td>{{ row.start_at }}<div class="compact-meta">{{ row.timezone }}</div></td>
+            <td>{{ row.end_at }}</td>
+            <td>{{ row.reason }}<div class="compact-meta">{{ row.notes }}</div></td>
+            <td>{{ "Active" if row.active else "Inactive" }}</td>
+            <td>{% if can_manage_mock_interviews %}<form method="post" action="/mock-interviews/consultant-availability/{{ row.id }}/toggle"><input type="hidden" name="consultant_id" value="{{ selected_consultant_id }}"><button type="submit">{{ "Disable" if row.active else "Enable" }}</button></form>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        {% if not blocks %}<tr><td colspan="6" class="muted">No availability blocks configured.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

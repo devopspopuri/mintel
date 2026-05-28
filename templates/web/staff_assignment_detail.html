@@ -1,0 +1,71 @@
+{% extends "web/base.html" %}
+{% block title %}Staff Assignment | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ staff_member.name or staff_member.email }}</h1>
+      <p>{{ staff_member.email }} · {{ staff_member.role.replace("_", " ").title() }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/staff-assignments">Back</a>
+      <a class="button" href="/staff-assignments/{{ staff_member.id }}/edit">Edit Assignment</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric">
+      <strong>{{ assigned_regions|length }}</strong>
+      <span>Regions</span>
+    </div>
+    <div class="metric">
+      <strong>{{ assigned_region_groups|length }}</strong>
+      <span>Region groups</span>
+    </div>
+    <div class="metric">
+      <strong>{{ assigned_marketing_roles|length }}</strong>
+      <span>Marketing roles</span>
+    </div>
+    <div class="metric">
+      <strong>{{ "Active" if staff_member.active else "Inactive" }}</strong>
+      <span>Status</span>
+    </div>
+  </section>
+
+  <section class="detail-grid">
+    <article class="card">
+      <h2>Regions</h2>
+      {% if staff_member.role == 'admin' %}
+        <div class="flash success"><strong>Admin access:</strong> this user has all coverage. Direct region assignments are optional.</div>
+      {% endif %}
+      <div class="tag-list">
+        {% for region in assigned_regions %}
+          <span class="tag">{{ region.name }}</span>
+        {% else %}
+          <span class="muted">{{ "All regions through admin access." if staff_member.role == 'admin' else "No regions assigned." }}</span>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Region Groups</h2>
+      <div class="tag-list">
+        {% for group in assigned_region_groups %}
+          <span class="tag">{{ group.name }}</span>
+        {% else %}
+          <span class="muted">{{ "All region groups through admin access." if staff_member.role == 'admin' else "No region groups assigned." }}</span>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Marketing Roles</h2>
+      <div class="tag-list">
+        {% for role in assigned_marketing_roles %}
+          <span class="tag">{{ role.name }}</span>
+        {% else %}
+          <span class="muted">{{ "All marketing roles through admin access." if staff_member.role == 'admin' else "No marketing roles assigned." }}</span>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+{% endblock %}

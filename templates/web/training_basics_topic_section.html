@@ -1,0 +1,172 @@
+{% extends "web/base.html" %}
+{% block title %}{{ section.label }} | {{ module.title }} | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-basics">Basics Preparation</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-basics/topics/{{ topic_number }}">Topic {{ topic_number }}</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">{{ section.label }}</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Topic {{ topic_number }} / {{ topic_total }} · Section {{ section.index }}</p>
+      <h1>{{ section.label }}</h1>
+      <p>{{ module.title }}</p>
+    </div>
+    <div class="page-actions">
+      <a class="button secondary" href="/training-basics/topics/{{ topic_number }}">Back To Topic</a>
+    </div>
+  </section>
+
+  <style>
+    .detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+    .detail-main { display: grid; gap: 14px; }
+    .detail-side { position: sticky; top: 74px; display: grid; gap: 12px; }
+    .detail-panel { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 18px; display: grid; gap: 10px; }
+    .detail-panel h2, .detail-panel h3 { margin: 0; color: var(--ink); }
+    .detail-panel h2 { font-size: 22px; line-height: 1.25; }
+    .detail-panel h3 { font-size: 16px; line-height: 1.35; }
+    .detail-panel p { margin: 0; line-height: 1.55; font-size: 16px; color: #334155; }
+    .detail-list { margin: 0; padding-left: 22px; color: #475569; line-height: 1.5; font-size: 15px; }
+    .detail-list li { margin: 6px 0; list-style: disc; }
+    .visual-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .visual-card { border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 16px; display: grid; gap: 12px; }
+    .visual-card h2, .visual-card p { margin: 0; }
+    .visual-card p { color: #475569; font-size: 14px; }
+    .visual-flow { display: grid; gap: 8px; }
+    .visual-node { align-items: center; border: 1px solid #b7d8d3; border-radius: 8px; background: #f0fdfa; color: #134e4a; display: grid; gap: 2px; min-height: 58px; padding: 9px 10px; }
+    .visual-node strong { color: #0f3f3a; font-size: 14px; line-height: 1.25; }
+    .visual-node span { color: #35615c; font-size: 12px; line-height: 1.25; }
+    .visual-arrow { color: var(--accent-dark); font-weight: 900; text-align: center; }
+    .visual-evidence { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .visual-evidence .visual-node { background: #fff; border-color: #dbeafe; color: #1e3a8a; }
+    .visual-evidence .visual-node strong { color: #1e3a8a; }
+    .visual-evidence .visual-node span { color: #475569; }
+    .qa-list { display: grid; gap: 10px; }
+    .qa-card { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 14px; background: #fff; display: grid; gap: 8px; }
+    .qa-card h3 { font-size: 15px; line-height: 1.35; }
+    .qa-card p { color: #475569; font-size: 15px; }
+    .answer-steps { margin: 0; padding-left: 20px; color: #475569; font-size: 14px; line-height: 1.5; }
+    .answer-steps li { margin: 5px 0; list-style: disc; }
+    .answer-steps strong { color: var(--ink); }
+    .faang-depth { border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff; padding: 12px; display: grid; gap: 8px; }
+    .faang-depth summary { cursor: pointer; font-weight: 900; color: #1e3a8a; }
+    .faang-depth p { font-size: 14px; color: #334155; }
+    .faang-depth ul { margin: 0; padding-left: 20px; color: #475569; font-size: 14px; line-height: 1.45; }
+    .faang-depth li { margin: 5px 0; list-style: disc; }
+    .section-nav { margin: 0; padding-left: 22px; line-height: 1.65; font-size: 14px; }
+    .section-nav a { text-decoration: none; font-weight: 800; color: var(--ink); }
+    .section-nav a.active { color: var(--accent-dark); }
+    @media (max-width: 900px) { .detail-layout, .visual-grid, .visual-evidence { grid-template-columns: 1fr; } .detail-side { position: static; } }
+  </style>
+
+  <section class="detail-layout">
+    <main class="detail-main">
+      <article class="detail-panel">
+        <h2>Purpose</h2>
+        <p>{{ section.summary }}</p>
+      </article>
+
+      {% if module.project_thread %}
+        <article class="detail-panel">
+          <h2>{{ module.project_thread.name }} Project Link</h2>
+          <p>{{ module.project_thread.scenario }}</p>
+          <ul class="detail-list">
+            {% for item in module.project_thread.evidence %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endif %}
+
+      {% if section.visuals %}
+        <section class="visual-grid" aria-label="Visual learning aids">
+          {% for visual in section.visuals %}
+            <article class="visual-card">
+              <div>
+                <h2>{{ visual.title }}</h2>
+                <p>{{ visual.caption }}</p>
+              </div>
+              {% if visual.type == "flow" %}
+                <div class="visual-flow">
+                  {% for node in visual.nodes %}
+                    <div class="visual-node">
+                      <strong>{{ node.label }}</strong>
+                      <span>{{ node.meta }}</span>
+                    </div>
+                    {% if not loop.last %}<div class="visual-arrow">↓</div>{% endif %}
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="visual-evidence">
+                  {% for node in visual.nodes %}
+                    <div class="visual-node">
+                      <strong>{{ node.label }}</strong>
+                      <span>{{ node.meta }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if module.official_references %}
+        <article class="detail-panel">
+          <h2>Official Product References</h2>
+          <p>This section should be taught from product documentation, not public tutorial pages or repeated answer generators.</p>
+          <ul class="detail-list">
+            {% for reference in module.official_references %}
+              <li><a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">{{ reference.label }}</a></li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endif %}
+
+      {% for block in section.expanded_material %}
+        <article class="detail-panel">
+          <h2>{{ block.heading }}</h2>
+          <p>{{ block.body }}</p>
+          <ul class="detail-list">
+            {% for item in block.bullets %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endfor %}
+
+      {% if section.practice_prompts %}
+        <article class="detail-panel">
+          <h2>Practice Prompts</h2>
+          <p>Practice the exact situation covered in this section.</p>
+          {% if section.practice_solutions_url %}
+            <p><a class="button secondary" href="{{ section.practice_solutions_url }}">View Practice Solutions</a></p>
+          {% endif %}
+          <ul class="detail-list">
+            {% for item in section.practice_prompts %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endif %}
+    </main>
+
+    <aside class="detail-side">
+      <article class="detail-panel">
+        <h2>Section Index</h2>
+        <ol class="section-nav">
+          {% for item in topic_sections %}
+            <li><a class="{% if item.key == section.key %}active{% endif %}" href="{{ item.detail_url }}">{{ item.label }}</a></li>
+          {% endfor %}
+        </ol>
+      </article>
+      <article class="detail-panel">
+        <h2>Topic Focus</h2>
+        <p>{{ module.why }}</p>
+      </article>
+    </aside>
+  </section>
+{% endblock %}

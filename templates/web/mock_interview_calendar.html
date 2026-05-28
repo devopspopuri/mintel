@@ -1,0 +1,35 @@
+{% extends "web/base.html" %}
+{% block title %}Mock Interview Calendar | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div><h1>Mock Interview Calendar</h1><p>Scheduled sessions grouped by date for the visible marketing roles.</p></div>
+    <div class="actions"><a class="button secondary" href="/mock-interviews">List</a><a class="button" href="/mock-interviews/new">Add Mock Interview</a></div>
+  </section>
+  <form class="filters" method="get" action="/mock-interviews/calendar">
+    <div><label>Marketing Role</label><select name="marketing_role_id"><option value="">All visible roles</option>{% for role in marketing_roles %}<option value="{{ role.id }}" {% if marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>{% endfor %}</select></div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+  <section class="stack">
+    {% for day in calendar_days %}
+      <div class="card">
+        <h2>{{ day.day }}</h2>
+        <table class="data-list">
+          <thead><tr><th>Time</th><th>Consultant</th><th>Role</th><th>Interviewer</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for row in day.rows %}
+              <tr>
+                <td>{{ row.scheduled_time or "Time not set" }}<div class="compact-meta">{{ row.duration_minutes }} min · {{ row.timezone }}</div></td>
+                <td>{{ row.consultant.name or row.consultant.email }}</td>
+                <td>{{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else "") }}<div class="compact-meta">{{ row.domain_snapshot }}</div></td>
+                <td>{{ row.assigned_staff.name if row.assigned_staff else row.interviewer_name or "Unassigned" }}</td>
+                <td><span class="pill">{{ row.status.replace("_", " ").title() }}</span></td>
+                <td><a class="button secondary" href="/mock-interviews/{{ row.id }}">Open</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endfor %}
+    {% if not calendar_days %}<div class="card muted">No scheduled mock interviews found.</div>{% endif %}
+  </section>
+{% endblock %}

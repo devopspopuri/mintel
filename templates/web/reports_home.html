@@ -1,0 +1,321 @@
+{% extends "web/base.html" %}
+{% block title %}Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Reports</h1>
+      <p>USCIS and pursuit reports for company intelligence decisions.</p>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Operating Workbench</h2>
+          <p>One daily view for region staff: companies to promote or enrich, consultant journey gaps, mocks, submissions, interviews, and staff capacity.</p>
+        </div>
+        <a class="button secondary" href="/reports/operating-workbench">Open Workbench</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/operating-workbench">
+        <div>
+          <label>Latest Year</label>
+          <select name="fiscal_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_end %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Region</label>
+          <select name="region_id">
+            <option value="">My/default region</option>
+            {% for region in regions %}
+              <option value="{{ region.id }}">{{ region.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Capacity / Staff</label>
+          <input name="capacity_per_staff" type="number" min="10" max="500" value="100">
+        </div>
+        <div><button type="submit">Open Workbench</button></div>
+      </form>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Role Journeys</h2>
+          <p>Track every consultant from day-1 role intake through training, positioning, company targeting, submissions, and interview prep.</p>
+        </div>
+        <a class="button secondary" href="/reports/role-journeys">Open Report</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/role-journeys">
+        <div>
+          <label>Marketing Role</label>
+          <select name="marketing_role_id">
+            <option value="">All roles</option>
+            {% for role in marketing_roles %}
+              <option value="{{ role.id }}">{{ role.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Stage</label>
+          <select name="stage">
+            <option value="all">All stages</option>
+            <option value="training_plan">Training plan</option>
+            <option value="positioning">Positioning</option>
+            <option value="company_matching">Company matching</option>
+            <option value="campaign_active">Campaign active</option>
+          </select>
+        </div>
+        <div>
+          <label>Min Readiness</label>
+          <input name="readiness" type="number" min="0" max="100" value="0">
+        </div>
+        <div><button type="submit">View Journeys</button></div>
+      </form>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Location Expansion</h2>
+          <p>Rank cost-effective office hubs from latest USCIS filing signal, opportunity density, affordability, and 250-mile interview coverage.</p>
+        </div>
+        <a class="button secondary" href="/reports/location-expansion">Open Report</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/location-expansion">
+        <div>
+          <label>Latest Year</label>
+          <select name="fiscal_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_end %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Plan Size</label>
+          <select name="plan_size">
+            <option value="10" selected>10 locations</option>
+            <option value="15">15 locations</option>
+          </select>
+        </div>
+        <div>
+          <label>Region Slots</label>
+          <select name="slots_per_region">
+            <option value="0">Best overall</option>
+            <option value="2">2 per region</option>
+            <option value="3">3 per region</option>
+          </select>
+        </div>
+        <div>
+          <label>Max Cost</label>
+          <select name="max_cost_tier">
+            <option value="medium" selected>Medium or lower</option>
+            <option value="high">High or lower</option>
+            <option value="very_high">All markets</option>
+          </select>
+        </div>
+        <div><button type="submit">Plan Locations</button></div>
+      </form>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Company Targeting Queue</h2>
+          <p>Give each staff member a practical company queue with candidate fit, hiring-standard elimination, role/tech match, and next action.</p>
+        </div>
+        <a class="button secondary" href="/reports/company-targeting">Open Report</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/company-targeting">
+        <div>
+          <label>Latest Year</label>
+          <select name="fiscal_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_end %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Region</label>
+          <select name="region_id">
+            <option value="">All regions</option>
+            {% for region in regions %}
+              <option value="{{ region.id }}">{{ region.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Stage</label>
+          <select name="stage">
+            <option value="all">All signals</option>
+            <option value="actionable">Candidate-ready</option>
+            <option value="ready_to_promote">Ready to promote</option>
+            <option value="needs_json">Needs JSON</option>
+          </select>
+        </div>
+        <div>
+          <label>Capacity / Staff</label>
+          <input name="capacity_per_staff" type="number" min="10" max="500" value="100">
+        </div>
+        <div><button type="submit">Build Queue</button></div>
+      </form>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Candidate Company Matches</h2>
+          <p>Start with active consultants and rank USCIS-backed companies by role, skill, readiness, authorization, and company evidence.</p>
+        </div>
+        <a class="button secondary" href="/reports/candidate-company-matches">Open Report</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/candidate-company-matches">
+        <div>
+          <label>Latest Year</label>
+          <select name="fiscal_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_end %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Region</label>
+          <select name="region_id">
+            <option value="">All regions</option>
+            {% for region in regions %}
+              <option value="{{ region.id }}">{{ region.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Min Match</label>
+          <input name="min_match_score" type="number" min="0" max="100" value="35">
+        </div>
+        <div>
+          <label>Source</label>
+          <select name="source">
+            <option value="all">USCIS + promoted</option>
+            <option value="promoted">Promoted only</option>
+          </select>
+        </div>
+        <div><button type="submit">Find Matches</button></div>
+      </form>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Targeting Campaigns</h2>
+          <p>Operational campaigns created from candidate-company matches for resume tailoring, outreach, submission tracking, and interviews.</p>
+        </div>
+        <a class="button secondary" href="/targeting-campaigns">Open Campaigns</a>
+      </div>
+      <div class="stack-list">
+        <p class="muted">Create campaigns from the Candidate Company Matches report after selecting a candidate.</p>
+        <a class="button secondary" href="/reports/candidate-company-matches">Find Candidate Matches</a>
+      </div>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Company Watchlist</h2>
+          <p>Build a staff-capacity watchlist from the latest USCIS year and promoted-company job evidence. Filters out very high-standard hiring companies in the first pass.</p>
+        </div>
+        <a class="button secondary" href="/reports/company-watchlist">Open Report</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/company-watchlist">
+        <div>
+          <label>Latest Year</label>
+          <select name="fiscal_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_end %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Region</label>
+          <select name="region_id">
+            <option value="">All regions</option>
+            {% for region in regions %}
+              <option value="{{ region.id }}">{{ region.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Capacity / Staff</label>
+          <input name="capacity_per_staff" type="number" min="10" max="500" value="100">
+        </div>
+        <div>
+          <label>Initial Pass</label>
+          <select name="standard_filter">
+            <option value="exclude_very_high">Exclude very high standards</option>
+            <option value="include_all">Include all</option>
+            <option value="only_high_risk">Only high-standard risk</option>
+          </select>
+        </div>
+        <div><button type="submit">Build Watchlist</button></div>
+      </form>
+    </article>
+    <article class="card report-tile">
+      <div class="report-tile-head">
+        <div>
+          <h2>Companies by Region</h2>
+          <p>Group USCIS employer companies into the 8 Mintel regions for selected fiscal years and decision type.</p>
+        </div>
+        <a class="button secondary" href="/reports/companies-by-region">Open Report</a>
+      </div>
+      <form class="mini-form" method="get" action="/reports/companies-by-region">
+        <div>
+          <label>Start Year</label>
+          <select name="start_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_start %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>End Year</label>
+          <select name="end_year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == default_end %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="wide">
+          <label>Decision Type</label>
+          <select name="decision_type">
+            {% for option in decision_options %}
+              <option value="{{ option.value }}">{{ option.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div><button type="submit">Run Report</button></div>
+      </form>
+    </article>
+  </section>
+  <style>
+    .report-tile {
+      display: grid;
+      gap: 14px;
+    }
+    .report-tile-head {
+      align-items: flex-start;
+      display: flex;
+      gap: 16px;
+      justify-content: space-between;
+    }
+    .report-tile-head h2 {
+      margin: 0 0 6px;
+    }
+    .report-tile-head p {
+      color: var(--muted);
+      margin: 0;
+      max-width: 62ch;
+    }
+    @media (max-width: 760px) {
+      .report-tile-head {
+        display: grid;
+      }
+    }
+  </style>
+{% endblock %}

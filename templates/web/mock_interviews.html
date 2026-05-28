@@ -1,0 +1,62 @@
+{% extends "web/base.html" %}
+{% block title %}Mock Interviews | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div><h1>Mock Interviews</h1><p>Role/domain mock interviews tied to consultants, submissions, and training programs.</p></div>
+    <div class="actions">
+      <a class="button secondary" href="/mock-interviews/calendar">Calendar</a>
+      <a class="button secondary" href="/mock-interviews/trainer-dashboard">Trainer Dashboard</a>
+      <a class="button secondary" href="/mock-interviews/trainer-availability">Interviewer Availability</a>
+      <a class="button secondary" href="/mock-interviews/consultant-availability">Consultant Availability</a>
+      {% if can_manage_mock_interviews %}<a class="button" href="/mock-interviews/new">Add Mock Interview</a>{% endif %}
+    </div>
+  </section>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form class="filters" method="get" action="/mock-interviews">
+    <div><label>Consultant</label><select name="consultant_id"><option value="">All consultants</option>{% for consultant in consultants %}<option value="{{ consultant.id }}" {% if consultant_id == consultant.id %}selected{% endif %}>{{ consultant.name or consultant.email }}</option>{% endfor %}</select></div>
+    <div><label>Marketing Role</label><select name="marketing_role_id"><option value="">All visible roles</option>{% for role in marketing_roles %}<option value="{{ role.id }}" {% if marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>{% endfor %}</select></div>
+    <div><label>Status</label><select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label>Per Page</label><select name="per_page">{% for size in [10,25,50,100] %}<option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+    <div><button type="submit">Apply</button></div>
+    <div><a class="button secondary" href="/mock-interviews/export.csv?{{ page_params }}">Export CSV</a></div>
+  </form>
+  <div class="listbar"><span>Filtered records: {{ total_rows }}</span><span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span></div>
+  <table class="data-list">
+    <thead><tr><th>S No</th><th>Consultant</th><th>Role / Domain</th><th>Schedule</th><th>Staff</th><th>Status</th><th>Score</th><th>Submission</th><th>Action Items</th><th>Manage</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td><strong>{{ row.consultant.name or row.consultant.email }}</strong><br><span class="muted">{{ row.consultant.email }}</span></td>
+          <td>{{ row.role_snapshot or (row.marketing_role.name if row.marketing_role else "") }}<br><span class="muted">{{ row.domain_snapshot or (row.training_program.industry_domain if row.training_program else "") }}</span></td>
+          <td>
+            <strong>{{ row.scheduled_on or "Not scheduled" }}</strong><br>
+            <span class="muted">{{ row.scheduled_time or "" }}{% if row.scheduled_time and row.timezone %} · {% endif %}{{ row.timezone or "" }}{% if row.duration_minutes %} · {{ row.duration_minutes }} min{% endif %}</span>
+            {% if row.meeting_link %}<br><a href="{{ row.meeting_link }}" target="_blank" rel="noopener">Meeting link</a>{% endif %}
+          </td>
+          <td>{{ row.assigned_staff.name if row.assigned_staff else row.interviewer_name }}<br><span class="muted">{{ row.round_type.replace("_", " ").title() if row.round_type else "" }}</span></td>
+          <td>
+            <span class="pill">{{ row.status.replace("_", " ").title() }}</span>
+            {% if row.consultant_ack_status == "pending" %}<br><span class="muted">Pending consultant ack</span>{% endif %}
+            {% if row.conflict_overridden %}<br><span class="muted">Conflict override</span>{% endif %}
+          </td>
+          <td><strong>{{ row.score }}</strong></td>
+          <td>{% if row.submission %}{{ row.submission.job.company.name }} · {{ row.submission.job.title }}{% else %}Not tied{% endif %}</td>
+          <td>{{ row.action_items or row.gaps or row.strengths }}</td>
+          <td>
+            {% if can_manage_mock_interviews %}
+              <div class="inline-actions">
+                <a class="button secondary" href="/mock-interviews/{{ row.id }}">View</a>
+                <a class="button secondary" href="/mock-interviews/{{ row.id }}/edit">Edit</a>
+              </div>
+            {% else %}
+              <a class="button secondary" href="/mock-interviews/{{ row.id }}">View</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not rows %}<tr><td colspan="10" class="muted">No mock interviews found.</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <div class="pagination">{% if page > 1 %}<a class="button secondary" href="/mock-interviews?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}{% if page < pages %}<a class="button secondary" href="/mock-interviews?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}</div>
+{% endblock %}

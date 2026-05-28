@@ -1,0 +1,54 @@
+{% extends "web/base.html" %}
+{% block title %}{{ job.title }} | Jobs | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ job.title }}</h1>
+      <p>{{ job.company.name }} · {{ job.location or "No location" }} · {{ job.requirement_key or "No requirement key" }}</p>
+    </div>
+    <div class="inline-actions"><a class="button secondary" href="/jobs">Back</a>{% if can_edit_job %}<a class="button" href="/jobs/{{ job.id }}/edit">Edit Job</a>{% endif %}</div>
+  </section>
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ job.company.name }}</strong><span>Promoted Company</span></div>
+    <div class="metric"><strong>{{ job.approval_status or "pending" }}</strong><span>Approval</span></div>
+    <div class="metric"><strong>{{ (job.source_type or job.source).replace("_", " ").title() }}</strong><span>Source Type</span></div>
+    <div class="metric"><strong>{{ "Active" if job.active else "Inactive" }}</strong><span>Status</span></div>
+    <div class="metric"><strong>{{ job.updated_at.strftime("%Y-%m-%d") if job.updated_at else "" }}</strong><span>Updated</span></div>
+  </section>
+  <section class="grid-2">
+    <article class="card stack">
+      <h2>Posting</h2>
+      <p><strong>URL:</strong> {% if job.url %}<a href="{{ job.url }}">{{ job.url }}</a>{% else %}No URL recorded.{% endif %}</p>
+      <p><strong>Posted:</strong> {{ job.posted_on or "Not set" }}</p>
+      <p><strong>ATS:</strong> {{ job.ats_platform or "Not set" }}</p>
+      <p><strong>Type:</strong> {{ job.job_type or "Not set" }} · {{ job.experience_level or "Experience not set" }}</p>
+      <p><strong>Cloud:</strong> {{ job.additional_cloud_specializations or "Not set" }}</p>
+      <p><strong>Created by:</strong> {{ job.created_by or "Unknown" }}</p>
+    </article>
+    <article class="card stack">
+      <h2>Requirements</h2>
+      <p><strong>Marketing roles:</strong> {{ job.marketing_role_ids or "Not set" }}</p>
+      <p><strong>Certifications:</strong> {{ job.certifications_required or "None recorded" }}</p>
+      <p><strong>Alerts:</strong> {{ "Created" if job.job_alerts_created else "Not created" }}</p>
+      <p><strong>Sponsorship:</strong></p>
+      {% if job_sponsorship_notes_html %}<div class="rich-content">{{ job_sponsorship_notes_html|safe }}</div>{% else %}<p>No notes recorded.</p>{% endif %}
+    </article>
+  </section>
+  <section class="card stack">
+    <h2>Description</h2>
+    {% if job_description_html %}<div class="rich-content">{{ job_description_html|safe }}</div>{% else %}<p>No description recorded.</p>{% endif %}
+  </section>
+  <style>
+    .rich-content { line-height: 1.55; color: var(--ink); }
+    .rich-content p { margin: 0 0 10px; }
+    .rich-content ul, .rich-content ol { margin: 0 0 10px 22px; padding: 0; }
+    .rich-content li { margin: 4px 0; }
+    .rich-content a { color: var(--accent-dark); font-weight: 750; }
+  </style>
+  {% if job.decision_payload %}
+    <section class="card stack">
+      <h2>Decision Payload</h2>
+      <pre>{{ job.decision_payload }}</pre>
+    </section>
+  {% endif %}
+{% endblock %}

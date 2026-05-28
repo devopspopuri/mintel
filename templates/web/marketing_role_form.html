@@ -1,0 +1,65 @@
+{% extends "web/base.html" %}
+{% block title %}{% if role %}Edit Marketing Role{% else %}Add Marketing Role{% endif %} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{% if role %}Edit Marketing Role{% else %}Add Marketing Role{% endif %}</h1>
+      <p>{% if role %}Update taxonomy details for {{ role.name }}.{% else %}Create a role that staff can use for classification and marketing decisions.{% endif %}</p>
+    </div>
+    <a class="button secondary" href="/marketing-roles">Back to Roles</a>
+  </section>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form class="card stack" method="post" action="{% if role %}/marketing-roles/{{ role.id }}{% else %}/marketing-roles{% endif %}">
+    <div class="grid-2">
+      <div>
+        <label>Name</label>
+        <input name="name" required value="{{ role.name if role else '' }}">
+      </div>
+      <div>
+        <label>Code</label>
+        <input name="code" value="{{ role.code if role else '' }}">
+      </div>
+    </div>
+    <div>
+      <label>Owner</label>
+      <select name="owner_id">
+        <option value="">No owner assigned</option>
+        {% for staff in owner_options %}
+          <option value="{{ staff.id }}" {% if role and role.owner_id == staff.id %}selected{% endif %}>{{ staff.name or staff.email }}{% if staff.email and staff.name %} · {{ staff.email }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Description</label>
+      <textarea name="description">{{ role.description if role else '' }}</textarea>
+    </div>
+    <div>
+      <label>What It Covers</label>
+      <textarea name="covers">{{ role.covers if role else '' }}</textarea>
+    </div>
+    <div>
+      <label>Common Tools</label>
+      <textarea name="common_tools">{{ role.common_tools if role else '' }}</textarea>
+    </div>
+    <div>
+      <label>Also Includes</label>
+      <textarea name="aliases">{{ role.aliases if role else '' }}</textarea>
+    </div>
+    <div>
+      <label>Classification Keywords</label>
+      <textarea name="keywords">{{ role.keywords if role else '' }}</textarea>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;">
+      <input style="width:auto;min-height:0;" type="checkbox" name="active" value="true" {% if not role or role.active %}checked{% endif %}>
+      Active
+    </label>
+    <div class="inline-actions">
+      <a class="button secondary" href="/marketing-roles">Cancel</a>
+      <button type="submit">{% if role %}Save Changes{% else %}Create Role{% endif %}</button>
+    </div>
+  </form>
+{% endblock %}

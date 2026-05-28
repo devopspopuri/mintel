@@ -1,0 +1,216 @@
+{% extends "web/base.html" %}
+{% block title %}{{ "Edit Job" if job else "Add Mintel Job" }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ "Edit Job" if job else "Add Mintel Job" }}</h1>
+      <p>Create a pursuit-ready job from an original company or ATS posting. New staff-created jobs start pending review.</p>
+    </div>
+    <a class="button secondary" href="{{ '/jobs/' ~ job.id if job else '/jobs' }}">Cancel</a>
+  </section>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  {% if not promoted_companies %}<p class="error">No promoted companies are available. Promote a company first before adding jobs.</p>{% endif %}
+  <form class="card stack" method="post" action="{{ '/jobs/' ~ job.id if job else '/jobs' }}">
+    <section class="grid-2">
+      <div>
+        <label>Promoted Company</label>
+        <select name="company_id" required>
+          <option value="">Select promoted company</option>
+          {% for company in promoted_companies %}
+            <option value="{{ company.id }}" {% if job and job.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div><label>Requirement Key</label><input name="requirement_key" required value="{{ (job.requirement_key or '') if job else '' }}" placeholder="REQ-2001"></div>
+      <div><label>Title</label><input name="title" required value="{{ job.title if job else '' }}" placeholder="Platform Engineer"></div>
+      <div><label>Location</label><input name="location" required value="{{ job.location if job else '' }}" placeholder="Remote"></div>
+      <div>
+        <label>Job Type</label>
+        <select name="job_type">
+          <option value="">Select type</option>
+          {% for value, label in job_type_options %}<option value="{{ value }}" {% if job and job.job_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Experience</label>
+        <select name="experience_level">
+          <option value="">Select level</option>
+          {% for value, label in experience_level_options %}<option value="{{ value }}" {% if job and job.experience_level == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div><label>Posted On</label><input type="date" name="posted_on" value="{{ (job.posted_on or '') if job else '' }}"></div>
+      <div><label>ATS Platform</label><input name="ats_platform" value="{{ job.ats_platform if job else '' }}" placeholder="Workday"></div>
+    </section>
+
+    <section>
+      <h2>Marketing Roles</h2>
+      <div class="checkbox-grid">
+        {% for role in marketing_roles %}
+          <label class="check-row"><input type="checkbox" name="marketing_roles" value="{{ role.id }}" {% if role.id in selected_marketing_roles %}checked{% endif %}><span><strong>{{ role.name }}</strong><span>{{ role.description or "Use this role for matching and alerts." }}</span></span></label>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section>
+      <h2>Cloud Specializations</h2>
+      <div class="checkbox-grid">
+        {% for value, label in cloud_specialization_options %}
+          <label class="check-row"><input type="checkbox" name="additional_cloud_specializations" value="{{ value }}" {% if value in selected_cloud_specializations %}checked{% endif %}><span><strong>{{ label }}</strong><span>Additional cloud specialization requested.</span></span></label>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div><label>Original Posting URL</label><input name="url" required value="{{ job.url if job else '' }}" placeholder="https://company.wd1.myworkdayjobs.com/..."></div>
+    <div><label>Certifications Required</label><input name="certifications_required" value="{{ job.certifications_required if job else '' }}" placeholder="AWS Solutions Architect, Kubernetes"></div>
+    <div class="rich-field">
+      <label>Description</label>
+      <div class="rich-editor" data-rich-editor data-target="description" data-placeholder="Paste the original job description. Minimum ten words.">
+        <div class="rich-toolbar" role="toolbar" aria-label="Description formatting">
+          <button type="button" data-command="bold" title="Bold"><strong>B</strong></button>
+          <button type="button" data-command="italic" title="Italic"><em>I</em></button>
+          <button type="button" data-command="underline" title="Underline"><u>U</u></button>
+          <button type="button" data-command="insertUnorderedList" title="Bulleted list">• List</button>
+          <button type="button" data-command="insertOrderedList" title="Numbered list">1. List</button>
+          <button type="button" data-link title="Add link">Link</button>
+          <button type="button" data-command="removeFormat" title="Clear formatting">Clear</button>
+        </div>
+        <div class="rich-surface" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Paste the original job description. Minimum ten words."></div>
+      </div>
+      <textarea class="rich-source" name="description" data-rich-source="description">{{ job.description if job else '' }}</textarea>
+    </div>
+    <div class="rich-field">
+      <label>Sponsorship Notes</label>
+      <div class="rich-editor" data-rich-editor data-target="sponsorship_notes" data-placeholder="Add sponsorship, OPT, recruiter, or evidence notes.">
+        <div class="rich-toolbar" role="toolbar" aria-label="Sponsorship notes formatting">
+          <button type="button" data-command="bold" title="Bold"><strong>B</strong></button>
+          <button type="button" data-command="italic" title="Italic"><em>I</em></button>
+          <button type="button" data-command="underline" title="Underline"><u>U</u></button>
+          <button type="button" data-command="insertUnorderedList" title="Bulleted list">• List</button>
+          <button type="button" data-command="insertOrderedList" title="Numbered list">1. List</button>
+          <button type="button" data-link title="Add link">Link</button>
+          <button type="button" data-command="removeFormat" title="Clear formatting">Clear</button>
+        </div>
+        <div class="rich-surface" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Add sponsorship, OPT, recruiter, or evidence notes."></div>
+      </div>
+      <textarea class="rich-source" name="sponsorship_notes" data-rich-source="sponsorship_notes">{{ job.sponsorship_notes if job else '' }}</textarea>
+    </div>
+    <div><label>Decision Payload</label><textarea name="decision_payload" placeholder="Optional scoring or decision JSON">{{ job.decision_payload if job else '' }}</textarea></div>
+    <div class="grid-2">
+      <label class="check-row"><input type="checkbox" name="is_active" value="true" {% if not job or job.active %}checked{% endif %}><span><strong>Active</strong><span>Keep this job available for marketing analysis.</span></span></label>
+      <label class="check-row"><input type="checkbox" name="job_alerts_created" value="true" {% if job and job.job_alerts_created %}checked{% endif %}><span><strong>Job alerts created</strong><span>Mark once external alerts or searches are configured.</span></span></label>
+    </div>
+    <div class="inline-actions"><a class="button secondary" href="{{ '/jobs/' ~ job.id if job else '/jobs' }}">Cancel</a><button type="submit">{{ "Save Job" if job else "Create Job For Review" }}</button></div>
+  </form>
+  <style>
+    .rich-field { display: grid; gap: 6px; }
+    .rich-source { display: none; }
+    .rich-editor { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+    .rich-editor:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12); }
+    .rich-toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border-bottom: 1px solid var(--line); background: #f8fafc; }
+    .rich-toolbar button { min-height: 30px; border-color: var(--line); background: #fff; color: var(--ink); padding: 0 9px; font-size: 12px; font-weight: 750; }
+    .rich-toolbar button:hover { border-color: var(--accent); color: var(--accent-dark); background: #f0fdfa; }
+    .rich-surface { min-height: 132px; padding: 12px; line-height: 1.5; outline: 0; overflow-wrap: anywhere; }
+    .rich-surface:empty::before { content: attr(data-placeholder); color: #98a2b3; }
+    .rich-surface p { margin: 0 0 10px; }
+    .rich-surface ul, .rich-surface ol { margin: 0 0 10px 22px; padding: 0; }
+    .rich-surface li { margin: 4px 0; }
+  </style>
+  <script>
+    (() => {
+      const allowedTags = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "UL", "OL", "LI", "A"]);
+
+      const textToHtml = (text) => text
+        .split(/\n{2,}/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .map((part) => `<p>${escapeHtml(part).replace(/\n/g, "<br>")}</p>`)
+        .join("");
+
+      const escapeHtml = (value) => value.replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      }[char]));
+
+      const sanitizeNode = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return document.createTextNode(node.textContent || "");
+        }
+        if (node.nodeType === Node.ELEMENT_NODE && ["SCRIPT", "STYLE"].includes(node.tagName)) {
+          return document.createDocumentFragment();
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE || !allowedTags.has(node.tagName)) {
+          const fragment = document.createDocumentFragment();
+          node.childNodes.forEach((child) => fragment.appendChild(sanitizeNode(child)));
+          return fragment;
+        }
+        const clean = document.createElement(node.tagName.toLowerCase());
+        if (node.tagName === "A") {
+          const href = node.getAttribute("href") || "";
+          if (/^(https?:|mailto:)/i.test(href)) {
+            clean.setAttribute("href", href);
+            clean.setAttribute("target", "_blank");
+            clean.setAttribute("rel", "noopener noreferrer");
+          }
+        }
+        node.childNodes.forEach((child) => clean.appendChild(sanitizeNode(child)));
+        return clean;
+      };
+
+      const sanitizeHtml = (html) => {
+        const template = document.createElement("template");
+        template.innerHTML = html;
+        const fragment = document.createDocumentFragment();
+        template.content.childNodes.forEach((child) => fragment.appendChild(sanitizeNode(child)));
+        const wrapper = document.createElement("div");
+        wrapper.appendChild(fragment);
+        return wrapper.innerHTML.trim();
+      };
+
+      const prepareHtml = (value) => /<\/?[a-z][\s\S]*>/i.test(value) ? sanitizeHtml(value) : textToHtml(value);
+
+      document.querySelectorAll("[data-rich-editor]").forEach((editor) => {
+        const source = document.querySelector(`[data-rich-source="${editor.dataset.target}"]`);
+        const surface = editor.querySelector(".rich-surface");
+        if (!source || !surface) return;
+        surface.innerHTML = prepareHtml(source.value || "");
+
+        const sync = () => {
+          source.value = sanitizeHtml(surface.innerHTML);
+        };
+
+        editor.querySelectorAll("[data-command]").forEach((button) => {
+          button.addEventListener("click", () => {
+            surface.focus();
+            document.execCommand(button.dataset.command, false, null);
+            sync();
+          });
+        });
+
+        const linkButton = editor.querySelector("[data-link]");
+        if (linkButton) {
+          linkButton.addEventListener("click", () => {
+            const href = window.prompt("Link URL");
+            if (!href || !/^(https?:|mailto:)/i.test(href)) return;
+            surface.focus();
+            document.execCommand("createLink", false, href);
+            sync();
+          });
+        }
+
+        surface.addEventListener("input", sync);
+        surface.addEventListener("blur", sync);
+        surface.addEventListener("paste", (event) => {
+          event.preventDefault();
+          const html = event.clipboardData.getData("text/html");
+          const text = event.clipboardData.getData("text/plain");
+          document.execCommand("insertHTML", false, html ? sanitizeHtml(html) : textToHtml(text));
+          sync();
+        });
+        editor.closest("form")?.addEventListener("submit", sync);
+      });
+    })();
+  </script>
+{% endblock %}

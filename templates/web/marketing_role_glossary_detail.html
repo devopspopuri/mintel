@@ -1,0 +1,156 @@
+{% extends "web/base.html" %}
+{% block title %}{{ item.term }} | Consultant Glossary | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ item.term }}</h1>
+      <p>{{ item.roles }} · {{ item.category }} · Concept first, interview answer next</p>
+    </div>
+    <a class="button secondary" href="/marketing-roles/glossary">Back to Glossary</a>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ item.term }}</strong><span>Term</span></div>
+    <div class="metric"><strong>{{ item.roles }}</strong><span>Marketing Role</span></div>
+    <div class="metric"><strong>{{ item.category }}</strong><span>Category</span></div>
+    <div class="metric"><strong>Beginner</strong><span>Learning Level</span></div>
+  </section>
+
+  <section class="card">
+    <h2>AI Overview</h2>
+    <ul class="stack-list"><li>{{ item.overview.definition }}</li></ul>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>Key Points</h2>
+      <ul class="stack-list">
+        {% for point in item.overview.key_points %}
+          <li>{{ point }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+    <article class="card">
+      <h2>Common Methods</h2>
+      <ul class="stack-list">
+        {% for method in item.overview.methods %}
+          <li>{{ method }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>How To Spot It In JD</h2>
+      <ul class="stack-list"><li>Action verbs around <strong>{{ item.term }}</strong> identify the expected project story.</li></ul>
+      <div class="tag-cloud">
+        {% for clue in item.overview.jd_clues %}
+          <span class="pill">{{ clue }}</span>
+        {% endfor %}
+      </div>
+    </article>
+    <article class="card">
+      <h2>Consultant Answer</h2>
+      <ul class="stack-list"><li>{{ item.overview.consultant_sentence }}</li></ul>
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>Interview Explanation Flow</h2>
+    <ol class="stack-list">
+      {% for step in item.overview.interview_flow %}
+        <li>{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>Why Consultants Must Know It</h2>
+      <ul class="stack-list"><li>{{ item.beginner.why_it_matters }}</li></ul>
+    </article>
+    <article class="card">
+      <h2>Beginner Reading Tip</h2>
+      <ul class="stack-list"><li>{{ item.beginner.jd_signal }}</li></ul>
+    </article>
+    <article class="card">
+      <h2>Simple Interview Sentence</h2>
+      <ul class="stack-list"><li>{{ item.beginner.simple_sentence }}</li></ul>
+    </article>
+    <article class="card">
+      <h2>Mistake To Avoid</h2>
+      <ul class="stack-list"><li>{{ item.beginner.mistake_to_avoid }}</li></ul>
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>Small Example</h2>
+    <ul class="stack-list"><li>{{ item.beginner.mini_example }}</li></ul>
+  </section>
+
+  <section class="card">
+    <h2>Interview Use Cases</h2>
+    <ul class="stack-list"><li>Each use case has a summary and a full interview answer.</li></ul>
+    <table class="data-list">
+      <thead>
+        <tr>
+          <th class="sno">S No</th>
+          <th>Use Case</th>
+          <th class="right">Words</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for use_case in item.use_cases %}
+          <tr>
+            <td class="sno">{{ loop.index }}</td>
+            <td>
+              <details class="interview-usecase">
+                <summary><strong>{{ use_case.title }}</strong> <span class="muted">{{ use_case.summary }}</span></summary>
+                <div class="interview-answer-grid">
+                  {% for section in use_case.script_sections %}
+                    <section class="interview-answer-block">
+                      <h3>{{ section.label }}</h3>
+                      <ul class="stack-list">
+                        {% for line in section["items"] %}
+                          <li>{{ line }}</li>
+                        {% endfor %}
+                      </ul>
+                    </section>
+                  {% endfor %}
+                </div>
+              </details>
+            </td>
+            <td class="right compact-meta">{{ use_case.word_count }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Advanced STAR Practice</h2>
+    <ul class="stack-list"><li>STAR format turns the term into Situation, Task, Action, and Result.</li></ul>
+    <details>
+      <summary><strong>Open STAR explanation</strong> <span class="muted">{{ word_count }} words</span></summary>
+      <section class="grid-2" style="margin-top:12px;">
+        <article class="card">
+          <h2>Situation</h2>
+          <ul class="stack-list"><li>{{ item.star.situation }}</li></ul>
+        </article>
+        <article class="card">
+          <h2>Task</h2>
+          <ul class="stack-list"><li>{{ item.star.task }}</li></ul>
+        </article>
+        <article class="card">
+          <h2>Action</h2>
+          <ul class="stack-list"><li>{{ item.star.action }}</li></ul>
+        </article>
+        <article class="card">
+          <h2>Result</h2>
+          <ul class="stack-list"><li>{{ item.star.result }}</li></ul>
+        </article>
+      </section>
+    </details>
+  </section>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "web/base.html" %}
+{% block title %}Landing Pages | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Mintel Landing Pages</h1>
+      <p>Role, region, consultant, and admin homepages for daily operating decisions.</p>
+    </div>
+    {% if can(user, "manage_staff") %}<a class="button" href="/landings/admin">Admin Landing</a>{% endif %}
+  </section>
+
+  <section class="metrics compact">
+    <a class="metric" href="/regions"><strong>{{ summary.regions }}</strong><span>Active regions</span></a>
+    <a class="metric" href="/marketing-roles"><strong>{{ summary.roles }}</strong><span>Marketing roles</span></a>
+    <a class="metric" href="/consultants"><strong>{{ summary.consultants }}</strong><span>Consultants</span></a>
+    <a class="metric" href="/pursuits"><strong>{{ summary.promoted_companies }}</strong><span>Active companies</span></a>
+    <a class="metric" href="{% if consultant %}/consultants/{{ consultant.id }}{% else %}/landings/consultant{% endif %}"><strong>{% if consultant %}1{% else %}0{% endif %}</strong><span>Your consultant profile</span></a>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <h2>Region Landing Pages</h2>
+      <p>Each region page gives staff the company queue, current postings, owner gaps, overdue actions, and targeting links.</p>
+      <div class="tag-list">
+        {% for region in regions %}
+          <a class="tag system-tag" href="/landings/regions/{{ region.id }}">{{ region.name }}</a>
+        {% else %}
+          <span class="muted">No active regions.</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <h2>Marketing Role Landing Pages</h2>
+      <p>Each role page gives the team readiness, blockers, role demand, training, mocks, and candidate-company matching.</p>
+      <div class="tag-list">
+        {% for role in roles %}
+          <a class="tag system-tag" href="/landings/roles/{{ role.id }}">{{ role.name }}</a>
+        {% else %}
+          <span class="muted">No active marketing roles.</span>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <a class="card workflow-link-card" href="/landings/consultant">
+      <h2>Consultant Landing</h2>
+      <p>One place for the consultant or staff owner to see readiness, submissions, campaigns, mocks, and next evidence work.</p>
+      <span class="tile-open-indicator">Open Consultant Landing</span>
+    </a>
+    {% if can(user, "manage_staff") %}
+    <a class="card workflow-link-card" href="/landings/admin">
+      <h2>Admin Landing</h2>
+      <p>Control tower for region coverage, role-team readiness, unowned companies, active submissions, and system-level gaps.</p>
+      <span class="tile-open-indicator">Open Admin Landing</span>
+    </a>
+    {% else %}
+    <div class="card">
+      <h2>Admin Landing</h2>
+      <p>Control tower for region coverage, role-team readiness, unowned companies, active submissions, and system-level gaps.</p>
+      <span class="muted">Admin access required.</span>
+    </div>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "web/base.html" %}
+{% block title %}Interviewer Availability | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div><h1>Interviewer Availability</h1><p>Maintain weekly and ad-hoc availability for mock interview scheduling.</p></div>
+    <div class="actions"><a class="button secondary" href="/mock-interviews">List</a><a class="button" href="/mock-interviews/new">Add Mock Interview</a></div>
+  </section>
+  <form class="filters" method="get" action="/mock-interviews/trainer-availability">
+    <div><label>Interviewer</label><select name="staff_id">{% for staff_member in staff_options %}<option value="{{ staff_member.id }}" {% if selected_staff_id == staff_member.id %}selected{% endif %}>{{ staff_member.name or staff_member.email }}</option>{% endfor %}</select></div>
+    <div><button type="submit">Open</button></div>
+  </form>
+  {% if selected_staff_id %}
+    <div class="grid-2">
+      <form class="card stack" method="post" action="/mock-interviews/trainer-availability">
+        <h2>Add Weekly Availability</h2>
+        <input type="hidden" name="kind" value="weekly">
+        <input type="hidden" name="staff_id" value="{{ selected_staff_id }}">
+        <label>Weekday<select name="weekday">{% for value, label in weekdays %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+        <label>Start Time<input type="time" name="start_time" required></label>
+        <label>End Time<input type="time" name="end_time" required></label>
+        <label>Timezone<select name="timezone_name">{% for value, label in timezone_options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+        <label>Notes<input name="notes" placeholder="Morning slots, weekend only, etc."></label>
+        <button type="submit">Save Weekly Block</button>
+      </form>
+      <form class="card stack" method="post" action="/mock-interviews/trainer-availability">
+        <h2>Add Ad-hoc Availability</h2>
+        <input type="hidden" name="kind" value="adhoc">
+        <input type="hidden" name="staff_id" value="{{ selected_staff_id }}">
+        <label>Start<input type="datetime-local" name="start_at" required></label>
+        <label>End<input type="datetime-local" name="end_at" required></label>
+        <label>Timezone<select name="timezone_name">{% for value, label in timezone_options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+        <label>Notes<input name="notes" placeholder="Special availability window"></label>
+        <button type="submit">Save Ad-hoc Block</button>
+      </form>
+    </div>
+  {% endif %}
+  <section class="card">
+    <h2>Weekly Blocks</h2>
+    <table class="data-list">
+      <thead><tr><th>S No</th><th>Day</th><th>Window</th><th>Timezone</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for row in weekly %}
+          <tr><td class="sno">{{ loop.index }}</td><td>{{ weekdays[row.weekday][1] }}</td><td>{{ row.start_time }} - {{ row.end_time }}</td><td>{{ row.timezone }}</td><td>{{ "Active" if row.active else "Inactive" }}</td><td><form method="post" action="/mock-interviews/trainer-availability/{{ row.id }}/toggle"><input type="hidden" name="kind" value="weekly"><input type="hidden" name="staff_id" value="{{ selected_staff_id }}"><button type="submit">{{ "Disable" if row.active else "Enable" }}</button></form></td></tr>
+        {% endfor %}
+        {% if not weekly %}<tr><td colspan="6" class="muted">No weekly blocks configured.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>Ad-hoc Blocks</h2>
+    <table class="data-list">
+      <thead><tr><th>S No</th><th>Start</th><th>End</th><th>Timezone</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for row in adhoc %}
+          <tr><td class="sno">{{ loop.index }}</td><td>{{ row.start_at }}</td><td>{{ row.end_at }}</td><td>{{ row.timezone }}</td><td>{{ "Active" if row.active else "Inactive" }}</td><td><form method="post" action="/mock-interviews/trainer-availability/{{ row.id }}/toggle"><input type="hidden" name="kind" value="adhoc"><input type="hidden" name="staff_id" value="{{ selected_staff_id }}"><button type="submit">{{ "Disable" if row.active else "Enable" }}</button></form></td></tr>
+        {% endfor %}
+        {% if not adhoc %}<tr><td colspan="6" class="muted">No ad-hoc blocks configured.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

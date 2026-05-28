@@ -1,0 +1,121 @@
+{% extends "web/base.html" %}
+{% block title %}Training Programs | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <span class="crumb-current">Training Programs</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <h1>Training Programs</h1>
+      <p>{% if is_consultant_access %}Assigned role/domain training for your current preparation path.{% else %}Domain-specific MAAS / MTAS consultant training for role, project, interview, and resume readiness.{% endif %}</p>
+    </div>
+    {% if not is_consultant_access %}<a class="button secondary" href="/marketing-roles">Marketing Roles</a>{% endif %}
+  </section>
+
+  {% if not is_consultant_access %}
+  <form class="filters" method="get" action="/training-programs">
+    <div>
+      <label>Marketing Role</label>
+      <select name="marketing_role_id">
+        <option value="">All marketing roles</option>
+        {% for role in marketing_roles %}
+          <option value="{{ role.id }}" {% if marketing_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Industry Domain</label>
+      <select name="industry_domain">
+        <option value="all" {% if industry_domain == "all" %}selected{% endif %}>All domains</option>
+        {% for domain in industry_domains %}
+          <option value="{{ domain }}" {% if industry_domain == domain %}selected{% endif %}>{{ domain }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="wide">
+      <label>Search</label>
+      <input name="q" value="{{ q }}" placeholder="Search tools, deliverables, applications">
+    </div>
+    <div>
+      <label>Status</label>
+      <select name="status">{% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div>
+      <label>Sort</label>
+      <select name="sort">
+        <option value="role" {% if sort == "role" %}selected{% endif %}>Role</option>
+        <option value="domain" {% if sort == "domain" %}selected{% endif %}>Domain</option>
+        <option value="owner" {% if sort == "owner" %}selected{% endif %}>Owner</option>
+        <option value="updated" {% if sort == "updated" %}selected{% endif %}>Updated</option>
+      </select>
+    </div>
+    <div class="inline-actions">
+      <button type="submit">Apply</button>
+      <a class="button secondary" href="/training-programs">Reset</a>
+    </div>
+  </form>
+  {% else %}
+    <article class="subtle-panel">
+      <strong>Access scope</strong>
+      <p>Your account can open Basics Preparation and the training program assigned to your consultant profile. Staff can update your marketing role or domain assignment during onboarding.</p>
+    </article>
+  {% endif %}
+
+  <div class="listbar">
+    <span>Programs: {{ total_rows }}</span>
+    <span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span>
+  </div>
+
+  <div class="grid-2">
+    {% for program in programs %}
+      <section class="card stack">
+        <div>
+          <span class="pill">{{ program.marketing_role.name }}</span>
+          <span class="tag">{{ program.industry_domain }}</span>
+        </div>
+        <h2>{{ program.industry_domain }} - {{ program.marketing_role.name }} Training Program</h2>
+        <p>{{ program.short_description }}</p>
+        <div class="subgrid">
+          <div><strong>{{ program.application_landscape|length }}</strong><br><span class="muted">Applications</span></div>
+          <div><strong>{{ program.tools_and_technologies|length }}</strong><br><span class="muted">Tools</span></div>
+          <div><strong>{{ program.key_deliverables|length }}</strong><br><span class="muted">Deliverables</span></div>
+        </div>
+        <div>
+          <strong>Top tools</strong>
+          <div class="tag-cloud">{% for item in program.tools_and_technologies[:5] %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+        </div>
+        <div>
+          <strong>Deliverables</strong>
+          <ul class="stack-list">{% for item in program.key_deliverables[:5] %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        <div class="program-card-actions">
+          <a class="button program-primary-action" href="/training-programs/{{ program.id }}">View Details</a>
+          <div class="icon-actions" aria-label="Training program quick actions">
+            <a class="icon-button" href="/training-programs/{{ program.id }}/export.pdf" title="Download full reference PDF" aria-label="Download full reference PDF">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+            </a>
+            <button class="icon-button" type="button" x-data @click="navigator.clipboard && navigator.clipboard.writeText($el.dataset.copy)" data-copy="{{ program.interview_story|e }}" title="Copy interview story" aria-label="Copy interview story">
+              <svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            </button>
+            <button class="icon-button" type="button" x-data @click="navigator.clipboard && navigator.clipboard.writeText($el.dataset.copy)" data-copy="{{ program.resume_project_summary|e }}" title="Copy resume summary" aria-label="Copy resume summary">
+              <svg viewBox="0 0 24 24"><path d="M8 2h8l4 4v16H4V2z"/><path d="M16 2v4h4"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
+            </button>
+            {% if can_manage %}
+              <a class="icon-button" href="/training-programs/{{ program.id }}/edit" title="Edit training program" aria-label="Edit training program">
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+    {% else %}
+      <section class="card"><p class="muted">{% if is_consultant_access %}No assigned training program is available yet. Ask staff to set your Marketing Role and Target Industry Domain on your consultant profile using the same email as this login.{% else %}No training programs found for the selected filters.{% endif %}</p></section>
+    {% endfor %}
+  </div>
+
+  <div class="pagination">
+    {% if page > 1 %}<a class="button secondary" href="/training-programs?page={{ page - 1 }}&{{ page_params }}">Previous</a>{% endif %}
+    {% if page < pages %}<a class="button secondary" href="/training-programs?page={{ page + 1 }}&{{ page_params }}">Next</a>{% endif %}
+  </div>
+{% endblock %}

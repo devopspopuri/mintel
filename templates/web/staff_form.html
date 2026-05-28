@@ -1,0 +1,112 @@
+{% extends "web/base.html" %}
+{% block title %}{{ "Edit Staff" if staff_member else "Add Staff" }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ "Edit Staff" if staff_member else "Add Staff" }}</h1>
+      <p>{{ "Update account, access role, timezone, status, or password." if staff_member else "Create a Mintel staff account. Pick the access role below." }}</p>
+    </div>
+    <a class="button secondary" href="{{ '/staff/' ~ staff_member.id if staff_member else '/staff' }}">Cancel</a>
+  </section>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form class="card stack" method="post" action="{{ '/staff/' ~ staff_member.id if staff_member else '/staff' }}">
+    <div class="grid-2">
+      <div>
+        <label>First name</label>
+        <input name="first_name" value="{{ staff_member.first_name if staff_member else '' }}" placeholder="First name">
+      </div>
+      <div>
+        <label>Last name</label>
+        <input name="last_name" value="{{ staff_member.last_name if staff_member else '' }}" placeholder="Last name">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label>Username</label>
+        <input name="username" value="{{ staff_member.username if staff_member else '' }}" required placeholder="username">
+      </div>
+      <div>
+        <label>Email</label>
+        <input type="email" name="email" value="{{ staff_member.email if staff_member else '' }}" required placeholder="name@example.com">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label>Password</label>
+        <input type="password" name="password" {% if not staff_member %}required{% endif %} placeholder="{{ 'Leave blank to keep current password' if staff_member else 'Temporary password' }}">
+      </div>
+      <div>
+        <label>Password confirmation</label>
+        <input type="password" name="password_confirm" {% if not staff_member %}required{% endif %} placeholder="{{ 'Repeat new password' if staff_member else 'Repeat temporary password' }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label>Timezone</label>
+        <select name="timezone">
+          {% for value, label in timezone_options %}
+            <option value="{{ value }}" {% if (staff_member and staff_member.timezone == value) or (not staff_member and value == "Asia/Kolkata") %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Access role</label>
+        <select name="role">
+          {% for value, label in role_options %}
+            <option value="{{ value }}" {% if staff_member and staff_member.role == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <label class="check-row">
+      <input type="checkbox" name="active" value="true" {% if not staff_member or staff_member.active %}checked{% endif %}>
+      <span>
+        <strong>Active</strong>
+        <span>Allows this staff member to log in and receive assignments.</span>
+      </span>
+    </label>
+
+    <h2>Regions</h2>
+    <div class="checkbox-grid">
+      {% for region in regions %}
+        <label class="check-row">
+          <input type="checkbox" name="region_ids" value="{{ region.id }}" {% if region.id in assigned_region_ids %}checked{% endif %}>
+          <span>
+            <strong>{{ region.name }}</strong>
+            <span>{{ region.description }}</span>
+          </span>
+        </label>
+      {% else %}
+        <p class="muted">No active regions are available.</p>
+      {% endfor %}
+    </div>
+
+    <h2>Marketing Roles</h2>
+    <div class="checkbox-grid">
+      {% for marketing_role in marketing_roles %}
+        <label class="check-row">
+          <input type="checkbox" name="marketing_role_ids" value="{{ marketing_role.id }}" {% if marketing_role.id in assigned_role_ids %}checked{% endif %}>
+          <span>
+            <strong>{{ marketing_role.name }}</strong>
+            <span>{{ marketing_role.description }}</span>
+          </span>
+        </label>
+      {% else %}
+        <p class="muted">No active marketing roles are available.</p>
+      {% endfor %}
+    </div>
+
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ '/staff/' ~ staff_member.id if staff_member else '/staff' }}">Cancel</a>
+      <button type="submit">{{ "Save Staff" if staff_member else "Create Staff" }}</button>
+    </div>
+  </form>
+{% endblock %}

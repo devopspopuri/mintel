@@ -1,0 +1,118 @@
+{% extends "web/base.html" %}
+{% block title %}{{ campaign.name }} | Targeting Campaigns | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ campaign.name }}</h1>
+      <p>{{ campaign.consultant.name or campaign.consultant.email }} · {{ campaign.target_role or "Target role not set" }}</p>
+    </div>
+    <div class="inline-actions">
+      {% if role_value(user) != 'consultant' %}<a class="button secondary" href="/reports/candidate-company-matches?consultant_id={{ campaign.consultant_id }}">Find More Matches</a>{% endif %}
+      {% if can_manage(user) %}<a class="button" href="/targeting-campaigns/{{ campaign.id }}/edit">Edit Campaign</a>{% endif %}
+      <a class="button secondary" href="/targeting-campaigns">Campaigns</a>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.total }}</strong><span>Total Targets</span></div>
+    <div class="metric"><strong>{{ summary.queued }}</strong><span>Queued</span></div>
+    <div class="metric"><strong>{{ summary.resume }}</strong><span>Resume Tailoring</span></div>
+    <div class="metric"><strong>{{ summary.ready }}</strong><span>Ready To Submit</span></div>
+    <div class="metric"><strong>{{ summary.submitted }}</strong><span>Submitted / Interview</span></div>
+    <div class="metric"><strong>{{ summary.skipped }}</strong><span>Skipped</span></div>
+  </section>
+
+  <section class="card campaign-overview">
+    <h2>Campaign Overview</h2>
+    <div class="overview-grid">
+      <div><span>Status</span><strong>{{ campaign.status.replace("_", " ").title() }}</strong></div>
+      <div><span>Owner</span><strong>{{ campaign.owner.name if campaign.owner else "Unassigned" }}</strong></div>
+      <div><span>Due Date</span><strong>{{ campaign.due_date or "No due date" }}</strong></div>
+      <div><span>Target Role</span><strong>{{ campaign.target_role or "Not set" }}</strong></div>
+    </div>
+    {% if campaign.notes %}<p>{{ campaign.notes }}</p>{% endif %}
+  </section>
+
+  <section class="campaign-targets">
+    {% for target in targets %}
+      <article class="card campaign-target">
+        <div class="target-head">
+          <div>
+            <div class="compact-meta">Match {{ target.match_score }} · Company score {{ target.company_score }}</div>
+            <h2>{% if role_value(user) == 'consultant' %}{{ target.company.name }}{% elif target.pursuit %}<a href="/pursuits/{{ target.pursuit.id }}?tab=intelligence">{{ target.company.name }}</a>{% else %}<a href="/companies/{{ target.company.id }}/uscis">{{ target.company.name }}</a>{% endif %}</h2>
+            <div class="company-subline">
+              <span class="pill {% if target.status in ['skipped', 'rejected'] %}warn{% elif target.status in ['submitted', 'interview'] %}hot{% endif %}">{{ target.status.replace("_", " ").title() }}</span>
+              <span class="tag">{{ target.role_fit or "Role fit missing" }}</span>
+            </div>
+          </div>
+          {% if role_value(user) != 'consultant' %}
+            <div class="target-actions">
+              {% if target.pursuit %}<a class="button secondary" href="/pursuits/{{ target.pursuit.id }}?tab=job-postings">Jobs</a>{% endif %}
+              <a class="button secondary" href="/companies/{{ target.company.id }}/uscis">USCIS</a>
+            </div>
+          {% endif %}
+        </div>
+        <div class="target-grid">
+          <div><h3>Skill Overlap</h3><p>{{ target.skill_overlap or "No overlap captured" }}</p></div>
+          <div><h3>Gaps</h3><p>{{ target.gaps or "No major gaps" }}</p></div>
+          <div><h3>Next Action</h3><p>{{ target.next_action or "No next action set" }}</p></div>
+        </div>
+        {% if can_manage(user) %}
+          <form class="target-edit" method="post" action="/targeting-campaigns/{{ campaign.id }}/targets/{{ target.id }}">
+            <label>Status<select name="status">{% for value, label in target_status_options %}<option value="{{ value }}" {% if target.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label class="wide">Next Action<input name="next_action" value="{{ target.next_action }}"></label>
+            <label class="wide">Notes<input name="notes" value="{{ target.notes }}"></label>
+            <button class="secondary" type="submit">Update</button>
+          </form>
+          {% set company_jobs = jobs_by_company.get(target.company_id, []) %}
+          <details class="submission-panel">
+            <summary>Create submission from this target</summary>
+            {% if company_jobs %}
+              <form class="submission-form" method="post" action="/targeting-campaigns/{{ campaign.id }}/targets/{{ target.id }}/submission">
+                <label>Job<select name="job_id" required><option value="">Select job</option>{% for job in company_jobs %}<option value="{{ job.id }}">{{ job.title }} · {{ job.location or "Location missing" }}</option>{% endfor %}</select></label>
+                <label>Resume<select name="resume_version_id"><option value="">No resume attached</option>{% for resume in resume_versions %}<option value="{{ resume.id }}">{{ resume.version_name }}</option>{% endfor %}</select></label>
+                <label>Status<select name="status"><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="client_review">Client Review</option></select></label>
+                <label>Submitted On<input type="date" name="submitted_on"></label>
+                <label>Vendor Contact<input name="vendor_contact" placeholder="Recruiter/vendor"></label>
+                <label>Bill Rate<input name="bill_rate" placeholder="$70/hr C2C"></label>
+                <label class="wide">Notes<input name="submission_notes" value="{{ target.notes or target.next_action }}"></label>
+                <label class="wide">Next Step<input name="next_step" value="Follow up on submission and update campaign target."></label>
+                <button type="submit">Create Submission</button>
+              </form>
+            {% else %}
+              <p class="muted">No active promoted-company jobs exist for this company yet. Create a job from the company workspace first.</p>
+            {% endif %}
+          </details>
+        {% endif %}
+      </article>
+    {% else %}
+      <section class="card"><p class="muted">No company targets in this campaign.</p></section>
+    {% endfor %}
+  </section>
+
+  <style>
+    .campaign-targets { display: grid; gap: 12px; }
+    .campaign-overview { display: grid; gap: 10px; }
+    .overview-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .overview-grid div { border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+    .overview-grid span { color: var(--muted); display: block; font-size: 0.86rem; font-weight: 700; }
+    .overview-grid strong { display: block; margin-top: 4px; }
+    .campaign-target { display: grid; gap: 12px; }
+    .target-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .target-head h2 { margin: 4px 0 8px; }
+    .target-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .target-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .target-grid h3 { margin: 0 0 6px; }
+    .target-grid p { margin: 0; }
+    .target-edit { align-items: end; border-top: 1px solid var(--line); display: grid; gap: 8px; grid-template-columns: 170px 1fr 1fr auto; padding-top: 10px; }
+    .submission-panel { border-top: 1px solid var(--line); padding-top: 10px; }
+    .submission-panel summary { color: var(--accent-dark); cursor: pointer; font-weight: 800; }
+    .submission-form { align-items: end; display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; }
+    .submission-form .wide { grid-column: span 2; }
+    @media (max-width: 980px) {
+      .overview-grid, .target-head, .target-grid, .target-edit, .submission-form { display: grid; grid-template-columns: 1fr; }
+      .submission-form .wide { grid-column: span 1; }
+      .target-actions { justify-content: flex-start; }
+    }
+  </style>
+{% endblock %}

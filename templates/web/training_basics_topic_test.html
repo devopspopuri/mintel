@@ -1,0 +1,158 @@
+{% extends "web/base.html" %}
+{% block title %}Topic {{ topic_number }} Test | Basics Preparation | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-basics">Basics Preparation</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-basics/topics/{{ topic_number }}">Topic {{ topic_number }}</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">Test</span>
+  </nav>
+
+  <div class="topic-test-page">
+    <section class="card assessment-head">
+      <div>
+        <span class="pill">Certification-style topic check</span>
+        <h1>{{ assessment.title }}</h1>
+        <p>{{ assessment.subtitle }}</p>
+      </div>
+      <div class="assessment-scorebox">
+        <strong>{{ assessment.totalQuestions }}</strong>
+        <span>questions</span>
+      </div>
+    </section>
+
+    <section class="test-meta-grid">
+      <article class="card test-meta-card">
+        <h2>Test Rules</h2>
+        <ul class="stack-list">
+          <li><strong>Source rule:</strong> {{ assessment.sourceRule }}</li>
+          <li><strong>Time limit:</strong> {{ assessment.timeLimitMinutes }} minutes</li>
+          <li><strong>Passing score:</strong> {{ assessment.passingScore }}%</li>
+          {% for rule in assessment.scoringRules %}<li>{{ rule }}</li>{% endfor %}
+        </ul>
+      </article>
+      <article class="card test-meta-card">
+        <h2>Result Bands</h2>
+        <div class="assessment-band-grid">
+          {% for band in assessment.resultBands %}
+            <article>
+              <strong>{{ band.range }} · {{ band.label }}</strong>
+              <p>{{ band.action }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="card assessment-panel">
+      <div class="assessment-toolbar">
+        <div>
+          <h2>Knowledge Test</h2>
+          <p class="muted">Answer all questions, then score the test. Multi-select questions require the exact correct choices.</p>
+        </div>
+        <button type="button" id="score-topic-test">Score Test</button>
+      </div>
+      <div id="topic-test-result" class="assessment-result" hidden></div>
+      <form id="topic-test-form">
+        {% for question in assessment.questions %}
+          <article class="assessment-question" data-question-id="{{ question.id }}" data-correct="{{ question.correctAnswers|join(',') }}">
+            <div class="assessment-question-head">
+              <span>{{ question.id }}</span>
+              <span>{{ question.typeLabel }}</span>
+              <span>{{ question.section }}</span>
+            </div>
+            <h3>{{ question.prompt }}</h3>
+            <div class="assessment-options">
+              {% for option in question.options %}
+                <label>
+                  <input type="{{ 'checkbox' if question.type == 'multi_select' else 'radio' }}" name="{{ question.id }}" value="{{ option.key }}">
+                  <span><strong>{{ option.key }}.</strong> {{ option.text }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <details>
+              <summary>Source and answer key</summary>
+              <ul class="stack-list">
+                <li><strong>Source:</strong> {{ question.sourceTitle }} · {{ question.sourceSection }}</li>
+                <li><strong>Topic:</strong> {{ question.topic }} · {{ question.difficulty }}</li>
+                <li><strong>Correct answer:</strong> {{ question.correctAnswers|join(', ') }}</li>
+                <li><strong>Explanation:</strong> {{ question.explanation }}</li>
+              </ul>
+            </details>
+          </article>
+        {% endfor %}
+      </form>
+    </section>
+
+    <div class="topic-test-actions">
+      <a class="button secondary" href="/training-basics/topics/{{ topic_number }}">Back To Topic</a>
+      {% if topic_number < topic_total %}<a class="button" href="/training-basics/topics/{{ topic_number + 1 }}">Next Topic</a>{% endif %}
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const button = document.getElementById("score-topic-test");
+      const result = document.getElementById("topic-test-result");
+      const questions = Array.from(document.querySelectorAll(".assessment-question"));
+      if (!button || !result || !questions.length) return;
+      button.addEventListener("click", () => {
+        let correctCount = 0;
+        questions.forEach((question) => {
+          const expected = (question.dataset.correct || "").split(",").filter(Boolean).sort().join(",");
+          const selected = Array.from(question.querySelectorAll("input:checked")).map((input) => input.value).sort().join(",");
+          const isCorrect = selected === expected;
+          question.classList.toggle("correct", isCorrect);
+          question.classList.toggle("incorrect", !isCorrect);
+          if (isCorrect) correctCount += 1;
+        });
+        const percent = Math.round((correctCount / questions.length) * 100);
+        const band = percent >= 85 ? "Ready" : percent >= 75 ? "Ready with review" : percent >= 60 ? "Repair needed" : "Not ready";
+        result.hidden = false;
+        result.textContent = `${correctCount}/${questions.length} correct (${percent}%) · ${band}`;
+        result.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    })();
+  </script>
+
+  <style>
+    .topic-test-page { display: grid; gap: 14px; max-width: 1120px; }
+    .assessment-head { align-items: center; display: flex; justify-content: space-between; gap: 18px; }
+    .assessment-head h1, .assessment-head p { margin: 0; }
+    .assessment-head h1 { margin-top: 8px; }
+    .test-meta-grid { align-items: stretch; display: grid; gap: 14px; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); }
+    .test-meta-card { align-content: start; display: grid; gap: 10px; }
+    .test-meta-card h2, .assessment-toolbar h2 { margin: 0; }
+    .assessment-scorebox { align-items: center; background: #f0fdfa; border: 1px solid #99d9ce; border-radius: 8px; color: var(--accent-dark); display: flex; flex: 0 0 120px; flex-direction: column; justify-content: center; min-height: 96px; }
+    .assessment-scorebox strong { font-size: 34px; line-height: 1; }
+    .assessment-scorebox span { font-size: 12px; font-weight: 850; text-transform: uppercase; }
+    .assessment-panel { display: grid; gap: 14px; }
+    .assessment-toolbar { align-items: center; display: flex; gap: 16px; justify-content: space-between; }
+    .assessment-toolbar p { margin: 4px 0 0; }
+    .assessment-toolbar button { flex: 0 0 auto; }
+    .assessment-result { background: #fff7d6; border: 1px solid #f0c66a; border-radius: 8px; color: #8a5a00; font-size: 18px; font-weight: 850; padding: 14px; }
+    #topic-test-form { display: grid; gap: 12px; }
+    .assessment-question { border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 12px; padding: 14px; }
+    .assessment-question.correct { border-color: #64b9a8; box-shadow: inset 4px 0 0 #64b9a8; }
+    .assessment-question.incorrect { border-color: #df8a7d; box-shadow: inset 4px 0 0 #df8a7d; }
+    .assessment-question-head { display: flex; flex-wrap: wrap; gap: 8px; }
+    .assessment-question-head span { background: #f8fafc; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 850; padding: 5px 9px; }
+    .assessment-question h3 { font-size: 17px; line-height: 1.4; margin: 0; }
+    .assessment-options { display: grid; gap: 8px; }
+    .assessment-options label { align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; display: flex; gap: 10px; padding: 10px; width: auto; }
+    .assessment-options label span { display: block; flex: 1 1 auto; line-height: 1.45; min-width: 0; overflow-wrap: anywhere; }
+    .assessment-options input { box-sizing: border-box; flex: 0 0 16px; height: 16px; margin: 3px 0 0; max-width: 16px; min-height: 0; padding: 0; width: 16px; }
+    .assessment-band-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .assessment-band-grid article { background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .assessment-band-grid strong { display: block; line-height: 1.35; }
+    .assessment-band-grid p { margin: 6px 0 0; }
+    .topic-test-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    @media (max-width: 900px) {
+      .assessment-head, .assessment-toolbar, .topic-test-actions { align-items: stretch; display: grid; }
+      .test-meta-grid { grid-template-columns: 1fr; }
+      .assessment-scorebox { flex-basis: auto; min-width: 0; }
+      .assessment-band-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}

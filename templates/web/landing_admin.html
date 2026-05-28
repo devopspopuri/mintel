@@ -1,0 +1,63 @@
+{% extends "web/base.html" %}
+{% block title %}Admin Landing | Mintel{% endblock %}
+{% block content %}
+  <section class="breadcrumbs">
+    <a href="/landings">Landing Pages</a><span class="crumb-separator">/</span><span class="crumb-current">Admin</span>
+  </section>
+  <section class="page-head">
+    <div>
+      <h1>Admin Landing</h1>
+      <p>Control tower for region coverage, role readiness, company ownership, submissions, and operating gaps.</p>
+    </div>
+    <a class="button" href="/reports/operating-workbench">Operating Workbench</a>
+  </section>
+
+  <section class="metrics compact">
+    <a class="metric" href="/regions"><strong>{{ summary.regions }}</strong><span>Regions</span></a>
+    <a class="metric" href="/marketing-roles"><strong>{{ summary.roles }}</strong><span>Marketing roles</span></a>
+    <a class="metric" href="/consultants"><strong>{{ summary.consultants }}</strong><span>Consultants</span></a>
+    <a class="metric" href="/reports/role-journeys"><strong>{{ summary.marketing_ready }}</strong><span>Marketing Ready</span></a>
+    <a class="metric" href="/submissions"><strong>{{ summary.active_submissions }}</strong><span>Active submissions</span></a>
+  </section>
+
+  <section class="grid-3">
+    {% for action in admin_actions %}
+      <a class="card workflow-link-card" href="{{ action.url }}">
+        <h2>{{ action.label }}</h2>
+        <p>{{ action.detail }}</p>
+        <span class="tile-open-indicator">Open</span>
+      </a>
+    {% else %}
+      <div class="card"><h2>No urgent admin gaps</h2><p>Core operating queues are currently clear.</p></div>
+    {% endfor %}
+  </section>
+
+  <section class="grid-2">
+    <div>
+      <h2>Regions</h2>
+      <table class="data-list">
+        <thead><tr><th>Region</th><th>Companies</th><th>Needs Owner</th><th>Jobs</th><th></th></tr></thead>
+        <tbody>
+          {% for row in region_rows %}
+            <tr><td><strong>{{ row.region.name }}</strong></td><td>{{ row.summary.active_companies }}</td><td>{{ row.summary.needs_owner }}</td><td>{{ row.summary.current_jobs }}</td><td class="right"><a class="button secondary" href="/landings/regions/{{ row.region.id }}">Open</a></td></tr>
+          {% else %}
+            <tr><td colspan="5" class="muted">No active regions.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h2>Marketing Roles</h2>
+      <table class="data-list">
+        <thead><tr><th>Role</th><th>Ready</th><th>Blocked</th><th>Jobs</th><th></th></tr></thead>
+        <tbody>
+          {% for row in role_rows %}
+            <tr><td><strong>{{ row.role.name }}</strong></td><td>{{ row.summary.marketing_ready }}/{{ row.summary.consultants }}</td><td>{{ row.summary.blocked }}</td><td>{{ row.summary.current_jobs }}</td><td class="right"><a class="button secondary" href="/landings/roles/{{ row.role.id }}">Open</a></td></tr>
+          {% else %}
+            <tr><td colspan="5" class="muted">No active marketing roles.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

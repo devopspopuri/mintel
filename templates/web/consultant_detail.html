@@ -1,0 +1,305 @@
+{% extends "web/base.html" %}
+{% block title %}{{ consultant.name }} | Consultants | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ consultant.name }}</h1>
+      <p>{{ consultant.email }} · {{ consultant.marketing_role.name if consultant.marketing_role else "No marketing role" }}{% if consultant.target_industry_domain %} · {{ consultant.target_industry_domain }}{% endif %}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/consultants">Back</a>
+      <a class="button secondary" href="/consultants/{{ consultant.id }}/onboarding">Student View</a>
+      <a class="button secondary" href="/consultants/{{ consultant.id }}/journey">Journey Checklist</a>
+      <a class="button secondary" href="/consultants/{{ consultant.id }}/positioning">Positioning Brief</a>
+      {% if can_manage(user) %}<a class="button" href="/consultants/{{ consultant.id }}/edit">Edit Consultant</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ consultant.marketing_readiness_percent }}%</strong><span>Marketing readiness</span></div>
+    <div class="metric"><strong>{{ consultant.resume_readiness_score }}</strong><span>Resume score</span></div>
+    <div class="metric"><strong>{{ consultant.technical_readiness_score }}</strong><span>Technical score</span></div>
+    <div class="metric"><strong>{{ consultant.interview_readiness_score }}</strong><span>Interview score</span></div>
+    <div class="metric"><strong>{{ consultant.maas_sync_status|replace("_", " ")|title }}</strong><span>MAAS sync</span></div>
+  </section>
+
+  <section class="card stack consultant-command-center">
+    <div class="command-center-head">
+      <div>
+        <h2>Consultant Lifecycle Control Center</h2>
+        <p>Single operating view from onboarding to placement. Staff ownership, training path, readiness evidence, submissions, and interview feedback stay tied to this profile.</p>
+      </div>
+      <div class="owner-badge {% if 'Unassigned' in lifecycle_hub.owner_label %}warn{% endif %}">
+        <span>Primary Staff Owner</span>
+        <strong>{{ lifecycle_hub.owner_label }}</strong>
+      </div>
+    </div>
+    <div class="grid-2">
+      <section class="subtle-panel">
+        <strong>Current operating state</strong>
+        <ul class="stack-list">
+          <li><strong>Role/domain:</strong> {{ lifecycle_hub.role_label }} · {{ lifecycle_hub.domain_label }}</li>
+          <li><strong>Stage:</strong> {{ lifecycle_hub.stage_label }} · {{ lifecycle_hub.status_label }}</li>
+          <li><strong>Next action:</strong> {{ lifecycle_hub.next_action }}</li>
+          <li><strong>Recruiter owner:</strong> {{ lifecycle_hub.recruiter_label }}</li>
+        </ul>
+      </section>
+      <section class="subtle-panel">
+        <strong>Training and evidence assignment</strong>
+        <ul class="stack-list">
+          <li><strong>Assigned program:</strong> {{ lifecycle_hub.assigned_program }}</li>
+          <li><strong>Program domain:</strong> {{ lifecycle_hub.assigned_program_domain }}</li>
+          <li><strong>Journey readiness:</strong> {{ lifecycle_hub.readiness_score }}%{% if lifecycle_hub.total_activities %} · {{ lifecycle_hub.completed_activities }}/{{ lifecycle_hub.total_activities }} activities{% endif %}</li>
+          <li><strong>Evidence package:</strong> {{ lifecycle_hub.evidence_package.completed }}/{{ lifecycle_hub.evidence_package.total }} · {{ lifecycle_hub.evidence_package.percent }}%</li>
+        </ul>
+      </section>
+    </div>
+    <div class="lifecycle-rail">
+      {% for phase in lifecycle_hub.lifecycle %}
+        <article class="lifecycle-phase {{ phase.state }}">
+          <span>{{ loop.index }}</span>
+          <strong>{{ phase.label }}</strong>
+          <small>{{ phase.owner }}</small>
+          <p>{{ phase.outcome }}</p>
+        </article>
+      {% endfor %}
+    </div>
+    <div class="grid-2">
+      <section class="subtle-panel">
+        <strong>Training operating path</strong>
+        <div class="timeline-list">
+          {% for item in lifecycle_hub.training_path %}
+            <div><span>{{ item.label }}</span><strong>{{ item.title }}</strong><p>{{ item.detail }}</p></div>
+          {% endfor %}
+        </div>
+      </section>
+      <section class="subtle-panel">
+        <strong>Staff responsibility from onboarding to placement</strong>
+        <ul class="stack-list">
+          {% for item in lifecycle_hub.staff_responsibilities %}
+            <li><strong>{{ item.stage }} · {{ item.staff }}:</strong> {{ item.responsibility }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+    <section class="subtle-panel">
+      <strong>Consultant access unlocks</strong>
+      <div class="unlock-grid">
+        {% for item in lifecycle_hub.unlock_plan %}
+          <article class="unlock-card {{ item.status }}">
+            <span>{{ loop.index }}</span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.status|replace("_", " ")|title }}</small>
+            <p>{{ item.reason }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ lifecycle_hub.links.basics or '/training-basics' }}">Basics Prep</a>
+      <a class="button secondary" href="{{ lifecycle_hub.links.training or '/training-programs' }}">Assigned Training</a>
+      <a class="button secondary" href="{{ lifecycle_hub.links.journey or ('/consultants/' ~ consultant.id ~ '/journey') }}">Journey Checklist</a>
+      <a class="button secondary" href="{{ lifecycle_hub.links.matches or ('/reports/candidate-company-matches?consultant_id=' ~ consultant.id ~ '&min_match_score=35') }}">Company Matches</a>
+      <a class="button secondary" href="{{ lifecycle_hub.links.submissions or '/submissions' }}">Submissions</a>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>Consultant Snapshot</h2>
+      <ul class="stack-list">
+        <li><strong>Preferred name:</strong> {{ consultant.preferred_name or "Not set" }}</li>
+        <li><strong>Phone:</strong> {{ consultant.phone or "Not set" }}</li>
+        <li><strong>LinkedIn:</strong> {% if consultant.linkedin_url %}<a href="{{ consultant.linkedin_url }}">{{ consultant.linkedin_url }}</a>{% else %}Not set{% endif %}</li>
+        <li><strong>Location:</strong> {{ consultant.current_location or "Not set" }}</li>
+        <li><strong>Relocation:</strong> {{ consultant.relocation_preference or "Not set" }}</li>
+        <li><strong>Onsite:</strong> {{ consultant.onsite_preference or "Not set" }}</li>
+        <li><strong>Availability:</strong> {{ consultant.availability or "Not set" }}</li>
+        <li><strong>Rate:</strong> {{ consultant.rate_expectation or "Not set" }}</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h2>Visa And Ownership</h2>
+      <ul class="stack-list">
+        <li><strong>Authorization:</strong> {{ consultant.work_authorization or "Not set" }}</li>
+        <li><strong>Visa valid until:</strong> {{ consultant.visa_valid_until or "Not set" }}</li>
+        <li><strong>EAD valid until:</strong> {{ consultant.ead_valid_until or "Not set" }}</li>
+        <li><strong>Staff owner:</strong> {{ consultant.staff_owner or "Not set" }}</li>
+        <li><strong>Recruiter owner:</strong> {{ consultant.recruiter_owner or "Not set" }}</li>
+        <li><strong>Status:</strong> {{ consultant.marketing_status|replace("_", " ")|title }}</li>
+        <li><strong>Placement:</strong> {% if consultant.placement_company %}{{ consultant.placement_company }}{% if consultant.placement_role %} · {{ consultant.placement_role }}{% endif %}{% else %}Not placed{% endif %}</li>
+        <li><strong>Start date:</strong> {{ consultant.placement_start_date or "Not set" }}</li>
+      </ul>
+    </article>
+  </section>
+
+  {% if consultant.placement_company or consultant.placement_notes %}
+    <section class="card">
+      <h2>Placement And Post-Placement Support</h2>
+      <ul class="stack-list">
+        <li><strong>Company:</strong> {{ consultant.placement_company or "Not set" }}</li>
+        <li><strong>Role:</strong> {{ consultant.placement_role or "Not set" }}</li>
+        <li><strong>Start date:</strong> {{ consultant.placement_start_date or "Not set" }}</li>
+      </ul>
+      <p>{{ consultant.placement_notes or "No placement support notes recorded." }}</p>
+    </section>
+  {% endif %}
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>Experience</h2>
+      <p><strong>Years:</strong> {{ consultant.years_experience or "Not set" }}</p>
+      <p>{{ consultant.professional_experience or "No professional experience captured yet." }}</p>
+      <h2>Domain Experience</h2>
+      <p>{{ consultant.domain_experience or "No domain experience captured yet." }}</p>
+    </article>
+    <article class="card">
+      <h2>Education And Certifications</h2>
+      <p><strong>Education</strong></p>
+      <p>{{ consultant.education_summary or "No education details captured yet." }}</p>
+      <p><strong>Certifications</strong></p>
+      <p>{{ consultant.certifications or "No certifications captured yet." }}</p>
+    </article>
+  </section>
+
+  {% if consultant.india_company_name or consultant.india_name_as_per_aadhaar or consultant.india_pan_no or consultant.india_aadhaar_no or consultant.india_bank_name %}
+    <section class="card">
+      <h2>India Company Registration</h2>
+      <div class="grid-2">
+        <ul class="stack-list">
+          <li><strong>Company:</strong> {{ consultant.india_company_name or "Not set" }}</li>
+          <li><strong>Name as per Aadhaar:</strong> {{ consultant.india_name_as_per_aadhaar or "Not set" }}</li>
+          <li><strong>Father name:</strong> {{ consultant.india_father_name or "Not set" }}</li>
+          <li><strong>DOB:</strong> {{ consultant.india_dob or "Not set" }}</li>
+          <li><strong>PAN:</strong> {{ consultant.india_pan_no or "Not set" }}</li>
+          <li><strong>Aadhaar:</strong> {{ consultant.india_aadhaar_no or "Not set" }}</li>
+          <li><strong>Technology:</strong> {{ consultant.india_technology or "Not set" }}</li>
+          <li><strong>Mail ID:</strong> {{ consultant.india_mail_id or "Not set" }}</li>
+          <li><strong>Mobile:</strong> {{ consultant.india_mobile_num or "Not set" }}</li>
+        </ul>
+        <ul class="stack-list">
+          <li><strong>Offer designation:</strong> {{ consultant.india_offer_designation or "Not set" }}</li>
+          <li><strong>Current designation:</strong> {{ consultant.india_current_designation or "Not set" }}</li>
+          <li><strong>Offer package:</strong> {{ consultant.india_offer_package or "Not set" }}</li>
+          <li><strong>Current package:</strong> {{ consultant.india_current_package or "Not set" }}</li>
+          <li><strong>Offer date:</strong> {{ consultant.india_offer_date or "Not set" }}</li>
+          <li><strong>Joining date:</strong> {{ consultant.india_joining_date or "Not set" }}</li>
+          <li><strong>Resignation date:</strong> {{ consultant.india_resignation_date or "Not set" }}</li>
+          <li><strong>Relieving date:</strong> {{ consultant.india_relieving_date or "Not set" }}</li>
+          <li><strong>Bank:</strong> {{ consultant.india_bank_name or "Not set" }}</li>
+          <li><strong>Bank account:</strong> {{ consultant.india_bank_account_num or "Not set" }}</li>
+        </ul>
+      </div>
+      <p><strong>Native address</strong></p>
+      <p>{{ consultant.india_native_address or "Not set" }}</p>
+      <p><strong>PF/UAN notes</strong></p>
+      <p>{{ consultant.india_pf_uan_notes or "Not set" }}</p>
+      <p><strong>Mandatory document notes</strong></p>
+      <p>{{ consultant.india_document_notes or "Resume, Aadhaar, and PAN attachment status not set." }}</p>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Before Marketing Checklist</h2>
+    <div class="listbar"><span>{{ readiness_completed }} of {{ readiness_total }} completed</span><span>{{ consultant.marketing_readiness_percent }}% ready</span></div>
+    <div class="flash {% if marketing_ready_gate.ready %}success{% else %}warn{% endif %}">
+      <strong>Marketing Ready Gate:</strong>
+      {% if marketing_ready_gate.ready %}
+        Resume ready, project proof, mock passed, final evidence package, and staff owner are complete.
+      {% else %}
+        Missing {{ marketing_ready_gate.missing_labels|join(", ") }}.
+      {% endif %}
+    </div>
+    <div class="checkbox-grid">
+      {% for item in readiness_items %}
+        <div class="check-row">
+          <input type="checkbox" disabled {% if item.done %}checked{% endif %}>
+          <span><strong>{{ item.label }}</strong><span>{{ "Completed" if item.done else "Pending" }}</span></span>
+        </div>
+      {% endfor %}
+    </div>
+    {% if consultant.checklist_notes %}<p>{{ consultant.checklist_notes }}</p>{% endif %}
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>Resume And Project Story</h2>
+      <ul class="stack-list">
+        <li><strong>Base resume:</strong> {{ consultant.base_resume_reference or "Not set" }}</li>
+        <li><strong>Latest project:</strong> {{ consultant.latest_project_title or "Not set" }}</li>
+        <li><strong>Project domain:</strong> {{ consultant.latest_project_domain or "Not set" }}</li>
+      </ul>
+      <p><strong>Resume summary</strong></p>
+      <p>{{ consultant.resume_summary or "No resume summary recorded." }}</p>
+      <p><strong>Latest project summary</strong></p>
+      <p>{{ consultant.latest_project_summary or "No latest project summary recorded." }}</p>
+    </article>
+    <article class="card">
+      <h2>Marketing Readiness Notes</h2>
+      <p><strong>Strengths</strong></p>
+      <p>{{ consultant.profile_strengths or "No strengths captured yet." }}</p>
+      <p><strong>Gaps</strong></p>
+      <p>{{ consultant.profile_gaps or "No gaps captured yet." }}</p>
+      <p><strong>Marketing notes</strong></p>
+      <p>{{ consultant.marketing_notes or "No marketing notes recorded." }}</p>
+    </article>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>MAAS Exchange</h2>
+      <ul class="stack-list">
+        <li><strong>MAAS profile ID:</strong> {{ consultant.maas_profile_id or "Not mapped" }}</li>
+        <li><strong>Sync status:</strong> {{ consultant.maas_sync_status|replace("_", " ")|title }}</li>
+        <li><strong>Last synced:</strong> {{ consultant.maas_last_synced_at or "Not synced" }}</li>
+      </ul>
+      <p>{{ consultant.maas_payload_notes or "No exchange notes captured yet." }}</p>
+    </article>
+    <article class="card">
+      <h2>Activity Summary</h2>
+      <ul class="stack-list">
+        <li><strong>Resume versions:</strong> {{ consultant.resume_versions|length }}</li>
+        <li><strong>Submissions:</strong> {{ consultant.submissions|length }}</li>
+        <li><strong>Mock interviews:</strong> {{ consultant.mock_interviews|length }}</li>
+        <li><strong>Internal notes:</strong> {{ consultant.notes or "No notes recorded." }}</li>
+      </ul>
+    </article>
+  </section>
+
+  <style>
+    .consultant-command-center { gap: 14px; }
+    .command-center-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .command-center-head h2, .command-center-head p { margin: 0; }
+    .owner-badge { background: #ecfdf5; border: 1px solid #99d9ce; border-radius: 8px; min-width: 220px; padding: 12px; }
+    .owner-badge.warn { background: #fff8f6; border-color: #f1b5ad; }
+    .owner-badge span { color: var(--muted); display: block; font-size: 12px; font-weight: 850; text-transform: uppercase; }
+    .owner-badge strong { color: var(--ink); display: block; margin-top: 4px; }
+    .lifecycle-rail { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .lifecycle-phase { background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 6px; min-height: 150px; padding: 12px; }
+    .lifecycle-phase span { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); display: inline-flex; font-size: 12px; font-weight: 850; height: 28px; justify-content: center; width: 28px; }
+    .lifecycle-phase strong, .lifecycle-phase small, .lifecycle-phase p { display: block; }
+    .lifecycle-phase small { color: var(--muted); font-weight: 800; line-height: 1.35; }
+    .lifecycle-phase p { font-size: 13px; line-height: 1.4; margin: 0; }
+    .lifecycle-phase.completed { background: #ecfdf5; border-color: #99d9ce; }
+    .lifecycle-phase.current { background: #fffbeb; border-color: #f4c76f; }
+    .timeline-list { display: grid; gap: 8px; }
+    .timeline-list div { border-left: 4px solid var(--accent); padding-left: 10px; }
+    .timeline-list span { color: var(--muted); display: block; font-size: 12px; font-weight: 850; text-transform: uppercase; }
+    .timeline-list strong { display: block; }
+    .timeline-list p { margin: 2px 0 0; }
+    .unlock-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+    .unlock-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 5px; padding: 10px; }
+    .unlock-card span { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); display: inline-flex; font-size: 11px; font-weight: 850; height: 24px; justify-content: center; width: 24px; }
+    .unlock-card small { color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+    .unlock-card p { font-size: 12px; line-height: 1.35; margin: 0; }
+    .unlock-card.unlocked { background: #ecfdf5; border-color: #99d9ce; }
+    .unlock-card.next { background: #fffbeb; border-color: #f4c76f; }
+    .unlock-card.locked { opacity: .78; }
+    @media (max-width: 1100px) {
+      .command-center-head { display: grid; }
+      .owner-badge { min-width: 0; }
+      .lifecycle-rail { grid-template-columns: 1fr; }
+      .unlock-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}

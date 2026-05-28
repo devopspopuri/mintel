@@ -1,0 +1,40 @@
+{% extends "web/base.html" %}
+{% block title %}Edit {{ region.name }} | Region | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Edit Region</h1>
+      <p>{{ region.name }} · {{ region.code }}</p>
+    </div>
+    <a class="button secondary" href="/regions/{{ region.id }}">Cancel</a>
+  </section>
+
+  <form method="post" action="/regions/{{ region.id }}" class="stack">
+    <section class="card">
+      <h2>Ownership</h2>
+      <div class="grid-2">
+        <label>Owner Name<input name="staff_owner_name" value="{{ region.staff_owner_name }}" placeholder="Staff owner"></label>
+        <label>Owner Email<input type="email" name="staff_owner_email" value="{{ region.staff_owner_email }}" placeholder="owner@example.com"></label>
+      </div>
+      <label class="check-inline"><input type="checkbox" name="active" value="true" {% if region.active %}checked{% endif %}> Active</label>
+    </section>
+
+    <section class="card">
+      <h2>Reference</h2>
+      <table>
+        <tbody>
+          <tr><th>Region</th><td>{{ region.name }}</td></tr>
+          <tr><th>Code</th><td>{{ region.code }}</td></tr>
+          <tr><th>Market Zone</th><td>{{ meta.tier if meta else "N/A" }}</td></tr>
+          <tr><th>States</th><td>{% if meta %}{{ meta.states|join(", ") }}{% else %}<span class="muted">Not mapped</span>{% endif %}</td></tr>
+          <tr><th>Description</th><td>{{ meta.description if meta else region.description }}</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="inline-actions">
+      <a class="button secondary" href="/regions/{{ region.id }}">Cancel</a>
+      <button type="submit">Update Region</button>
+    </div>
+  </form>
+{% endblock %}

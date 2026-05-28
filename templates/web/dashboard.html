@@ -1,0 +1,98 @@
+{% extends "web/base.html" %}
+{% block title %}Dashboard | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Dashboard</h1>
+      <p>USCIS-backed company analysis and pursuit workflow.</p>
+    </div>
+    <a class="button" href="/uscis/analysis">Analyze Companies</a>
+  </section>
+  <section class="metrics">
+    <div class="metric"><strong>{{ totals.companies }}</strong><span>Companies</span></div>
+    <div class="metric"><strong>{{ totals.uscis_rows }}</strong><span>USCIS rows</span></div>
+    <div class="metric"><strong>{{ totals.promoted }}</strong><span>Promoted</span></div>
+    <div class="metric"><strong>{{ totals.regions }}</strong><span>Regions</span></div>
+    <div class="metric"><strong>{{ totals.unassigned }}</strong><span>Unassigned pursuits</span></div>
+    <div class="metric"><strong>{{ totals.needs_owner }}</strong><span>Needs owner</span></div>
+    <div class="metric"><strong>{{ totals.my_queue }}</strong><span>My company queue</span></div>
+    <div class="metric"><strong>{{ totals.overdue }}</strong><span>Overdue follow-ups</span></div>
+  </section>
+  <section class="card stack">
+    <div class="page-head" style="margin-bottom: 0;">
+      <div>
+        <h2>Consultant Onboarding Queue</h2>
+        <p>Current training, evidence, mock, and marketing-readiness work for consultants in your coverage.</p>
+      </div>
+      <a class="button secondary" href="/consultant-onboarding-workbench">Open Workbench</a>
+    </div>
+    <section class="metrics compact">
+      <div class="metric"><strong>{{ consultant_workbench.summary.consultants }}</strong><span>Visible consultants</span></div>
+      <div class="metric"><strong>{{ consultant_workbench.summary.blocked }}</strong><span>Blocked</span></div>
+      <div class="metric"><strong>{{ consultant_workbench.summary.overdue }}</strong><span>Overdue</span></div>
+      <div class="metric"><strong>{{ consultant_workbench.summary.missing_training }}</strong><span>Missing training</span></div>
+      <div class="metric"><strong>{{ consultant_workbench.summary.market_ready }}</strong><span>Marketing ready</span></div>
+    </section>
+    <table class="data-list">
+      <thead><tr><th class="sno">S No</th><th>Consultant</th><th>Role / Domain</th><th>Stage</th><th>Next Action</th><th class="right">Readiness</th></tr></thead>
+      <tbody>
+        {% for row in consultant_workbench.rows %}
+          <tr>
+            <td class="sno">{{ loop.index }}</td>
+            <td><a href="/consultants/{{ row.consultant.id }}/journey">{{ row.consultant.name or row.consultant.email }}</a><div class="compact-meta">{{ row.consultant.staff_owner or "Unassigned owner" }}</div></td>
+            <td>{{ row.consultant.marketing_role.name if row.consultant.marketing_role else "Role not set" }}<div class="compact-meta">{{ row.consultant.target_industry_domain or "Domain not set" }}</div></td>
+            <td><span class="pill {% if row.blocked_count %}hot{% elif row.overdue_count %}warn{% endif %}">{{ row.stage_label }}</span></td>
+            <td>{{ row.journey.next_action or (row.next_activity.title if row.next_activity else "No next action") }}</td>
+            <td class="right">{{ row.journey.readiness_score }}%</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">No consultant onboarding work is visible for your account.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <h2>My Company Queue</h2>
+  <table>
+    <thead><tr><th class="sno">S No</th><th>Company</th><th>Region</th><th>Status</th><th>Due</th><th>Next Action</th></tr></thead>
+    <tbody>
+      {% for pursuit in my_queue %}
+        <tr><td class="sno">{{ loop.index }}</td><td><a href="/pursuits/{{ pursuit.id }}">{{ pursuit.company.name }}</a></td><td>{{ pursuit.region.name if pursuit.region else "Unassigned" }}</td><td><span class="pill">{{ pursuit.status.replace("_", " ") }}</span></td><td>{{ pursuit.next_follow_up_date or "Not set" }}</td><td>{{ pursuit.next_action or "No next action" }}</td></tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">No active companies in your queue.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Needs Owner</h2>
+  <table>
+    <thead><tr><th class="sno">S No</th><th>Company</th><th>Region</th><th>Reason</th><th></th></tr></thead>
+    <tbody>
+      {% for pursuit in owner_needed %}
+        <tr><td class="sno">{{ loop.index }}</td><td><a href="/pursuits/{{ pursuit.id }}">{{ pursuit.company.name }}</a></td><td>{{ pursuit.region.name if pursuit.region else "Unassigned" }}</td><td>{% if not pursuit.region_id %}No region{% elif not pursuit.assigned_staff_email %}No owner{% else %}Region has no active group owner{% endif %}</td><td class="right"><a class="button secondary" href="/pursuits?queue=needs_owner">Resolve</a></td></tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">Every active pursuit has an owner path.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Follow-up Queue</h2>
+  <table>
+    <thead><tr><th class="sno">S No</th><th>Company</th><th>Owner</th><th>Due</th><th>Next Action</th></tr></thead>
+    <tbody>
+      {% for pursuit in followups %}
+        <tr><td class="sno">{{ loop.index }}</td><td><a href="/pursuits/{{ pursuit.id }}">{{ pursuit.company.name }}</a></td><td>{{ pursuit.assigned_staff_name or "Unassigned" }}</td><td>{{ pursuit.next_follow_up_date }}</td><td>{{ pursuit.next_action or "No next action" }}</td></tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No follow-ups scheduled.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Top Sponsorship Signals</h2>
+  <table>
+    <thead><tr><th class="sno">S No</th><th>Company</th><th>Tier</th><th class="right">Approvals ↓</th><th class="right">Denials</th><th class="right">Score ↓</th></tr></thead>
+    <tbody>
+      {% for company in top_companies %}
+        <tr><td class="sno">{{ loop.index }}</td><td>{{ company.name }}</td><td><span class="pill">{{ company.sponsorship_tier }}</span></td><td class="right">{{ company.h1b_approval_count }}</td><td class="right">{{ company.h1b_denial_count }}</td><td class="right">{{ company.opt_friendliness_score }}</td></tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">Import USCIS data to populate analysis.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

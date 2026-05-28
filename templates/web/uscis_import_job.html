@@ -1,0 +1,15 @@
+{% extends "web/base.html" %}
+{% block title %}Import Job #{{ job.id }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Import Job #{{ job.id }}</h1>
+      <p>{{ job.source_file }}</p>
+    </div>
+    <div class="inline-actions">
+      {% if job.status in ["queued", "running"] %}<a class="button secondary" href="/uscis/import/jobs/{{ job.id }}">Refresh</a>{% endif %}
+      <a class="button secondary" href="/uscis/import">Import Data</a>
+    </div>
+  </section>
+  {% include "web/partials/uscis_import_job_status.html" %}
+{% endblock %}

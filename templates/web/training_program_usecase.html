@@ -1,0 +1,397 @@
+{% extends "web/base.html" %}
+{% block title %}{{ usecase.title }} | {{ program.title }} | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-programs">Training Programs</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-programs/{{ program.id }}">{{ program.marketing_role.name }} · {{ program.industry_domain }}</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-programs/{{ program.id }}?section=usecases">Use Cases</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">Use Case {{ usecase_index }}</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <h1>{{ usecase.title }}</h1>
+      <p>{{ program.industry_domain }} · {{ program.marketing_role.name }} · Use Case {{ usecase_index }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/training-programs/{{ program.id }}?section=usecases">Back To Use Cases</a>
+      <a class="button secondary" href="/training-programs/{{ program.id }}">Program Overview</a>
+    </div>
+  </section>
+
+  <section class="usecase-map">
+    <h2>Use Case Visual Map</h2>
+    <div class="usecase-map-grid">
+      <div class="usecase-map-card" data-step="1">
+        <strong>Business Trigger</strong>
+        <span>{{ usecase.businessProblem }}</span>
+      </div>
+      <div class="usecase-map-card" data-step="2">
+        <strong>Systems In Scope</strong>
+        <span>{% for system in usecase.systemsTouched[:3] %}{{ system }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+      </div>
+      <div class="usecase-map-card" data-step="3">
+        <strong>{{ program.marketing_role.name }} Work</strong>
+        <span>{{ usecase.deliveredScope[0] if usecase.deliveredScope else usecase.roleBoundary }}</span>
+      </div>
+      <div class="usecase-map-card" data-step="4">
+        <strong>Jira Delivery</strong>
+        <span>{% for story in usecase.jiraStories[:5] %}{{ story.key }}{% if not loop.last %} → {% endif %}{% endfor %}</span>
+      </div>
+      <div class="usecase-map-card" data-step="5">
+        <strong>Evidence</strong>
+        <span>{% for item in usecase.evidenceToExplain[:3] %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+      </div>
+      <div class="usecase-map-card" data-step="6">
+        <strong>Interview Outcome</strong>
+        <span>Explain problem, ownership, implementation, validation, production support, and measurable improvement.</span>
+      </div>
+    </div>
+    <div class="usecase-lanes">
+      <div class="usecase-lane">
+        <strong>Product Flow</strong>
+        <ul class="stack-list">{% for system in usecase.systemsTouched[:5] %}<li>{{ system }}</li>{% endfor %}</ul>
+      </div>
+      <div class="usecase-lane">
+        <strong>Engineering Flow</strong>
+        <ul class="stack-list">{% for item in usecase.deliveredScope[:5] %}<li>{{ item }}</li>{% endfor %}</ul>
+      </div>
+      <div class="usecase-lane">
+        <strong>Proof To Show</strong>
+        <ul class="stack-list">{% for item in usecase.evidenceToExplain[:5] %}<li>{{ item }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="architecture-diagram">
+    <h2>Use Case Architecture View</h2>
+    <div class="arch-layers">
+      <div class="arch-layer"><strong>Channel</strong>Portal, API, batch job, service request, or operations action starts the flow.</div>
+      <div class="arch-layer"><strong>Access</strong>DNS, WAF, identity, gateway, load balancer, routing, and policy controls.</div>
+      <div class="arch-layer"><strong>Runtime</strong>Application service, Kubernetes workload, automation job, data pipeline, model endpoint, or database workflow.</div>
+      <div class="arch-layer"><strong>Dependency</strong>Database, queue, third-party system, platform service, downstream product, or reporting layer.</div>
+      <div class="arch-layer"><strong>Operations</strong>Metrics, logs, alerts, tickets, runbook, validation, RCA, and support handoff.</div>
+    </div>
+    <div class="arch-canvas">
+      <div class="arch-node problem">
+        <strong>Business / Support Problem</strong>
+        <ul>
+          <li>{{ usecase.businessProblem }}</li>
+        </ul>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <strong>Systems In Scope</strong>
+        <ul>
+          {% for system in usecase.systemsTouched[:4] %}
+            <li>{{ system }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <strong>Engineering Change</strong>
+        <ul>
+          {% for item in usecase.deliveredScope[:4] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node role">
+        <strong>{{ program.marketing_role.name }} Boundary</strong>
+        <ul>
+          <li>{{ usecase.roleBoundary }}</li>
+        </ul>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node support">
+        <strong>Validation / Evidence</strong>
+        <ul>
+          {% for item in usecase.evidenceToExplain[:4] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="arch-evidence">
+      {% for item in usecase.evidenceToExplain[:4] %}
+        <span>{{ item }}</span>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if usecase.businessAnalystLens %}
+    <section class="card stack">
+      <h2>Business Analyst And Domain View</h2>
+      <p>{{ usecase.businessAnalystLens.businessCapability }}</p>
+      <div class="grid-2">
+        <section class="subtle-panel">
+          <strong>Actors and workflow</strong>
+          <div class="tag-cloud">{% for item in usecase.businessAnalystLens.businessActors %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+          <ol class="stack-list">{% for item in usecase.businessAnalystLens.businessWorkflow %}<li>{{ item }}</li>{% endfor %}</ol>
+        </section>
+        <section class="subtle-panel">
+          <strong>Rules, exceptions, and KPIs</strong>
+          <ul class="stack-list">
+            {% for item in usecase.businessAnalystLens.businessRules %}<li>{{ item }}</li>{% endfor %}
+            {% for item in usecase.businessAnalystLens.kpisAndReports %}<li>KPI/report: {{ item }}</li>{% endfor %}
+          </ul>
+        </section>
+      </div>
+      <div class="grid-2">
+        <section class="subtle-panel">
+          <strong>Business/system touchpoints</strong>
+          <div class="tag-cloud">{% for item in usecase.businessAnalystLens.systemTouchpoints %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+          <strong>Domain vocabulary</strong>
+          <div class="tag-cloud">{% for item in usecase.businessAnalystLens.domainVocabulary %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+        </section>
+        <section class="subtle-panel">
+          <strong>BA acceptance criteria</strong>
+          <ul class="stack-list">{% for item in usecase.businessAnalystLens.baAcceptanceCriteria %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+      </div>
+      <strong>BA review questions</strong>
+      <ul class="stack-list">{% for item in usecase.businessAnalystLens.businessQuestions %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
+  {% if usecase.projectManagerLens %}
+    <section class="card stack">
+      <h2>Project Manager Delivery View</h2>
+      <p>{{ usecase.projectManagerLens.projectObjective }}</p>
+      <div class="grid-2">
+        <section class="subtle-panel">
+          <strong>Scope and stakeholders</strong>
+          <ul class="stack-list">{% for item in usecase.projectManagerLens.scope %}<li>{{ item }}</li>{% endfor %}</ul>
+          <div class="tag-cloud">{% for item in usecase.projectManagerLens.stakeholders %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+        </section>
+        <section class="subtle-panel">
+          <strong>Dependencies and milestones</strong>
+          <div class="tag-cloud">{% for item in usecase.projectManagerLens.dependencies %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+          <ol class="stack-list">{% for item in usecase.projectManagerLens.milestones %}<li>{{ item }}</li>{% endfor %}</ol>
+        </section>
+      </div>
+      <div class="grid-2">
+        <section class="subtle-panel">
+          <strong>Delivery risks</strong>
+          <ul class="stack-list">
+            {% for item in usecase.projectManagerLens.deliveryRisks %}
+              <li><strong>{{ item.risk }}:</strong> {{ item.impact }} Mitigation: {{ item.mitigation }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+        <section class="subtle-panel">
+          <strong>Status and acceptance</strong>
+          <ul class="stack-list">
+            {% for item in usecase.projectManagerLens.statusReporting %}<li>{{ item }}</li>{% endfor %}
+            {% for item in usecase.projectManagerLens.pmAcceptanceCriteria %}<li>{{ item }}</li>{% endfor %}
+          </ul>
+        </section>
+      </div>
+      <strong>Delivery evidence</strong>
+      <div class="tag-cloud">{% for item in usecase.projectManagerLens.deliveryEvidence %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+    </section>
+  {% endif %}
+
+  {% if usecase.qaTestLens or usecase.productionSupportLens or usecase.securityComplianceLens or usecase.dataReportingLens or usecase.productOwnerLens %}
+    <section class="card stack">
+      <h2>QA, Operations, Security, Data, And Product Views</h2>
+      <div class="grid-2">
+        {% if usecase.qaTestLens %}
+          <section class="subtle-panel">
+            <strong>QA / Test Lead view</strong>
+            <p>{{ usecase.qaTestLens.testStrategy }}</p>
+            <ul class="stack-list">
+              {% for item in usecase.qaTestLens.releaseGates[:4] %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+        {% if usecase.productionSupportLens %}
+          <section class="subtle-panel">
+            <strong>Production Support / Operations view</strong>
+            <p>{{ usecase.productionSupportLens.supportModel }}</p>
+            <ul class="stack-list">
+              {% for item in usecase.productionSupportLens.opsHandoff[:4] %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+        {% if usecase.securityComplianceLens %}
+          <section class="subtle-panel">
+            <strong>Security / Compliance view</strong>
+            <ul class="stack-list">
+              {% for item in usecase.securityComplianceLens.securityControls[:3] %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+            <div class="tag-cloud">{% for item in usecase.securityComplianceLens.complianceEvidence[:5] %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+          </section>
+        {% endif %}
+        {% if usecase.dataReportingLens %}
+          <section class="subtle-panel">
+            <strong>Data / Reporting view</strong>
+            <p>{{ usecase.dataReportingLens.dataFlow }}</p>
+            <ul class="stack-list">
+              {% for item in usecase.dataReportingLens.reportingSignals[:4] %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+        {% if usecase.productOwnerLens %}
+          <section class="subtle-panel">
+            <strong>Product Owner view</strong>
+            <p>{{ usecase.productOwnerLens.productValue }}</p>
+            <ul class="stack-list">
+              {% for item in usecase.productOwnerLens.productAcceptanceCriteria[:3] %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if usecase.architectLens %}
+    <section class="card stack">
+      <h2>Architect And SME View</h2>
+      <p>{{ usecase.architectLens.seniorExplanation }}</p>
+      <div class="grid-2">
+        <section class="subtle-panel">
+          <strong>Decision rationale</strong>
+          <ul class="stack-list">{% for item in usecase.architectLens.decisionRationale %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+        <section class="subtle-panel">
+          <strong>Tradeoffs</strong>
+          <ul class="stack-list">{% for item in usecase.architectLens.architecturalTradeoffs %}<li>{{ item }}</li>{% endfor %}</ul>
+        </section>
+      </div>
+      <div class="grid-2">
+        <section class="subtle-panel">
+          <strong>Constraints and controls</strong>
+          <ul class="stack-list">
+            {% for item in usecase.architectLens.constraints %}<li>{{ item }}</li>{% endfor %}
+            {% for item in usecase.architectLens.nfrsAndControls %}<li>{{ item }}</li>{% endfor %}
+          </ul>
+        </section>
+        <section class="subtle-panel">
+          <strong>Architecture risks</strong>
+          <ul class="stack-list">
+            {% for item in usecase.architectLens.riskRegister %}
+              <li><strong>{{ item.risk }}:</strong> {{ item.impact }} Mitigation: {{ item.mitigation }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      </div>
+      <strong>Architect review questions</strong>
+      <ul class="stack-list">{% for item in usecase.architectLens.reviewQuestions %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
+  <section class="card stack">
+    <h2>Functional Implementation Scenario</h2>
+    <p>{{ usecase.projectScenario }}</p>
+    <div class="grid-2">
+      <section class="subtle-panel">
+        <strong>System behavior and implementation sequence</strong>
+        <ol class="stack-list">
+          {% for activity in usecase.implementationActivities %}
+            <li>
+              <strong>{{ activity.phase }}:</strong> {{ activity.activity }}
+              <br><span class="muted">Artifacts: {{ activity.artifacts|join(", ") }}</span>
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+      <section class="subtle-panel">
+        <strong>Sandbox version of the same flow</strong>
+        <ol class="stack-list">{% for item in usecase.replicationLab %}<li>{{ item }}</li>{% endfor %}</ol>
+      </section>
+    </div>
+    <div class="grid-2">
+      <section class="subtle-panel">
+        <strong>Functional success conditions</strong>
+        <ul class="stack-list">{% for item in usecase.implementationAcceptanceCriteria %}<li>{{ item }}</li>{% endfor %}</ul>
+      </section>
+      <section class="subtle-panel">
+        <strong>Evidence package</strong>
+        <ul class="stack-list">{% for item in usecase.scenarioArtifactPack %}<li>{{ item }}</li>{% endfor %}</ul>
+      </section>
+    </div>
+    <strong>Project narrative</strong>
+    <ul class="stack-list">{% for item in usecase.consultantCanSay %}<li>{{ item }}</li>{% endfor %}</ul>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Business Problem</h2>
+      <ul class="stack-list"><li>{{ usecase.businessProblem }}</li></ul>
+      <h2>Role Boundary</h2>
+      <ul class="stack-list"><li>{{ usecase.roleBoundary }}</li></ul>
+    </section>
+    <section class="card">
+      <h2>Systems Touched</h2>
+      <div class="tag-cloud">{% for system in usecase.systemsTouched %}<span class="tag">{{ system }}</span>{% endfor %}</div>
+      <h2>Evidence To Explain</h2>
+      <ul class="stack-list">{% for item in usecase.evidenceToExplain %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+  </div>
+
+  <section class="card stack">
+    <h2>Workflow</h2>
+    <div class="workflow-visual">
+      <div class="visual-flow">
+        {% for node in usecase.workflow.diagram.split("->") %}
+          <span class="visual-node">{{ node.strip() }}</span>
+          {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    <ol class="stack-list">{% for step in usecase.workflow.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+  </section>
+
+  <h2>5 Jira Stories To Implement</h2>
+  <section class="workflow-visual">
+    <h2>Implementation Flow</h2>
+    <div class="visual-state">
+      {% for story in usecase.jiraStories %}
+        <span class="visual-node">{{ story.key }}</span>
+        {% if not loop.last %}<span class="visual-arrow">→</span>{% endif %}
+      {% endfor %}
+    </div>
+    <p class="workflow-note">Each story builds the use case from current-state discovery through design, implementation, validation, and final evidence.</p>
+  </section>
+  <div class="stack">
+    {% for story in usecase.jiraStories %}
+      <section class="card">
+        <h2>{{ story.key }} · {{ story.title }}</h2>
+        <ul class="stack-list"><li>{{ story.story }}</li></ul>
+        <strong>Acceptance Criteria</strong>
+        <ul class="stack-list">{% for criterion in story.acceptanceCriteria %}<li>{{ criterion }}</li>{% endfor %}</ul>
+        <ul class="stack-list"><li><strong>Implementation notes:</strong> {{ story.implementationNotes }}</li></ul>
+      </section>
+    {% endfor %}
+  </div>
+
+  {% set question_groups = [
+    ("10 Interview Questions", usecase.interviewQuestionSet),
+    ("5 Architecture Questions", usecase.architectureQuestionSet),
+    ("5 System Design Questions", usecase.systemDesignQuestionSet),
+    ("5 Scenario-Based Questions", usecase.scenarioQuestionSet),
+    ("5 Troubleshooting Questions", usecase.troubleshootingQuestionSet)
+  ] %}
+  {% for title, questions in question_groups %}
+    <h2>{{ title }}</h2>
+    <div class="stack">
+      {% for item in questions %}
+        <section class="card">
+          <h2>{{ loop.index }}. {{ item.question }}</h2>
+          <strong>Answer</strong>
+          <ul class="stack-list">
+            {% for bullet in item.answerBullets or [item.answer] %}
+              <li>{{ bullet }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "web/base.html" %}
+{% block title %}Onboarding Questionnaire | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head print-hide">
+    <div>
+      <h1>Consultant Onboarding Questionnaire</h1>
+      <p>Printable intake form for Mintel staff. The same fields can later be collected from MTAS and synced into the consultant profile.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/public/consultant-intake">Shareable Intake Link</a>
+      {% if consultant %}
+        <a class="button secondary" href="/consultants/{{ consultant.id }}/edit">Edit Consultant</a>
+        <a class="button secondary" href="/consultants/{{ consultant.id }}">Profile</a>
+      {% else %}
+        <a class="button secondary" href="/consultants/new">Add Consultant</a>
+      {% endif %}
+      <button type="button" onclick="window.print()">Print</button>
+    </div>
+  </section>
+
+  <section class="print-sheet">
+    <header class="questionnaire-cover">
+      <div>
+        <p class="eyebrow">Mintel Consultant Intake</p>
+        <h1>Onboarding Questionnaire</h1>
+        <p>Use this form during initial onboarding to collect role, domain, project, training, and ownership information before the consultant enters the Mintel readiness workflow.</p>
+      </div>
+      <dl>
+        <div><dt>Consultant</dt><dd>{{ consultant.name if consultant else "Blank Intake" }}</dd></div>
+        <div><dt>Email</dt><dd>{{ consultant.email if consultant else "" }}</dd></div>
+        <div><dt>Generated</dt><dd>{{ generated_on }}</dd></div>
+      </dl>
+    </header>
+
+    <article class="questionnaire-note">
+      <strong>Future MTAS connection</strong>
+      <span>Fields marked with a source key can be mapped directly when MTAS begins collecting consultant intake. Until then, staff can print this form, complete it with the consultant, and enter confirmed values into Mintel.</span>
+    </article>
+
+    {% for section in questionnaire_sections %}
+      <article class="questionnaire-section">
+        <div class="questionnaire-section-head">
+          <h2>{{ section.title }}</h2>
+          <p>{{ section.purpose }}</p>
+        </div>
+        <table class="questionnaire-table">
+          <thead>
+            <tr>
+              <th class="q-no">#</th>
+              <th>Question</th>
+              <th>Current / Answer</th>
+              <th>MTAS Source Key</th>
+              <th>Expected Format</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, label, source_key, expected in section.questions %}
+              <tr>
+                <td class="q-no">{{ loop.index }}</td>
+                <td><strong>{{ label }}</strong></td>
+                <td>
+                  {% if key and value_by_key.get(key) %}
+                    <div class="prefill">{{ value_by_key.get(key) }}</div>
+                    <div class="write-line"></div>
+                  {% else %}
+                    <div class="write-line"></div>
+                    <div class="write-line"></div>
+                  {% endif %}
+                </td>
+                <td><code>{{ source_key }}</code></td>
+                <td>{{ expected }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </article>
+    {% endfor %}
+
+    <article class="questionnaire-section">
+      <div class="questionnaire-section-head">
+        <h2>Staff Verification Checklist</h2>
+        <p>Use this as the handoff checklist before the consultant receives expanded readiness access.</p>
+      </div>
+      <div class="print-check-grid">
+        {% for item in [
+          "Profile intake completed",
+          "Work authorization reviewed",
+          "Education and certifications captured",
+          "Marketing role selected",
+          "Target domain selected",
+          "Basics Prep access enabled",
+          "Role/domain training lock confirmed",
+          "Base resume received",
+          "Project story intake completed",
+          "Evidence gaps identified",
+          "Staff owner assigned",
+          "Recruiter owner assigned"
+        ] %}
+          <label><span></span>{{ item }}</label>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <style>
+    .print-sheet { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
+    .questionnaire-cover { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); gap: 18px; border-bottom: 2px solid var(--line); padding-bottom: 16px; margin-bottom: 14px; }
+    .questionnaire-cover h1 { font-size: 32px; }
+    .questionnaire-cover p { margin: 8px 0 0; line-height: 1.5; }
+    .eyebrow { margin: 0; color: var(--accent-dark); font-size: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+    .questionnaire-cover dl { display: grid; gap: 8px; margin: 0; }
+    .questionnaire-cover div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fbfcfd; }
+    .questionnaire-cover dt { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+    .questionnaire-cover dd { margin: 3px 0 0; color: var(--ink); font-weight: 800; min-height: 20px; }
+    .questionnaire-note { display: grid; gap: 4px; border: 1px solid rgba(15, 118, 110, .28); border-left: 5px solid var(--accent); border-radius: 8px; background: #f0fdfa; padding: 12px; margin-bottom: 14px; }
+    .questionnaire-note span { color: var(--muted); line-height: 1.45; }
+    .questionnaire-section { break-inside: avoid; margin-top: 16px; }
+    .questionnaire-section-head { display: grid; gap: 4px; margin-bottom: 8px; }
+    .questionnaire-section-head h2 { margin: 0; }
+    .questionnaire-section-head p { margin: 0; line-height: 1.45; }
+    .questionnaire-table th, .questionnaire-table td { vertical-align: top; }
+    .questionnaire-table code { color: var(--accent-dark); font-size: 12px; white-space: nowrap; }
+    .q-no { width: 42px; text-align: right; color: var(--muted); }
+    .prefill { color: var(--ink); line-height: 1.45; white-space: pre-wrap; }
+    .write-line { border-bottom: 1px solid #aeb8c5; min-height: 24px; margin-top: 6px; }
+    .print-check-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .print-check-grid label { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font-weight: 750; }
+    .print-check-grid span { width: 16px; height: 16px; border: 1.5px solid var(--muted); border-radius: 3px; flex: 0 0 auto; }
+    @media print {
+      @page { margin: .45in; }
+      body { background: #fff; color: #111827; }
+      .sidebar, .topbar, .print-hide, .sidebar-backdrop { display: none !important; }
+      .shell { display: block; }
+      .content { max-width: none; padding: 0; }
+      .print-sheet { border: 0; padding: 0; }
+      .questionnaire-cover { grid-template-columns: 1.15fr .85fr; }
+      .questionnaire-cover h1 { font-size: 24px; }
+      .questionnaire-cover p, .questionnaire-note span, .questionnaire-section-head p { color: #334155; font-size: 12px; }
+      .questionnaire-section { page-break-inside: avoid; }
+      th, td { font-size: 10px; padding: 6px 7px; }
+      .questionnaire-table code { font-size: 9px; }
+      .write-line { min-height: 18px; }
+      .print-check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+{% endblock %}

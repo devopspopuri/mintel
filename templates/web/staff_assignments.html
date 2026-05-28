@@ -1,0 +1,115 @@
+{% extends "web/base.html" %}
+{% block title %}Staff Assignments | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Staff Assignments</h1>
+      <p>Admin-managed region and marketing role coverage for each staff member.</p>
+    </div>
+    <a class="button secondary" href="/staff">Manage Staff</a>
+  </section>
+
+  <form class="filters" method="get" action="/staff-assignments">
+    <div>
+      <label>Status</label>
+      <select name="status">
+        {% for value, label in status_options %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Sort</label>
+      <select name="sort">
+        <option value="name" {% if sort == "name" %}selected{% endif %}>Name</option>
+        <option value="email" {% if sort == "email" %}selected{% endif %}>Email</option>
+        <option value="role" {% if sort == "role" %}selected{% endif %}>Role</option>
+        <option value="status" {% if sort == "status" %}selected{% endif %}>Status</option>
+        <option value="updated" {% if sort == "updated" %}selected{% endif %}>Updated</option>
+      </select>
+    </div>
+    <div>
+      <label>Per Page</label>
+      <select name="per_page">
+        {% for size in [10, 25, 50, 100] %}
+          <option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Apply</button></div>
+  </form>
+
+  <div class="listbar">
+    <span>Filtered records: {{ total_rows }}</span>
+    <span>Showing {{ row_start }}-{{ row_end }} · Page {{ page }} of {{ pages }}</span>
+  </div>
+
+  <table class="data-list">
+    <thead>
+      <tr>
+        <th class="sno">S No</th>
+        <th><a class="sort-link {% if sort == 'name' %}active{% endif %}" href="{{ sort_urls.name }}">Staff</a></th>
+        <th><a class="sort-link {% if sort == 'role' %}active{% endif %}" href="{{ sort_urls.role }}">Role</a></th>
+        <th>Regions</th>
+        <th>Marketing Roles</th>
+        <th><a class="sort-link {% if sort == 'status' %}active{% endif %}" href="{{ sort_urls.status }}">Status</a></th>
+        <th class="right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for staff_member in staff %}
+        <tr>
+          <td class="sno">{{ row_start + loop.index0 }}</td>
+          <td class="company-cell">
+            <strong>{{ staff_member.name or staff_member.email }}</strong>
+            <span class="muted">{{ staff_member.email }}</span>
+          </td>
+          <td class="nowrap">{{ staff_member.role.replace("_", " ").title() }}</td>
+          <td>
+            <div class="tag-list">
+              {% for assignment in staff_member.region_assignments if assignment.active and assignment.region and assignment.region.active %}
+                <span class="tag">{{ assignment.region.name }}</span>
+              {% else %}
+                <span class="muted">No regions</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td>
+            <div class="tag-list">
+              {% for assignment in staff_member.marketing_role_assignments if assignment.active and assignment.marketing_role and assignment.marketing_role.active %}
+                <span class="tag">{{ assignment.marketing_role.name }}</span>
+              {% else %}
+                <span class="muted">No roles</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td><span class="pill {% if not staff_member.active %}warn{% endif %}">{{ "active" if staff_member.active else "inactive" }}</span></td>
+          <td class="right">
+            <div class="icon-actions">
+              <a class="icon-button" href="/staff-assignments/{{ staff_member.id }}" title="View assignment" aria-label="View assignment">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span class="visually-hidden">View</span>
+              </a>
+              <a class="icon-button" href="/staff-assignments/{{ staff_member.id }}/edit" title="Edit assignment" aria-label="Edit assignment">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>
+                <span class="visually-hidden">Edit</span>
+              </a>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not staff %}
+        <tr><td colspan="7" class="muted">No staff users found.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page > 1 %}
+      <a class="button secondary" href="/staff-assignments?page={{ page - 1 }}&{{ page_params }}">Previous</a>
+    {% endif %}
+    {% if page < pages %}
+      <a class="button secondary" href="/staff-assignments?page={{ page + 1 }}&{{ page_params }}">Next</a>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "web/base.html" %}
+{% block title %}Practice Solutions | {{ section.label }} | {{ module.title }} | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-basics">Basics Preparation</a>
+    <span class="crumb-separator">/</span>
+    <a href="/training-basics/topics/{{ topic_number }}">Topic {{ topic_number }}</a>
+    <span class="crumb-separator">/</span>
+    <a href="{{ section.detail_url }}">{{ section.label }}</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">Practice Solutions</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Topic {{ topic_number }} / {{ topic_total }} · Section {{ section.index }}</p>
+      <h1>Practice Solutions</h1>
+      <p>{{ module.title }} · {{ section.label }}</p>
+    </div>
+    <div class="page-actions">
+      <a class="button secondary" href="{{ section.detail_url }}">Back To Practice</a>
+    </div>
+  </section>
+
+  <style>
+    .solutions-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+    .solutions-main { display: grid; gap: 14px; }
+    .solutions-side { position: sticky; top: 74px; display: grid; gap: 12px; }
+    .solution-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 18px; display: grid; gap: 10px; }
+    .solution-card h2, .solution-card h3 { margin: 0; color: var(--ink); }
+    .solution-card p { margin: 0; line-height: 1.55; color: #334155; }
+    .solution-list { margin: 0; padding-left: 22px; color: #475569; line-height: 1.5; }
+    .solution-list li { margin: 6px 0; list-style: disc; }
+    .prompt-label { color: var(--accent-dark); font-weight: 900; }
+    @media (max-width: 900px) { .solutions-layout { grid-template-columns: 1fr; } .solutions-side { position: static; } }
+  </style>
+
+  <section class="solutions-layout">
+    <main class="solutions-main">
+      <article class="solution-card">
+        <h2>Practice Solutions</h2>
+        <p>Attempt the practice prompts first. Then compare your answer with the solution path, commands, evidence, and close statement below.</p>
+      </article>
+
+      {% for solution in section.practice_solutions %}
+        <article class="solution-card">
+          <p class="prompt-label">Prompt {{ loop.index }}</p>
+          <h2>{{ solution.prompt }}</h2>
+          <p>{{ solution.answer }}</p>
+          <h3>Evidence Path</h3>
+          <ul class="solution-list">
+            {% for step in solution.steps %}
+              <li>{{ step }}</li>
+            {% endfor %}
+          </ul>
+          <h3>Close The Answer</h3>
+          <p>{{ solution.close }}</p>
+        </article>
+      {% endfor %}
+    </main>
+
+    <aside class="solutions-side">
+      <article class="solution-card">
+        <h2>Section Index</h2>
+        <ol class="section-nav">
+          {% for item in topic_sections %}
+            <li><a class="{% if item.key == section.key %}active{% endif %}" href="{{ item.detail_url }}">{{ item.label }}</a></li>
+          {% endfor %}
+        </ol>
+      </article>
+      <a class="button" href="/training-basics/topics/{{ topic_number }}/test">Take Topic Test</a>
+    </aside>
+  </section>
+{% endblock %}

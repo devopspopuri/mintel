@@ -1,0 +1,225 @@
+{% extends "web/base.html" %}
+{% block title %}Onboarding | {{ consultant.name or consultant.email }} | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Your Mintel Journey</h1>
+      <p>{{ consultant.name or consultant.email }} · {{ consultant.marketing_role.name if consultant.marketing_role else "Role not assigned yet" }}</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="/consultants/{{ consultant.id }}">Profile</a>
+      <a class="button secondary" href="{{ positioning_url }}">Positioning Brief</a>
+      {% if can_manage(user) %}<a class="button secondary" href="{{ journey_url }}">Staff Checklist</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="student-hero card">
+    <div>
+      <span class="pill">{{ stage_label }}</span>
+      <h2>{{ role_fit_message }}</h2>
+      <p>{{ welcome_message }}</p>
+      <p class="student-confidence">{{ market_readiness_message }}</p>
+    </div>
+    <div class="readiness-ring">
+      <strong>{{ journey.readiness_score }}%</strong>
+      <span>ready</span>
+    </div>
+  </section>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ completed_count }}/{{ activity_count }}</strong><span>Steps complete</span></div>
+    <div class="metric"><strong>{{ next_tasks|length }}</strong><span>Next tasks</span></div>
+    <div class="metric"><strong>{{ student_blockers|length }}</strong><span>Blockers</span></div>
+    <div class="metric"><strong>{{ company_matches|length }}</strong><span>Target companies</span></div>
+    <div class="metric"><strong>{{ journey.target_market_date or "Not set" }}</strong><span>Target market date</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Journey Timeline</h2>
+    <div class="student-timeline">
+      {% for step in timeline_steps %}
+        <span class="{{ step.state }}">{{ step.label }}</span>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="student-coach-grid">
+    <article class="card weekly-focus">
+      <span class="pill">This Week</span>
+      <h2>{{ weekly_focus.title }}</h2>
+      <p>{{ weekly_focus.body }}</p>
+      {% if focus_task %}
+        <a class="button secondary" href="#task-{{ focus_task.id }}">Open First Task</a>
+      {% endif %}
+    </article>
+    <article class="card">
+      <h2>Progress Wins</h2>
+      {% if quick_wins %}
+        <div class="win-list">{% for item in quick_wins %}<span>{{ item }}</span>{% endfor %}</div>
+      {% else %}
+        <p class="muted">{{ confidence_message }}</p>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="grid-2">
+    <article class="card next-task-card">
+      <h2>Your Next 3 Actions</h2>
+      {% for task in next_tasks %}
+        <form id="task-{{ task.id }}" class="student-task" method="post" action="/consultants/{{ consultant.id }}/onboarding/activities/{{ task.id }}">
+          <div>
+            <strong>{{ task.student_title }}</strong>
+            <p>{{ task.student_description }}</p>
+            <span class="tag">{{ task.status_label }}</span>
+            {% if task.due_date %}<span class="tag">Due {{ task.due_date }}</span>{% endif %}
+          </div>
+          {% if task.can_submit_evidence %}
+            <div class="student-send-box">
+              <strong>What To Send</strong>
+              <span>Use a link or short note. Staff will review and mark the item complete when it is accepted.</span>
+            </div>
+            <label>Evidence or Link<input name="evidence_url" value="{{ task.evidence_url }}" placeholder="Resume, project, GitHub, LinkedIn, certificate, or document link"></label>
+            <label>Message to Staff<textarea name="notes" placeholder="What did you finish? Where are you stuck? What feedback do you need?">{{ task.notes }}</textarea></label>
+            <button type="submit">Send For Review</button>
+          {% endif %}
+        </form>
+      {% else %}
+        <p class="muted">No pending tasks. Keep your resume and interview stories current while staff works on submissions.</p>
+      {% endfor %}
+    </article>
+
+    <article class="card">
+      <h2>Your Marketing Setup</h2>
+      <ul class="stack-list">
+        <li><strong>Role:</strong> {{ consultant.marketing_role.name if consultant.marketing_role else "Not assigned" }}</li>
+        <li><strong>Training:</strong> {% if training_program %}<a href="/training-programs/{{ training_program.id }}">{{ training_program.title or training_program.industry_domain }}</a>{% else %}Not assigned yet{% endif %}</li>
+        {% if training_program %}<li><strong>Onboarding test:</strong> <a href="/training-programs/{{ training_program.id }}?section=assessment">Open Basic Prep + Role/Domain Test</a></li>{% endif %}
+        <li><strong>Work authorization:</strong> {{ consultant.work_authorization or "Not confirmed" }}</li>
+        <li><strong>Location:</strong> {{ consultant.current_location or "Not captured" }}</li>
+        <li><strong>Staff guidance:</strong> {{ staff_guidance }}</li>
+      </ul>
+      {% if student_blockers %}
+        <h2>Blockers</h2>
+        <ul class="stack-list">{% for item in student_blockers %}<li>{{ item.student_title }}</li>{% endfor %}</ul>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>How To Prepare</h2>
+    <div class="prep-card-grid">
+      {% for card in prep_cards %}
+        <article>
+          <strong>{{ card.title }}</strong>
+          <p>{{ card.body }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card evidence-student-card">
+    <div class="evidence-student-head">
+      <div>
+        <h2>Final Evidence Package</h2>
+        <p>This package turns your project into proof staff can use for resume bullets, submissions, mocks, and interviews.</p>
+      </div>
+      <span class="pill {% if evidence_package.ready %}hot{% endif %}">{{ evidence_package.completed }}/{{ evidence_package.total }} complete</span>
+    </div>
+    <div class="student-evidence-grid">
+      {% for item in evidence_package.items %}
+        <article class="{{ item.status }}">
+          <strong>{{ item.student_title }}</strong>
+          <span>{{ item.status_label }}</span>
+          <p>{{ item.student_description }}</p>
+          {% if item.evidence_url %}<a href="{{ item.evidence_url }}" target="_blank" rel="noopener noreferrer">Submitted evidence</a>{% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Target Company Direction</h2>
+    <div class="student-company-list">
+      {% for row in company_matches %}
+        <article>
+          <strong>{{ row.company_name }}</strong>
+          <span>{{ row.match_score }} match · {{ row.best_roles_label }}</span>
+          <p>{{ row.match_reason }}</p>
+        </article>
+      {% else %}
+        <p class="muted">Target companies will appear after role, skills, and readiness are captured.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>All Journey Steps</h2>
+    <div class="student-all-steps">
+      {% for task in student_activities %}
+        <div class="student-step {{ task.status }}">
+          <strong>{{ task.student_title }}</strong>
+          <span>{{ task.status_label }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <style>
+    .student-hero { align-items: center; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 160px; margin-bottom: 14px; }
+    .student-hero h2 { font-size: 26px; margin: 10px 0 8px; }
+    .student-hero p { font-size: 16px; line-height: 1.5; margin: 0; }
+    .student-confidence { color: var(--accent-dark); font-weight: 750; margin-top: 8px !important; }
+    .readiness-ring { align-items: center; aspect-ratio: 1; background: #f0fdfa; border: 10px solid #99f6e4; border-radius: 999px; color: var(--accent-dark); display: flex; flex-direction: column; justify-content: center; }
+    .readiness-ring strong { font-size: 32px; line-height: 1; }
+    .readiness-ring span { color: var(--muted); font-size: 13px; font-weight: 800; text-transform: uppercase; }
+    .student-timeline { display: grid; gap: 8px; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+    .student-timeline span { background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 850; min-height: 34px; padding: 8px 10px; text-align: center; }
+    .student-timeline span.done { background: #dff5f1; border-color: #99d9ce; color: var(--accent-dark); }
+    .student-timeline span.current { background: #fff7d6; border-color: #f0c66a; color: #8a5a00; }
+    .student-coach-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); margin-bottom: 12px; }
+    .weekly-focus { display: grid; gap: 8px; align-content: start; }
+    .weekly-focus h2, .weekly-focus p { margin: 0; }
+    .weekly-focus .button { justify-self: start; margin-top: 4px; }
+    .win-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .win-list span { background: #f0fdfa; border: 1px solid #99d9ce; border-radius: 999px; color: var(--accent-dark); font-size: 12px; font-weight: 850; padding: 6px 10px; }
+    .next-task-card { display: grid; gap: 10px; }
+    .next-task-card h2 { margin: 0; }
+    .student-task { border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 10px; padding: 12px; }
+    .student-task strong { display: block; font-size: 16px; }
+    .student-task p { margin: 4px 0 8px; }
+    .student-task textarea { min-height: 72px; }
+    .student-send-box { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 3px; padding: 10px; }
+    .student-send-box strong { color: var(--accent-dark); font-size: 13px; }
+    .student-send-box span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .prep-card-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .prep-card-grid article { background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .prep-card-grid strong { color: var(--accent-dark); display: block; margin-bottom: 6px; }
+    .prep-card-grid p { margin: 0; }
+    .evidence-student-card { display: grid; gap: 12px; }
+    .evidence-student-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+    .evidence-student-head h2, .evidence-student-head p { margin: 0; }
+    .student-evidence-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .student-evidence-grid article { background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 5px; padding: 12px; }
+    .student-evidence-grid article.completed { background: #f0fdfa; border-color: #99d9ce; }
+    .student-evidence-grid article.blocked { background: #fff8f6; border-color: #f1b5ad; }
+    .student-evidence-grid strong, .student-evidence-grid span, .student-evidence-grid a { display: block; }
+    .student-evidence-grid span { color: var(--muted); font-size: 12px; font-weight: 850; }
+    .student-evidence-grid p { margin: 0; }
+    .student-evidence-grid a { font-size: 12px; font-weight: 850; }
+    .student-company-list { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .student-company-list article { background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .student-company-list strong, .student-company-list span { display: block; }
+    .student-company-list span { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .student-company-list p { margin: 8px 0 0; }
+    .student-all-steps { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .student-step { align-items: center; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; display: flex; gap: 10px; justify-content: space-between; min-height: 52px; padding: 10px 12px; }
+    .student-step span { color: var(--muted); font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .student-step.completed { background: #f0fdfa; border-color: #99d9ce; }
+    .student-step.blocked { background: #fff8f6; border-color: #f1b5ad; }
+    @media (max-width: 980px) {
+      .student-hero, .student-timeline, .student-coach-grid, .prep-card-grid, .student-evidence-grid, .student-company-list, .student-all-steps { grid-template-columns: 1fr; }
+      .evidence-student-head { display: grid; }
+      .readiness-ring { max-width: 150px; }
+    }
+  </style>
+{% endblock %}

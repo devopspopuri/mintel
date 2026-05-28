@@ -1,0 +1,150 @@
+{% extends "web/base.html" %}
+{% block title %}Location Expansion | Reports | Mintel{% endblock %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>Location Expansion</h1>
+      <p>Plan cost-effective office hubs from latest USCIS filing signal, opportunity density, affordability, and 250-mile interview coverage.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button secondary" href="{{ export_url }}">Export CSV</a>
+      <a class="button secondary" href="/reports">Reports Home</a>
+    </div>
+  </section>
+
+  <form class="filters" method="get" action="/reports/location-expansion">
+    <div>
+      <label>USCIS Year</label>
+      <select name="fiscal_year">
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if fiscal_year == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Plan Size</label>
+      <input name="plan_size" type="number" min="5" max="25" value="{{ plan_size }}">
+    </div>
+    <div>
+      <label>Slots / Region</label>
+      <select name="slots_per_region">
+        <option value="0" {% if slots_per_region == 0 %}selected{% endif %}>Best overall</option>
+        <option value="2" {% if slots_per_region == 2 %}selected{% endif %}>2 per region</option>
+        <option value="3" {% if slots_per_region == 3 %}selected{% endif %}>3 per region</option>
+      </select>
+    </div>
+    <div>
+      <label>Max Cost Tier</label>
+      <select name="max_cost_tier">
+        {% for value, label in cost_tier_options %}
+          <option value="{{ value }}" {% if max_cost_tier == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Min New Approvals</label>
+      <input name="min_new_employment" type="number" min="0" value="{{ min_new_employment }}">
+    </div>
+    <label class="check-inline"><input type="checkbox" name="include_existing_houston" value="true" {% if include_existing_houston %}checked{% endif %}> Include Houston as existing base</label>
+    <div><button type="submit">Plan Locations</button></div>
+  </form>
+
+  <section class="metrics compact">
+    <div class="metric"><strong>{{ summary.plan_size or 0 }}</strong><span>Planned Hubs</span></div>
+    <div class="metric"><strong>{{ summary.plan_new_employment or 0 }}</strong><span>New Employment Signal</span></div>
+    <div class="metric"><strong>{{ summary.plan_approvals or 0 }}</strong><span>Total Approvals</span></div>
+    <div class="metric"><strong>{{ summary.plan_employers or 0 }}</strong><span>Employer Breadth</span></div>
+    <div class="metric"><strong>{{ summary.eligible_hub_count or 0 }}</strong><span>Eligible Hubs</span></div>
+  </section>
+
+  <section class="card stack location-guidance">
+    <h2>Planning Rule</h2>
+    <div class="rule-grid">
+      <div><strong>F2F coverage</strong><span>One hub should support interviews within roughly 250 driving miles.</span></div>
+      <div><strong>USCIS source</strong><span>Latest-year new employment approvals are the strongest opening signal.</span></div>
+      <div><strong>Cost control</strong><span>High-cost markets can be watch hubs unless signal is exceptional.</span></div>
+      <div><strong>No duplicate corridors</strong><span>Nearby cities are consolidated into one operating hub.</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Recommended Plan</h2>
+    <table class="data-list">
+      <thead><tr><th class="sno">#</th><th>Hub</th><th>Region</th><th>Cost</th><th>Signal</th><th>Score</th><th>Decision</th></tr></thead>
+      <tbody>
+        {% for row in plan_rows %}
+          <tr>
+            <td class="sno">{{ row.plan_rank }}</td>
+            <td><a href="/reports/location-expansion/{{ row.hub_key }}?fiscal_year={{ fiscal_year }}"><strong>{{ row.hub }}</strong></a><div class="compact-meta">{{ row.plan_note }} · {{ row.coverage_notes }}</div></td>
+            <td>{{ row.region_name }}<div class="compact-meta">{{ row.states_label }}</div></td>
+            <td><span class="pill {% if row.cost_tier == 'very_high' %}warn{% endif %}">{{ row.cost_tier.replace("_", " ").title() }}</span></td>
+            <td>{{ row.new_employment }} new<br><span class="muted">{{ row.approvals }} approvals · {{ row.employer_count }} employers</span></td>
+            <td><strong>{{ row.expansion_score }}</strong><div class="compact-meta">Opp {{ row.opportunity_score }} · Cost {{ row.affordability_score }}</div></td>
+            <td>{{ row.recommendation }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted">No recommended hubs match these filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="grid-2">
+    {% for region in region_rows %}
+      <article class="card region-location-card">
+        <h2>{{ region.region_name }}</h2>
+        <p class="muted">{{ region.selected_count }} selected · {{ region.new_employment }} new approvals · {{ region.employer_count }} employer-city signals</p>
+        <div class="tag-list">
+          {% for hub in region.selected_hubs %}
+            <span class="tag">{{ hub.hub }}</span>
+          {% else %}
+            <span class="muted">No selected hub for this plan.</span>
+          {% endfor %}
+        </div>
+        <details>
+          <summary>Top data-backed hubs</summary>
+          <ol class="stack-list compact">
+            {% for hub in region.top_hubs %}
+              <li><a href="/reports/location-expansion/{{ hub.hub_key }}?fiscal_year={{ fiscal_year }}"><strong>{{ hub.hub }}</strong></a> — {{ hub.new_employment }} new, {{ hub.approvals }} approvals, {{ hub.cost_tier.replace("_", " ") }} cost</li>
+            {% else %}
+              <li class="muted">No USCIS city signal found.</li>
+            {% endfor %}
+          </ol>
+        </details>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>All Ranked Hubs</h2>
+    <table class="data-list">
+      <thead><tr><th class="sno">Rank</th><th>Hub</th><th>Region</th><th>Cost</th><th>USCIS Signal</th><th>Scores</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        {% for row in rows[:80] %}
+          <tr>
+            <td class="sno">{{ row.rank }}</td>
+            <td><a href="/reports/location-expansion/{{ row.hub_key }}?fiscal_year={{ fiscal_year }}"><strong>{{ row.hub }}</strong></a><div class="compact-meta">{{ row.cities_label }}</div></td>
+            <td>{{ row.region_name }}<div class="compact-meta">{{ row.states_label }}</div></td>
+            <td><span class="pill {% if row.cost_tier == 'very_high' %}warn{% endif %}">{{ row.cost_tier.replace("_", " ").title() }}</span></td>
+            <td>{{ row.new_employment }} new<br><span class="muted">{{ row.approvals }} approvals · {{ row.approval_rate }}% · {{ row.employer_count }} employers</span></td>
+            <td>{{ row.expansion_score }} total<br><span class="muted">Opp {{ row.opportunity_score }} · Cost {{ row.affordability_score }} · Coverage {{ row.coverage_score }}</span></td>
+            <td>{{ row.recommendation }}<div class="compact-meta">{{ row.coverage_notes }}</div></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted">No location hubs found from USCIS data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <style>
+    .location-guidance { margin-bottom: 16px; }
+    .rule-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .rule-grid div { border: 1px solid var(--line); border-radius: 7px; padding: 10px; background: #fbfcfd; }
+    .rule-grid strong, .rule-grid span { display: block; }
+    .rule-grid span { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .region-location-card { display: grid; gap: 10px; }
+    .region-location-card details summary { color: var(--accent-dark); cursor: pointer; font-weight: 800; }
+    @media (max-width: 980px) { .rule-grid { grid-template-columns: 1fr; } }
+  </style>
+{% endblock %}

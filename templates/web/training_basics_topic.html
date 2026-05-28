@@ -1,0 +1,243 @@
+{% extends "web/base.html" %}
+{% block title %}{{ module.title }} | Basics Preparation | Mintel{% endblock %}
+{% block content %}
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/training-basics">Basics Preparation</a>
+    <span class="crumb-separator">/</span>
+    <span class="crumb-current">Topic {{ topic_number }}</span>
+  </nav>
+
+  <section class="page-head">
+    <div>
+      <h1>{{ module.title }}</h1>
+      <p>{{ module.why }}</p>
+      <p class="muted"><strong>{{ module.course_level }}:</strong> {{ module.study_hours }} connected to the {{ module.continuous_project }}.</p>
+    </div>
+    <div class="page-actions">
+      {% if previous_topic %}<a class="button secondary" href="/training-basics/topics/{{ previous_topic }}">Previous</a>{% endif %}
+      <a class="button secondary" href="/training-basics/topics/{{ topic_number }}/test">Topic Test</a>
+      {% if next_topic %}<a class="button" href="/training-basics/topics/{{ next_topic }}">Next Topic</a>{% endif %}
+    </div>
+  </section>
+
+  <style>
+    .topic-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+    .topic-main { display: grid; gap: 14px; }
+    .topic-side { position: sticky; top: 74px; display: grid; gap: 12px; }
+    .topic-panel { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 16px; display: grid; gap: 10px; }
+    .topic-panel h2, .topic-panel h3 { margin: 0; }
+    .topic-panel h2 a, .topic-panel h3 a { color: inherit; text-decoration: none; }
+    .topic-panel h2 a:hover, .topic-panel h3 a:hover { color: var(--accent-dark); }
+    .topic-panel p { margin: 0; line-height: 1.55; }
+    .topic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .section-index { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+    .section-index-head { display: grid; grid-template-columns: 44px minmax(180px, 0.9fr) minmax(0, 1.6fr) 118px; gap: 14px; padding: 10px 16px; background: #f8fafc; color: var(--muted); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; border-bottom: 1px solid var(--line); }
+    .section-row { display: grid; grid-template-columns: 44px minmax(180px, 0.9fr) minmax(0, 1.6fr) 118px; gap: 14px; align-items: center; padding: 14px 16px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+    .section-row:last-child { border-bottom: 0; }
+    .section-row:hover { background: #fbfdff; }
+    .section-row-number { color: var(--accent-dark); font-weight: 900; font-variant-numeric: tabular-nums; }
+    .section-row-title { color: var(--text); font-size: 16px; font-weight: 850; line-height: 1.25; }
+    .section-row-purpose { color: var(--muted); line-height: 1.45; }
+    .section-row-action { justify-self: end; color: var(--accent-dark); font-size: 13px; font-weight: 850; white-space: nowrap; }
+    .section-preview { margin: 0; padding-left: 22px; color: var(--muted); line-height: 1.55; }
+    .topic-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .topic-flow span { min-height: 34px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; padding: 6px 9px; font-size: 12px; font-weight: 800; }
+    .topic-flow i { color: var(--accent-dark); font-style: normal; font-weight: 900; }
+    .architecture-mini { display: grid; gap: 10px; }
+    .architecture-mini-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center; }
+    .architecture-mini-box { min-height: 58px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 9px; font-size: 12px; font-weight: 850; line-height: 1.35; }
+    .architecture-mini-box.active { border-color: var(--accent); background: #ecfdf5; color: #064e3b; }
+    .architecture-mini-note { border-left: 4px solid var(--accent); padding-left: 10px; color: var(--muted); }
+    .topic-mindmap { display: grid; gap: 14px; }
+    .mindmap-canvas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+    .mindmap-center { display: grid; place-items: center; min-height: 120px; border: 2px solid var(--accent); border-radius: 8px; background: #ecfdf5; color: #064e3b; padding: 14px; text-align: center; font-weight: 900; line-height: 1.35; }
+    .mindmap-branch { position: relative; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; padding: 12px; display: grid; gap: 8px; }
+    .mindmap-branch h3 { margin: 0; color: var(--accent-dark); font-size: 14px; }
+    .mindmap-branch ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.45; }
+    .mindmap-branch li { margin: 4px 0; overflow-wrap: anywhere; }
+    .command-map-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .command-map-card { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: #fff; padding: 14px; display: grid; gap: 8px; }
+    .command-map-card h3 { margin: 0; font-size: 15px; }
+    .command-map-card p { margin: 0; color: var(--muted); font-size: 13px; }
+    .command-map-card dl { display: grid; gap: 7px; margin: 0; }
+    .command-map-card dt { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: #1e3a8a; font-weight: 850; }
+    .command-map-card dd { margin: -4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .command-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .command-list code { display: block; border: 1px solid #dbeafe; border-radius: 7px; background: #0f172a; color: #e0f2fe; padding: 8px; font-size: 12px; white-space: normal; word-break: break-word; }
+    @media (max-width: 900px) {
+      .topic-layout, .topic-grid, .command-map-grid, .command-list, .architecture-mini-flow, .mindmap-canvas { grid-template-columns: 1fr; }
+      .topic-side { position: static; }
+      .section-index-head { display: none; }
+      .section-row { grid-template-columns: 32px minmax(0, 1fr); gap: 8px 12px; }
+      .section-row-purpose { grid-column: 2; }
+      .section-row-action { grid-column: 2; justify-self: start; }
+    }
+  </style>
+
+  <section class="topic-layout">
+    <main class="topic-main">
+      {% if day %}
+        <article class="topic-panel">
+          <h2>Topic {{ day.day }} Study Plan</h2>
+          <p><strong>Course sections:</strong> {{ day.courseSections|join(", ") }}</p>
+          <p><strong>Lab focus:</strong> {{ day.labFocus }}</p>
+          <p><strong>Output:</strong> {{ day.output }}</p>
+        </article>
+      {% endif %}
+
+      {% if module.project_thread %}
+        <article class="topic-panel">
+          <h2>{{ module.project_thread.name }} Scenario</h2>
+          <p>{{ module.project_thread.business }}</p>
+          <p><strong>Topic scenario:</strong> {{ module.project_thread.scenario }}</p>
+          <div class="topic-grid">
+            <section>
+              <h3>Lab Actions</h3>
+              <ol class="section-preview">
+                {% for item in module.project_thread.lab %}
+                  <li>{{ item }}</li>
+                {% endfor %}
+              </ol>
+            </section>
+            <section>
+              <h3>Interview Evidence</h3>
+              <ol class="section-preview">
+                {% for item in module.project_thread.evidence %}
+                  <li>{{ item }}</li>
+                {% endfor %}
+              </ol>
+            </section>
+          </div>
+        </article>
+      {% endif %}
+
+      {% if architecture_focus %}
+        <article class="topic-panel architecture-mini">
+          <h2>Architecture Fit</h2>
+          <div class="architecture-mini-flow" aria-label="Architecture layer focus">
+            <div class="architecture-mini-box">Users / Channels</div>
+            <div class="architecture-mini-box active">{{ architecture_focus.layer }}</div>
+            <div class="architecture-mini-box">Operations Evidence</div>
+          </div>
+          <p><strong>Where this topic sits:</strong> {{ architecture_focus.where }}</p>
+          <p class="architecture-mini-note"><strong>Evidence to speak:</strong> {{ architecture_focus.evidence }}</p>
+        </article>
+      {% endif %}
+
+      {% if module.mindmap %}
+        <article class="topic-panel topic-mindmap">
+          <h2>Topic Mindmap</h2>
+          <div class="mindmap-canvas" aria-label="Topic command and evidence mindmap">
+            {% for branch in module.mindmap.branches[:3] %}
+              <section class="mindmap-branch">
+                <h3>{{ branch.title }}</h3>
+                <ul>
+                  {% for item in branch["items"] %}
+                    {% if item %}<li>{{ item }}</li>{% endif %}
+                  {% endfor %}
+                </ul>
+              </section>
+            {% endfor %}
+            <div class="mindmap-center">{{ module.mindmap.center }}</div>
+            {% for branch in module.mindmap.branches[3:] %}
+              <section class="mindmap-branch">
+                <h3>{{ branch.title }}</h3>
+                <ul>
+                  {% for item in branch["items"] %}
+                    {% if item %}<li>{{ item }}</li>{% endif %}
+                  {% endfor %}
+                </ul>
+              </section>
+            {% endfor %}
+          </div>
+        </article>
+      {% endif %}
+
+      <section class="section-index" aria-label="Topic sections">
+        <div class="section-index-head" aria-hidden="true">
+          <span>No</span>
+          <span>Section</span>
+          <span>Purpose</span>
+          <span>Action</span>
+        </div>
+        {% for section in topic_sections %}
+          <a class="section-row" href="{{ section.detail_url }}">
+            <span class="section-row-number">{{ "%02d"|format(section.index) }}</span>
+            <span class="section-row-title">{{ section.label }}</span>
+            <span class="section-row-purpose">{{ section.summary }}</span>
+            <span class="section-row-action">Open section</span>
+          </a>
+        {% endfor %}
+      </section>
+
+      <article class="topic-panel">
+        <h2>System Flow To Remember</h2>
+        <div class="topic-flow">
+          {% for item in module.flowchart %}
+            <span>{{ item }}</span>{% if not loop.last %}<i>→</i>{% endif %}
+          {% endfor %}
+        </div>
+      </article>
+
+      {% if module.command_groups %}
+        <article class="topic-panel">
+          <h2>Command Map</h2>
+          <div class="command-map-grid">
+            {% for group in module.command_groups %}
+              <section class="command-map-card">
+                <h3>{{ group.group }}</h3>
+                <p>{{ group.context }}</p>
+                <dl>
+                  {% for command in group.commands %}
+                    <dt>{{ command.command }}</dt>
+                    <dd>{{ command.meaning }}</dd>
+                  {% endfor %}
+                </dl>
+              </section>
+            {% endfor %}
+          </div>
+        </article>
+      {% endif %}
+
+      {% if module.official_references %}
+        <article class="topic-panel">
+          <h2>Official Product References</h2>
+          <p>Product documentation source boundary for this topic.</p>
+          <ul class="section-preview">
+            {% for reference in module.official_references %}
+              <li><a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">{{ reference.label }}</a></li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endif %}
+
+      <section class="topic-grid">
+        <article class="topic-panel">
+          <h2>Command Evidence</h2>
+          <div class="command-list">{% for command in module.commands %}<code>{{ command }}</code>{% endfor %}</div>
+        </article>
+        <article class="topic-panel">
+          <h2>Topic Vocabulary</h2>
+          <div class="tag-cloud">{% for item in module.concepts %}<span class="tag">{{ item }}</span>{% endfor %}</div>
+        </article>
+      </section>
+    </main>
+
+    <aside class="topic-side">
+      <article class="topic-panel">
+        <h2>Topic {{ topic_number }} / {{ topic_total }}</h2>
+        <p class="module-answer-line">{{ module.interview }}</p>
+      </article>
+      <a class="button" href="/training-basics/topics/{{ topic_number }}/test">Take 15-Question Test</a>
+      <article class="topic-panel">
+        <h2>Expanded Sections</h2>
+        <ol>
+          {% for section in topic_sections %}
+            <li><a href="{{ section.detail_url }}">{{ section.label }}</a></li>
+          {% endfor %}
+        </ol>
+      </article>
+      <a class="button secondary" href="/training-basics">Back To Basics Index</a>
+    </aside>
+  </section>
+{% endblock %}
