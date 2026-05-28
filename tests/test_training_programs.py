@@ -739,7 +739,31 @@ def test_training_basics_include_linux_git_and_docker_command_maps():
         for group in docker_module["command_groups"]
     )
     assert "RHEL Login Context And File Navigation" in linux_text
+    assert "Daily Linux File And Directory Work" in linux_text
+    assert "Reading Application And Service Logs" in linux_text
+    assert "Simple Shell Automation" in linux_text
+    assert "SSH And Remote Server Access" in linux_text
+    assert "Environment Variables And Runtime Config" in linux_text
+    assert "Packages And DevOps Tools On Linux" in linux_text
+    assert "User-Facing Permission Problems" in linux_text
     assert "pwd" in linux_text
+    assert "cp <source> <target>" in linux_text
+    assert "mv <source> <target>" in linux_text
+    assert "rm <file>" in linux_text
+    assert "head -n 20 <file>" in linux_text
+    assert "tail -f /var/log/payment-api/app.log" in linux_text
+    assert "chmod +x check-payment-api.sh" in linux_text
+    assert "ssh -i key.pem user@host" in linux_text
+    assert "scp <file> user@host:/path" in linux_text
+    assert "telnet <host> <port>" in linux_text
+    assert "nc -vz <host> <port>" in linux_text
+    assert "dig <host>" in linux_text
+    assert "traceroute <host>" in linux_text
+    assert "echo $JAVA_HOME" in linux_text
+    assert "grep -n \"DATABASE_URL\" .env" in linux_text
+    assert "kubectl version --client" in linux_text
+    assert "terraform version" in linux_text
+    assert "chmod +x deploy.sh" in linux_text
     assert "sudo systemctl status payment-api" in linux_text
     assert "sudo journalctl -u payment-api -n 50 --no-pager" in linux_text
     assert "sudo firewall-cmd --list-ports" in linux_text
@@ -753,6 +777,11 @@ def test_training_basics_include_linux_git_and_docker_command_maps():
     assert "docker --help" in docker_text
     pdf_text = " ".join(block["text"] for block in _training_basics_pdf_blocks())
     assert "RHEL Login Context And File Navigation" in pdf_text
+    assert "Daily Linux File And Directory Work" in pdf_text
+    assert "Environment Variables And Runtime Config" in pdf_text
+    assert "grep -n \"DATABASE_URL\" .env" in pdf_text
+    assert "kubectl version --client" in pdf_text
+    assert "chmod +x deploy.sh" in pdf_text
     assert "sudo journalctl -u payment-api -n 50 --no-pager" in pdf_text
     assert "git rebase <base>" in pdf_text
     assert "docker stats" in pdf_text
