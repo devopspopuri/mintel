@@ -15761,6 +15761,106 @@ def _training_beginner_quiz(program: TrainingProgram) -> list[dict[str, str]]:
     ]
 
 
+def _training_interview_ready_answer_scripts(program: TrainingProgram) -> list[dict[str, Any]]:
+    role = program.marketing_role.name
+    domain = program.industry_domain
+    architecture = program.cloud_architecture or {}
+    systems = [str(item) for item in _as_list(program.application_landscape) if str(item).strip()]
+    tools = [str(item) for item in _as_list(program.tools_and_technologies) if str(item).strip()]
+    use_cases = [item for item in _as_list(architecture.get("deliveredUseCases")) if isinstance(item, dict)]
+    context = architecture.get("consultantProjectContextBrief") if isinstance(architecture.get("consultantProjectContextBrief"), dict) else {}
+    platform = architecture.get("roleDomainPlatform") if isinstance(architecture.get("roleDomainPlatform"), dict) else {}
+    primary_systems = ", ".join(systems[:4]) or f"{domain} applications"
+    adjacent_systems = ", ".join(systems[4:8]) or "connected downstream systems"
+    tool_stack = ", ".join(tools[:8]) or role
+    role_lane = platform.get("roleLane") or f"{role} delivery and support work for {domain}"
+    business_flow = " ".join(_as_list(context.get("businessFlow"))) or primary_systems
+    role_boundary = " ".join(_as_list(context.get("roleBoundary"))) or f"{role} owned the technical enablement layer."
+    evidence_model = " ".join(_as_list(context.get("evidenceModel"))) or "Evidence included Jira, logs, dashboards, command output, PRs, runbooks, and release notes."
+    first_use_case = use_cases[0] if use_cases else {}
+    second_use_case = use_cases[1] if len(use_cases) > 1 else first_use_case
+    third_use_case = use_cases[2] if len(use_cases) > 2 else first_use_case
+
+    def use_case_title(item: dict[str, Any], fallback: str) -> str:
+        return str(item.get("title") or fallback)
+
+    def use_case_problem(item: dict[str, Any]) -> str:
+        return str(item.get("businessProblem") or "The team needed a safer and more supportable production workflow.")
+
+    def use_case_scope(item: dict[str, Any]) -> str:
+        scope = _as_list(item.get("deliveredScope"))
+        return " ".join(str(part) for part in scope[:3]) or "I implemented, validated, documented, and handed off the role-owned technical work."
+
+    def use_case_evidence(item: dict[str, Any]) -> str:
+        evidence = _as_list(item.get("evidenceToExplain"))
+        return ", ".join(str(part) for part in evidence[:5]) or evidence_model
+
+    return [
+        {
+            "title": "Tell Me About Your Project",
+            "answer": (
+                f"I worked as a {role} in a {domain} enterprise environment. The main applications I supported were {primary_systems}, with connected systems like {adjacent_systems}. "
+                f"My work was not business-rule ownership or feature-code ownership. My contribution was the technical enablement layer: {role_lane}. "
+                f"I worked with product owners, business analysts, application developers, QA, security, release managers, operations, and service desk teams. "
+                f"Most work came through Jira epics, stories, defects, support requests, release-readiness tasks, and incident follow-ups. "
+                f"The tools I used or worked around included {tool_stack}. I validated changes in lower environments, attached evidence, and handed off clear release, support, rollback, or recovery notes."
+            ),
+            "evidence": [business_flow, role_boundary, evidence_model],
+        },
+        {
+            "title": "What Exactly Did You Do?",
+            "answer": (
+                f"My day-to-day contribution was to make the {domain} systems easier to release, run, troubleshoot, and support. "
+                f"For example, in the use case '{use_case_title(first_use_case, 'platform readiness improvement')}', the business problem was: {use_case_problem(first_use_case)} "
+                f"My part was: {use_case_scope(first_use_case)} "
+                f"I did not claim the whole application. I owned the {role} lane, coordinated with the right teams, validated the result, and produced evidence such as {use_case_evidence(first_use_case)}."
+            ),
+            "evidence": _as_list(first_use_case.get("evidenceToExplain"))[:5],
+        },
+        {
+            "title": "Explain One Epic Or Set Of Stories You Worked On",
+            "answer": (
+                f"One epic I can explain is '{use_case_title(second_use_case, 'production readiness and support improvement')}'. "
+                f"It had multiple Jira stories: analysis of the current flow, design or configuration work, implementation, validation in a lower environment, documentation, and support handoff. "
+                f"The affected systems were {', '.join(_as_list(second_use_case.get('systemsTouched'))[:5]) or primary_systems}. "
+                f"My contribution was to connect the business need to the technical change, make the {role} part repeatable, and prove the result with evidence. "
+                f"The evidence I would mention in an interview is {use_case_evidence(second_use_case)}."
+            ),
+            "evidence": _as_list(second_use_case.get("evidenceToExplain"))[:5],
+        },
+        {
+            "title": "How Did You Work With Teams?",
+            "answer": (
+                f"I worked across product, BA, application development, QA, security, release, operations, and service desk teams. "
+                f"Product and BA teams clarified workflow, priority, acceptance criteria, and business impact. Application developers owned code and API behavior. "
+                f"QA validated functional behavior. Security reviewed access, secrets, policy, or compliance concerns. Release and operations teams needed deployment status, rollback criteria, runbook notes, and health evidence. "
+                f"My role as a {role} was to keep my technical lane clear, provide evidence, communicate blockers early, and hand off issues with enough detail for the right owner to act."
+            ),
+            "evidence": ["Jira story notes", "approval or review comments", "validation evidence", "runbook or handoff notes"],
+        },
+        {
+            "title": "Describe A Production Issue Or Support Scenario",
+            "answer": (
+                f"In one support scenario, the issue was connected to '{use_case_title(third_use_case, 'a production support workflow')}'. "
+                f"I started with impact: which users, operations team, application, or downstream process was affected. Then I checked recent change history, logs, metrics, runtime status, access or network signals, and the relevant dashboard or ticket. "
+                f"If evidence pointed to my {role} lane, I worked on the fix or recovery path. If it pointed to application code, data, security, database, or vendor ownership, I routed it with the evidence. "
+                f"I closed the loop with validation and a support note so the same issue could be handled faster next time."
+            ),
+            "evidence": _as_list(third_use_case.get("evidenceToExplain"))[:5],
+        },
+        {
+            "title": "Why Should We Believe This Experience Is Real?",
+            "answer": (
+                f"I can explain the business systems, the teams involved, the tools used, the Jira flow, and the evidence behind each claim. "
+                f"For this {role} / {domain} project, I can walk through the applications, the role boundary, the use cases, the support scenarios, and the artifacts. "
+                f"I would show diagrams, Jira story groups, PRs or config changes, logs, dashboards, command output, runbooks, release notes, rollback or recovery notes, and interview stories tied to specific systems. "
+                f"That is how I separate real project contribution from only naming tools."
+            ),
+            "evidence": ["Architecture diagrams", "Jira story groups", "PR/config evidence", "dashboards/logs", "runbooks and rollback notes"],
+        },
+    ]
+
+
 def _training_provider_diagram_cards(program: TrainingProgram) -> list[dict[str, Any]]:
     role_name = program.marketing_role.name
     domain_name = program.industry_domain
@@ -18095,33 +18195,30 @@ def _training_program_pdf_blocks(program: TrainingProgram, *, include_diagrams: 
         add_callout("Pattern pulled forward", item["pattern"], "key")
         add_callout("Use cases to prioritize", item["use_cases"], "learn")
         add_callout("Evidence visible in the scenario", item["evidence"], "diagram" if include_diagrams else "key")
-    for card in _training_beginner_cards(program):
-        add(f"{card['step']}. {card['title']}", "section")
-        add_callout("What to understand", card["bullets"], "learn")
-        add_callout("Functional example", card["try_this"], "practice")
-    add("The story to keep in mind", "section")
-    add_table(
-        ["Step", "What it means"],
-        [[item["label"], item["text"]] for item in _training_beginner_story_steps(program)],
+    add("Interview-Ready Answer Scripts", "section", page_break=True)
+    add(
+        "These are near word-for-word interview answers. Read them aloud, keep the same systems and evidence, and adjust only small details to match the exact question.",
+        "chapter_intro",
     )
-    add("Quick check", "section")
-    for item in _training_beginner_quiz(program):
-        add_callout(item["question"], item["answer"], "practice")
+    for script in _training_interview_ready_answer_scripts(program):
+        add(script["title"], "section")
+        add_callout("Say this in the interview", script["answer"], "interview")
+        add_callout("Proof to mention", script.get("evidence"), "key")
     add_chapter_close(
         [
-            "The system story matters before tool memorization.",
-            "A rough diagram is useful because it shows flow, ownership, and failure points.",
-            "Every resume claim eventually connects to evidence.",
+            "Use full spoken answers with systems, teams, tools, Jira work, ownership, and proof.",
+            "Do not answer with tool names only.",
+            "Each answer should connect one business workflow to one role-owned contribution and one evidence trail.",
         ],
         [
-            "Reading glossary terms without drawing the workflow.",
-            "Answers that do not mention ownership boundaries.",
-            "Marketing before proof artifacts are understandable.",
+            "Saying the whole team did it without naming my lane.",
+            "Skipping applications, teams, epics, stories, tools, or validation evidence.",
+            "Giving a guidance-style answer instead of a speakable interview answer.",
         ],
         [
-            "Can you explain the project without tool names?",
-            "Can you draw the workflow from memory?",
-            "Which artifact proves your strongest resume bullet?",
+            "Can I say the answer aloud in under two minutes?",
+            "Did I mention teams, apps, tools, stories, and evidence?",
+            "Did I clearly say what I owned and what I did not own?",
         ],
     )
 

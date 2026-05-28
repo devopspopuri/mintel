@@ -1140,6 +1140,13 @@ def test_role_domain_guides_are_concise_consultant_explanations_not_bulk_templat
     assert "Business analyst view" in text
     assert "Senior architect view" in text
     assert "Full Project Narrative - Readable Version" in text
+    assert "Interview-Ready Answer Scripts" in text
+    assert "Tell Me About Your Project" in text
+    assert "Say this in the interview" in text
+    assert "Jira epics, stories, defects" in text
+    assert "product owners, business analysts, application developers, QA, security" in text
+    assert "The story to keep in mind" not in text
+    assert "Quick check" not in text
     assert "Real interview questions" in text
     assert "What exactly did you contribute" in text
     assert "Enterprise delivery context for Banking / Financial Services technology systems" not in text
@@ -1501,6 +1508,13 @@ def test_role_program_maps_concepts_to_basics_or_company_context():
     role_text = " ".join(block["text"] for block in role_blocks)
     assert "Concept Coverage Map" in role_text
     assert "How I Say This In An Interview" in role_text
+    assert "Interview-Ready Answer Scripts" in role_text
+    assert "What Exactly Did You Do?" in role_text
+    assert "Explain One Epic Or Set Of Stories You Worked On" in role_text
+    assert "Most work came through Jira epics, stories, defects" in role_text
+    assert "I worked across product, BA, application development, QA, security, release, operations, and service desk teams" in role_text
+    assert "The story to keep in mind" not in role_text
+    assert "Quick check" not in role_text
     assert "Say it naturally" in role_text
     assert "Full Project Narrative - Readable Version" in role_text
     assert "I did not own business rules or feature code" in role_text
@@ -1582,6 +1596,10 @@ def test_basics_export_prioritizes_useful_content_over_page_count():
     role_blocks = _training_program_pdf_blocks(program, include_diagrams=True)
     role_text = " ".join(block["text"] for block in role_blocks)
     assert "600-Page Role And Domain Scenario Workbook" not in role_text
+    assert "Interview-Ready Answer Scripts" in role_text
+    assert "These are near word-for-word interview answers" in role_text
+    assert "Why Should We Believe This Experience Is Real?" in role_text
+    assert "teams, apps, tools, stories, and evidence" in role_text
     assert "Consultant explanation" in role_text
     assert "Real interview questions" in role_text
     assert "QA / Test Lead View" in role_text
